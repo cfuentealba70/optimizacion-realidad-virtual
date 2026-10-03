@@ -1,0 +1,17 @@
+{
+  "name": "modelacion-optimizacion-vr",
+  "version": "1.0.0",
+  "description": "Modelos en realidad virtual de dos problemas de optimización de Cálculo (reacción química y río con cable).",
+  "scripts": {
+    "test": "node tests/math.test.mjs",
+    "start": "python -m http.server 8123"
+  },
+  "type": "module",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "private": true,
+  "devDependencies": {
+    "iwer": "^2.5.0"
+  }
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de sesión VR emulada · río</title>
+<link rel="stylesheet" href="../css/site.css">
+<script type="importmap">
+{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+</script>
+</head>
+<body class="scene">
+<div id="app"></div>
+<div class="hud" id="hud"><h1>Prueba VR emulada</h1></div>
+<div class="controls" id="controls">
+  <input type="range" id="r-x" min="0" max="500" step="1" value="150"><output id="o-x"></output>
+  <button class="btn" id="b-var">Variante</button><button class="btn" id="b-mode">Escala real</button>
+  <button class="btn" id="b-opt">Óptimo</button><button class="btn" id="b-rev">Revelar</button>
+</div>
+<script type="module">
+// Solo para desarrollo: emula unas gafas Meta Quest 3 con IWER (npm install) para probar la sesión VR sin casco.
+import { XRDevice, metaQuest3 } from '../node_modules/iwer/build/iwer.module.js';
+const device = new XRDevice(metaQuest3);
+device.installRuntime({ forceInstall: true });
+device.position.set(0, 1.6, 0);
+window.__xrdev = device;
+await import('../rio/scene.js');
+</script>
+</body>
+</html>

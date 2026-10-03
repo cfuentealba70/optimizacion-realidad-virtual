@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimización en realidad virtual · dos modelos de Cálculo</title>
+<meta name="description" content="Dos problemas de optimización de Cálculo en una variable modelados en realidad virtual para Meta Quest 3 y para el navegador: una reacción química y el tendido de un cable sobre un río.">
+<meta property="og:title" content="Optimización en realidad virtual">
+<meta property="og:description" content="Una reacción química y el tendido de un cable sobre un río, modelados en WebXR para Meta Quest 3 y para el navegador.">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="home">
+<main class="wrap">
+  <h1>Optimización en realidad virtual</h1>
+  <p class="lead">Dos problemas de Cálculo en una variable construidos como escenas WebXR para Meta Quest 3 y para el navegador de escritorio. En cada uno se ve la función objetivo y se mueve la variable para observar cómo cambian las magnitudes del problema.</p>
+
+  <section class="cards" aria-label="Modelos">
+    <article class="card">
+      <img class="thumb" src="assets/reactor.jpg" alt="Laboratorio con un reactor y el gráfico de la concentración en función del tiempo" width="1280" height="720" loading="lazy">
+      <div class="body">
+        <h2>Reacción química</h2>
+        <p class="eq">C(t) = 4t e<sup>−0,3t</sup>, t ≥ 0</p>
+        <p>Un laboratorio con un reactor cuyo líquido cambia de color según la concentración. Se mueve el instante sobre el gráfico, se ve la derivada y se distingue el instante del valor máximo.</p>
+        <a class="btn go" href="reactor/index.html">Abrir escena</a>
+      </div>
+    </article>
+    <article class="card">
+      <img class="thumb" src="assets/rio-maqueta.jpg" alt="Maqueta de un valle con un río, una planta eléctrica, una fábrica y un cable" width="1280" height="720" loading="lazy">
+      <div class="body">
+        <h2>Río y cable</h2>
+        <p class="eq">C(x) = 90x + 150√((500 − x)² + 100²)</p>
+        <p>Un valle con una planta eléctrica y una fábrica separadas por un río. Se arrastra el poste a lo largo de la orilla y se comparan la variable x, la longitud del tendido y el costo. Hay una maqueta sobre una mesa y una vista a escala real.</p>
+        <a class="btn go" href="rio/index.html">Abrir escena</a>
+      </div>
+    </article>
+  </section>
+
+  <h3>Con unas gafas Meta Quest 3</h3>
+  <ol>
+    <li>Abre esta página en el navegador de las gafas.</li>
+    <li>Entra en una escena y pulsa <b>Entrar en VR</b>.</li>
+    <li>Apunta con el mando y aprieta el gatillo. En la escala real, el joystick izquierdo camina y el derecho gira.</li>
+  </ol>
+
+  <h3>En el computador</h3>
+  <ul>
+    <li>Arrastra con el ratón para girar la vista y usa la rueda para acercarte.</li>
+    <li>Haz clic y arrastra sobre el gráfico, el poste naranja o los deslizadores.</li>
+  </ul>
+
+  <h3>Qué se modela</h3>
+  <ul>
+    <li><b>Reacción química.</b> La concentración C (mol/L) de un producto varía con el tiempo t (horas) según C(t) = 4t e<sup>−0,3t</sup>. El máximo está en t = 10/3 h y vale 40/(3e) ≈ 4,905 mol/L.</li>
+    <li><b>Río y cable.</b> Un río rectilíneo de 100 m separa una planta de una fábrica ubicada 500 m río arriba, en la orilla opuesta. El cable cuesta $90 por metro en la orilla y $150 por metro sobre el agua. El problema pregunta por la longitud del tendido más económico.</li>
+  </ul>
+  <p>En ambas escenas el enunciado queda a la vista y la solución se muestra solo cuando se pide. Las fórmulas y las comprobaciones están en <a href="docs/modelo.md">docs/modelo.md</a>.</p>
+
+  <p class="foot">Código con licencia MIT. Funciona sin conexión una vez cargado y no recoge datos de quien lo usa. Hecho con <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.</p>
+</main>
+</body>
+</html>

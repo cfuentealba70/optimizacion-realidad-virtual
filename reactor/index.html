@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reacción química en VR · función objetivo C(t)</title>
+<meta name="description" content="Modelo en realidad virtual de un problema de optimización: concentración de un producto en una reacción química, C(t) = 4t e^(-0,3t).">
+<link rel="stylesheet" href="../css/site.css">
+<script type="importmap">
+{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+</script>
+</head>
+<body class="scene">
+<div id="app"></div>
+
+<div class="hud" id="hud">
+  <h1>Reacción química · función objetivo</h1>
+  <p>C(t) = 4t e<sup>−0,3t</sup>, con t ≥ 0. <b>t</b> es el instante en horas y <b>C</b> la concentración en mol/L. ¿Cuándo es máxima la concentración y cuánto vale?</p>
+  <details>
+    <summary>Cómo usarlo</summary>
+    <p>Arrastra sobre el gráfico para mover el instante. Con <b>Derivada</b> verás la tangente y su pendiente C′(t). <b>Instante</b> y <b>valor máximo</b> son dos magnitudes distintas: una vive en el eje t y la otra en el eje C.</p>
+    <p>Con unas gafas Meta Quest abre esta página en su navegador y pulsa <b>Entrar en VR</b>. Apunta con el mando y aprieta el gatillo.</p>
+  </details>
+  <div class="row"><a href="../index.html">← Inicio</a></div>
+</div>
+
+<div class="controls" id="controls">
+  <button class="btn" id="b-play">❚❚ Pausar</button>
+  <button class="btn" id="b-reset">↺ Reiniciar</button>
+  <label>Tiempo <input type="range" id="r-t" min="0" max="12" step="0.01" value="0"><output id="o-t">0,00 h</output></label>
+  <button class="btn" id="b-deriv">Derivada</button>
+  <button class="btn" id="b-max">Revelar máximo</button>
+</div>
+
+<script type="module" src="./scene.js"></script>
+</body>
+</html>

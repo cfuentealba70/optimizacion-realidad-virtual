@@ -7,9 +7,11 @@ Dos problemas de optimización de Cálculo en una variable modelados como escena
 
 Las fórmulas y las comprobaciones están en [docs/modelo.md](docs/modelo.md).
 
+Sitio publicado: https://cfuentealba70.github.io/optimizacion-realidad-virtual/
+
 ## Uso
 
-Abre `index.html` desde un servidor web. En las Quest 3, abre la dirección publicada en el navegador de las gafas, entra en una escena y pulsa **Entrar en VR**. Con el mando se apunta y se aprieta el gatillo. En la escala real del río, el joystick izquierdo camina y el derecho gira.
+En las Quest 3, abre https://cfuentealba70.github.io/optimizacion-realidad-virtual/ en el navegador de las gafas, entra en una escena y pulsa **Entrar en VR**. Con el mando se apunta y se aprieta el gatillo. En la escala real del río, el joystick izquierdo camina y el derecho gira.
 
 En el computador, el ratón gira la vista y se puede arrastrar sobre el gráfico, el poste naranja y los deslizadores.
 

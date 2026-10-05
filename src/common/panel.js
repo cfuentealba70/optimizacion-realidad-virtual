@@ -182,7 +182,7 @@ export function createPanel(opts) {
     panel.last = nowMs;
     paint();
   };
-  panel.register = (input) => { panel.item = input.add(mesh, panel.handlers); return panel.item; };
+  panel.register = (input, enabled) => { panel.item = input.add(mesh, panel.handlers, enabled); return panel.item; };
   panel.dispose = () => { texture.dispose(); mat.dispose(); mesh.geometry.dispose(); };
   paint();
   return panel;

@@ -64,7 +64,7 @@ body.home { overflow: auto; }
 .card .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .card h2 { margin: 0; font-size: 20px; }
 .card p { margin: 0; color: var(--dim); font-size: 14.5px; line-height: 1.5; }
-.card .eq { font-family: "Cambria Math", "Times New Roman", serif; color: var(--text); font-size: 16px; }
+.wrap .eq { font-size: 18px; font-family: "Cambria Math", "Times New Roman", serif; color: var(--text); font-size: 16px; }
 .card a.go { margin-top: auto; align-self: flex-start; text-decoration: none; }
 .wrap h3 { margin: 34px 0 8px; font-size: 18px; }
 .wrap ol, .wrap ul { color: var(--dim); line-height: 1.6; padding-left: 20px; }

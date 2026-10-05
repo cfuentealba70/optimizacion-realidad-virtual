@@ -16,18 +16,18 @@
 
 <div class="hud" id="hud">
   <h1>Río y cable · función objetivo</h1>
-  <p>Un río rectilíneo de 100 m separa una planta eléctrica de una fábrica ubicada 500 m río arriba, en la orilla opuesta. Tender el cable por la orilla cuesta $90 por metro y sobre el agua $150 por metro. ¿Cuál es la longitud del tendido más económico?</p>
+  <p><b>Función objetivo:</b> C(x, y) = 90x + 150y, con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500, incluyendo ambos extremos. x son los metros de cable por la orilla e y los metros sobre el agua.</p>
   <details>
-    <summary>Cómo usarlo</summary>
-    <p>Arrastra el poste naranja a lo largo de la orilla o usa el deslizador. Mira cómo cambian <b>x</b>, la <b>longitud</b> y el <b>costo</b>: son tres magnitudes distintas y el problema pregunta por una sola.</p>
-    <p><b>Variante</b> cambia la variable x que define la función objetivo. <b>Escala real</b> te pone a caminar junto al río. Con unas gafas Meta Quest abre esta página en su navegador y pulsa <b>Entrar en VR</b>.</p>
+    <summary>El problema y cómo usarlo</summary>
+    <p>Un río rectilíneo de 100 m separa una planta eléctrica de una fábrica ubicada 500 m río arriba, en la orilla opuesta. Tender el cable por la orilla cuesta $90 por metro y sobre el agua $150 por metro. ¿Cuál es la longitud del tendido más económico?</p>
+    <p>Arrastra el poste naranja a lo largo de la orilla o usa el deslizador. Mira cómo cambian <b>x</b>, <b>y</b>, la <b>longitud</b> x + y y el <b>costo</b>: el problema pregunta por una sola de ellas. Prueba los extremos x = 0 y x = 500 y compáralos con el punto crítico.</p>
+    <p><b>Escala real</b> te pone a caminar junto al río. Con unas gafas Meta Quest abre esta página en su navegador y pulsa <b>Entrar en VR</b>.</p>
   </details>
   <div class="row"><a href="../index.html">← Inicio</a></div>
 </div>
 
 <div class="controls" id="controls">
   <label>x <input type="range" id="r-x" min="0" max="500" step="1" value="150"><output id="o-x">150 m</output></label>
-  <button class="btn" id="b-var">Variante: orilla primero</button>
   <button class="btn" id="b-mode">Escala real</button>
   <button class="btn" id="b-opt">Ir al óptimo</button>
   <button class="btn" id="b-rev">Revelar solución</button>

@@ -1,5 +1,5 @@
-// Escena 2: valle con un río, una planta eléctrica y una fábrica. El poste naranja define la
-// función objetivo del costo del cable. Modo maqueta (sobre una mesa) y modo escala real.
+// Valle con un río, una planta eléctrica y una fábrica. El poste naranja define x en la función
+// objetivo C(x, y) = 90x + 150y, con y = raíz((500 - x)^2 + 100^2) y 0 <= x <= 500. Modo maqueta (sobre una mesa) y modo escala real.
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -21,11 +21,11 @@ const TABLE = { y: 0.9, z: -0.55 };
 const ZS_NEAR = 3.5, ZS_FAR = -103.5; // línea de postes junto a cada orilla
 const W_Y = -0.25;                    // nivel del agua
 const PAD_H = 0.9;
-const state = { variant: 'orilla', x: 150, mode: 'maqueta', reveal: false, dirty: true };
+const state = { x: 150, mode: 'maqueta', reveal: false, dirty: true };
 
 // ------------------------------------------------------------------ aplicación base
 const app = createApp({
-  camera: { position: [0.3, 1.55, 2.25], target: [-0.1, 1.1, -0.75] },
+  camera: { position: [-0.1, 1.5, 2.75], target: [-0.4, 1.05, -0.7] },
   orbit: { minDistance: 0.25, maxDistance: 8, maxPolarAngle: Math.PI * 0.53 },
   xrStart: { position: [0, 0, 0.95], yaw: 0 },
   exposure: 0.78, background: 0x9fb8d0, far: 30000, near: 0.04,
@@ -386,37 +386,26 @@ function shoreLine(xa, xb, z) { // postes entre xa y xb a lo largo de la orilla,
 }
 let route = null;
 function buildRoute() {
-  const xv = state.x, v = state.variant, V = vz();
+  const xv = state.x, V = vz();
   for (const c of cableGroup.children) c.geometry.dispose();
   cableGroup.clear();
   const poles = [];
   const waterPts = [];
   let shore = null;
   const yGround = (x, z) => terrainH(x, z);
-  if (v === 'orilla') {
-    if (xv > 0.5) { shore = shoreLine(0, xv, ZS_NEAR); poles.push(...shore.bases); }
-    const start = shore ? shore.tops[shore.tops.length - 1] : new THREE.Vector3(0, yGround(0, ZS_NEAR) + 8.9, ZS_NEAR);
-    if (!shore) poles.push(new THREE.Vector3(0, yGround(0, ZS_NEAR), ZS_NEAR));
-    waterPts.push(start.clone(), new THREE.Vector3(xv, yGround(xv, 1.0) + 0.5, 1.0), new THREE.Vector3(xv, W_Y + 0.12, -1.5));
-    const farEnd = new THREE.Vector3(RIO.D, W_Y + 0.12, -98.5);
-    const L = new THREE.Vector3().subVectors(farEnd, waterPts[waterPts.length - 1]);
-    const n = Math.max(2, Math.ceil(L.length() / 22));
-    for (let i = 1; i <= n; i++) waterPts.push(waterPts[2].clone().addScaledVector(L, i / n));
-    waterPts.push(new THREE.Vector3(RIO.D, yGround(RIO.D, -101.5) + 0.5, -101.5), new THREE.Vector3(RIO.D, yGround(RIO.D, ZS_FAR) + 8.9, ZS_FAR));
-    poles.push(new THREE.Vector3(RIO.D, yGround(RIO.D, ZS_FAR), ZS_FAR));
-  } else {
-    waterPts.push(new THREE.Vector3(0, yGround(0, ZS_NEAR) + 8.9, ZS_NEAR), new THREE.Vector3(0, yGround(0, 1.0) + 0.5, 1.0), new THREE.Vector3(0, W_Y + 0.12, -1.5));
-    poles.push(new THREE.Vector3(0, yGround(0, ZS_NEAR), ZS_NEAR));
-    const farStart = new THREE.Vector3(xv, W_Y + 0.12, -98.5);
-    const L = new THREE.Vector3().subVectors(farStart, waterPts[2]);
-    const n = Math.max(2, Math.ceil(L.length() / 22));
-    for (let i = 1; i <= n; i++) waterPts.push(waterPts[2].clone().addScaledVector(L, i / n));
-    waterPts.push(new THREE.Vector3(xv, yGround(xv, -101.5) + 0.5, -101.5));
-    if (xv < RIO.D - 0.5) {
-      shore = shoreLine(xv, RIO.D, ZS_FAR); poles.push(...shore.bases);
-      waterPts.push(shore.tops[0].clone());
-    } else { waterPts.push(new THREE.Vector3(xv, yGround(xv, ZS_FAR) + 8.9, ZS_FAR)); poles.push(new THREE.Vector3(xv, yGround(xv, ZS_FAR), ZS_FAR)); }
-  }
+  // tramo de x metros por la orilla de la planta
+  if (xv > 0.5) { shore = shoreLine(0, xv, ZS_NEAR); poles.push(...shore.bases); }
+  const start = shore ? shore.tops[shore.tops.length - 1] : new THREE.Vector3(0, yGround(0, ZS_NEAR) + 8.9, ZS_NEAR);
+  if (!shore) poles.push(new THREE.Vector3(0, yGround(0, ZS_NEAR), ZS_NEAR));
+  // tramo de y metros sobre el agua, en diagonal hasta la fábrica
+  waterPts.push(start.clone(), new THREE.Vector3(xv, yGround(xv, 1.0) + 0.5, 1.0), new THREE.Vector3(xv, W_Y + 0.12, -1.5));
+  const farEnd = new THREE.Vector3(RIO.D, W_Y + 0.12, -98.5);
+  const L = new THREE.Vector3().subVectors(farEnd, waterPts[waterPts.length - 1]);
+  const n = Math.max(2, Math.ceil(L.length() / 22));
+  for (let i = 1; i <= n; i++) waterPts.push(waterPts[2].clone().addScaledVector(L, i / n));
+  waterPts.push(new THREE.Vector3(RIO.D, yGround(RIO.D, -101.5) + 0.5, -101.5), new THREE.Vector3(RIO.D, yGround(RIO.D, ZS_FAR) + 8.9, ZS_FAR));
+  poles.push(new THREE.Vector3(RIO.D, yGround(RIO.D, ZS_FAR), ZS_FAR));
+
   if (shore) cableGroup.add(tubeFrom(shore.pts, V.cable, cableMatShore));
   cableGroup.add(tubeFrom(waterPts, V.cable * 1.1, cableMatWater));
 
@@ -429,8 +418,7 @@ function buildRoute() {
   polesInst.instanceMatrix.needsUpdate = true;
 
   // boyas a lo largo del tramo sobre el agua
-  const a = v === 'orilla' ? new THREE.Vector3(xv, W_Y + 0.2, -1.5) : new THREE.Vector3(0, W_Y + 0.2, -1.5);
-  const b = v === 'orilla' ? new THREE.Vector3(RIO.D, W_Y + 0.2, -98.5) : new THREE.Vector3(xv, W_Y + 0.2, -98.5);
+  const a = new THREE.Vector3(xv, W_Y + 0.2, -1.5), b = new THREE.Vector3(RIO.D, W_Y + 0.2, -98.5);
   const nb = Math.min(60, Math.max(2, Math.floor(a.distanceTo(b) / 20)));
   buoyInst.count = nb;
   for (let i = 0; i < nb; i++) { const t = (i + 0.5) / nb; const p = a.clone().lerp(b, t); m.compose(p, q, new THREE.Vector3(V.buoy, V.buoy, V.buoy)); buoyInst.setMatrixAt(i, m); }
@@ -442,20 +430,17 @@ function buildRoute() {
 // Rótulos de cada tramo (se rehacen solo cuando cambian los números)
 let lastLbl = '';
 function updateSegmentLabels() {
-  const x = state.x, v = state.variant;
-  const lo = Math.round(RIO.tramoOrilla(x, v)), la = Math.round(RIO.tramoAgua(x, v));
-  const key = `${lo}|${la}|${state.mode}`;
+  const x = state.x, y = RIO.y(x);
+  const key = `${x}|${Math.round(y)}|${state.mode}`;
   if (key === lastLbl) return;
   lastLbl = key;
-  setLabelText(lblShore, `orilla  ${lo} m × $90 = ${formatoPesos(lo * 90)}`, { size: 0.05, color: '#ffd9a0', bg: 'rgba(12,20,32,0.85)', weight: 700 });
-  setLabelText(lblWater, `agua  ${la} m × $150 = ${formatoPesos(la * 150)}`, { size: 0.05, color: '#9fe8ff', bg: 'rgba(12,20,32,0.85)', weight: 700 });
+  setLabelText(lblShore, `x = ${formatoNum(x, 0)} m   90x = ${formatoPesos(RIO.a * x)}`, { size: 0.05, color: '#ffd9a0', bg: 'rgba(12,20,32,0.85)', weight: 700 });
+  setLabelText(lblWater, `y = ${formatoNum(y, 0)} m   150y = ${formatoPesos(RIO.b * y)}`, { size: 0.05, color: '#9fe8ff', bg: 'rgba(12,20,32,0.85)', weight: 700 });
   const k = vz().label;
   for (const l of [lblShore, lblWater]) fitLabel(l, k);
-  const xm = v === 'orilla' ? x / 2 : (x + RIO.D) / 2;
-  lblShore.position.set(xm, 30, v === 'orilla' ? ZS_NEAR : ZS_FAR);
-  lblShore.visible = lo > 5;
-  const wx = v === 'orilla' ? (x + RIO.D) / 2 : x / 2;
-  lblWater.position.set(wx, 34, -50);
+  lblShore.position.set(x / 2, 30, ZS_NEAR);
+  lblShore.visible = x > 5;
+  lblWater.position.set((x + RIO.D) / 2, 34, -50);
 }
 
 // ------------------------------------------------------------------ poste de control (marcador)
@@ -467,14 +452,13 @@ const mkRing = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.45, 8, 36), new THR
 const lblMark = billboardLabel('x', 10, { size: 0.06, color: '#1a1206', bg: '#ffb347' }); lblMark.position.y = 34; marker.add(lblMark);
 let lastMarkTxt = '';
 function moveMarker() {
-  const x = state.x, z = state.variant === 'orilla' ? ZS_NEAR : ZS_FAR;
-  marker.position.set(x, terrainH(x, z), z);
+  const x = state.x;
+  marker.position.set(x, terrainH(x, ZS_NEAR), ZS_NEAR);
   marker.scale.setScalar(vz().mark);
 }
 function placeMarker() {
   moveMarker();
-  const x = state.x;
-  const txt = `x = ${Math.round(x)} m`;
+  const txt = `x = ${Math.round(state.x)} m`;
   if (txt !== lastMarkTxt) { lastMarkTxt = txt; setLabelText(lblMark, txt, { size: 0.06, color: '#1a1206', bg: '#ffb347', weight: 700 }); }
   fitLabel(lblMark, 5);
 }
@@ -486,14 +470,10 @@ const flag = new THREE.Group(); world.add(flag);
   flag.visible = false;
 }
 
-// zonas para arrastrar el poste a lo largo de cada orilla
-const stripMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
-const strips = {
-  orilla: new THREE.Mesh(new THREE.BoxGeometry(RIO.D + 40, 2, 20), stripMat),
-  agua: new THREE.Mesh(new THREE.BoxGeometry(RIO.D + 40, 2, 20), stripMat),
-};
-strips.orilla.position.set(RIO.D / 2, 1, ZS_NEAR); strips.agua.position.set(RIO.D / 2, 1, ZS_FAR);
-world.add(strips.orilla, strips.agua);
+// zona para arrastrar el poste a lo largo de la orilla de la planta
+const strip = new THREE.Mesh(new THREE.BoxGeometry(RIO.D + 40, 2, 20), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+strip.position.set(RIO.D / 2, 1, ZS_NEAR);
+world.add(strip);
 const invWorld = new THREE.Matrix4(), ray = new THREE.Ray(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1), pt = new THREE.Vector3();
 function xFromPointer(p, hit) {
   world.updateWorldMatrix(true, false);
@@ -502,86 +482,85 @@ function xFromPointer(p, hit) {
   ray.copy(p.ray).applyMatrix4(invWorld);
   return ray.intersectPlane(plane, pt) ? pt.x : null;
 }
-for (const key of ['orilla', 'agua']) {
-  input.add(strips[key], {
-    cursor: 'ew-resize',
-    onDown(hit, p) { const x = xFromPointer(p, hit); if (x != null) setX(x); },
-    onMove(hit, p) { const x = xFromPointer(p, hit); if (x != null) setX(x); },
-  }, () => state.variant === key);
-}
-function setX(x) { state.x = Math.min(RIO.D, Math.max(0, Math.round(x * 2) / 2)); state.dirty = true; }
+input.add(strip, {
+  cursor: 'ew-resize',
+  onDown(hit, p) { const x = xFromPointer(p, hit); if (x != null) setX(x); },
+  onMove(hit, p) { const x = xFromPointer(p, hit); if (x != null) setX(x); },
+});
+function setX(x) { state.x = Math.min(RIO.D, Math.max(0, Math.round(x))); state.dirty = true; }
 
 // ------------------------------------------------------------------ paneles en el espacio del usuario
 const unitsM = (n) => `${formatoNum(n, 0)} m`;
 const CW = 950, CH = 950;
 const ctrl = createPanel({
-  width: 1.25, height: 1.25, ppm: 760, title: 'FUNCIÓN OBJETIVO · COSTO DEL CABLE',
+  width: 1.25, height: 1.25, ppm: 760, title: 'FUNCIÓN OBJETIVO',
   draw(ctx, W, H) {
-    const v = state.variant, x = state.x;
+    const x = state.x, y = RIO.y(x);
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    ctx.fillStyle = THEME.text; ctx.font = font(H * 0.05, 700);
-    ctx.fillText(v === 'orilla' ? 'C(x) = 90x + 150√((500 − x)² + 100²)' : 'C(x) = 150√(x² + 100²) + 90(500 − x)', W * 0.04, H * 0.158);
-    ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.034, 400);
-    wrapText(ctx, v === 'orilla'
-      ? 'x: metros de cable por la orilla de la planta antes de cruzar el río en diagonal hasta la fábrica.'
-      : 'x: distancia, río arriba, del punto donde el cable llega a la otra orilla; desde ahí sigue por la orilla.', W * 0.04, H * 0.205, W * 0.92, H * 0.04);
+    ctx.fillStyle = THEME.text; ctx.font = font(H * 0.056, 700);
+    ctx.fillText('C(x, y) = 90x + 150y', W * 0.04, H * 0.172);
+    ctx.font = font(H * 0.04, 600);
+    ctx.fillText('y = √((500 − x)² + 100²),   0 ≤ x ≤ 500', W * 0.04, H * 0.227);
+    ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.03, 400);
+    wrapText(ctx, 'x son los metros de cable por la orilla e y los metros sobre el agua, por el teorema de Pitágoras. El intervalo es cerrado e incluye los extremos x = 0 y x = 500.', W * 0.04, H * 0.272, W * 0.9, H * 0.035);
     const cards = [
-      ['x', unitsM(x), THEME.accent],
-      ['longitud del tendido', unitsM(RIO.longitud(x, v)), THEME.accent2],
-      ['costo C(x)', formatoPesos(RIO.costo(x, v)), THEME.good],
+      ['x (orilla)', unitsM(x), THEME.accent],
+      ['y (agua)', unitsM(y), THEME.accent2],
+      ['longitud x + y', unitsM(RIO.longitud(x)), '#c9a7ff'],
+      ['costo C(x, y)', formatoPesos(RIO.costo(x)), THEME.good],
     ];
     cards.forEach(([lab, val, col], i) => {
-      const cx = W * (0.04 + i * 0.318), cw = W * 0.29, cy = H * 0.31, chh = H * 0.15;
+      const cx = W * (0.04 + i * 0.235), cw = W * 0.215, cy = H * 0.375, chh = H * 0.13;
       ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(cx, cy, cw, chh);
       ctx.fillStyle = col; ctx.fillRect(cx, cy, 6, chh);
-      ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.03, 600); ctx.textAlign = 'left';
-      ctx.fillText(lab, cx + 16, cy + chh * 0.32);
-      ctx.fillStyle = THEME.text; ctx.font = font(H * 0.056, 700);
-      ctx.fillText(val, cx + 16, cy + chh * 0.8);
+      ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.026, 600); ctx.textAlign = 'left';
+      ctx.fillText(lab, cx + 14, cy + chh * 0.32);
+      ctx.fillStyle = THEME.text; ctx.font = font(H * 0.043, 700);
+      ctx.fillText(val, cx + 14, cy + chh * 0.8);
     });
-    ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.031, 500);
-    ctx.fillText(`orilla: ${unitsM(RIO.tramoOrilla(x, v))} × $90 = ${formatoPesos(RIO.tramoOrilla(x, v) * 90)}`, W * 0.04, H * 0.515);
-    ctx.fillText(`agua: ${unitsM(RIO.tramoAgua(x, v))} × $150 = ${formatoPesos(RIO.tramoAgua(x, v) * 150)}`, W * 0.52, H * 0.515);
-    ctx.fillStyle = state.reveal ? THEME.good : THEME.dim; ctx.font = font(H * 0.032, state.reveal ? 700 : 400);
-    const o = RIO.optimo(v);
+    ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.03, 500);
+    ctx.fillText(`90x = ${formatoPesos(RIO.a * x)}`, W * 0.04, H * 0.548);
+    ctx.fillText(`150y = ${formatoPesos(RIO.b * y)}`, W * 0.52, H * 0.548);
+    ctx.fillStyle = state.reveal ? THEME.good : THEME.dim; ctx.font = font(H * 0.028, state.reveal ? 700 : 400);
+    const cand = RIO.candidatos(), o = cand[1];
     wrapText(ctx, state.reveal
-      ? `Óptimo: x* = ${formatoNum(o.x, 0)} m, costo mínimo ${formatoPesos(o.costo)}. El problema pregunta la longitud del tendido: ${formatoNum(o.longitud, 0)} m.`
-      : 'Mueve el poste y observa qué cambia. El problema pregunta por una sola de las tres magnitudes.', W * 0.04, H * 0.965, W * 0.92, H * 0.038);
+      ? `Candidatos: C(0) = ${formatoPesos(cand[0].costo)}, C(${formatoNum(o.x, 0)}) = ${formatoPesos(o.costo)}, C(500) = ${formatoPesos(cand[2].costo)}. El mínimo está en x = ${formatoNum(o.x, 0)} m, y = ${formatoNum(o.y, 0)} m. Se pide la longitud: x + y = ${formatoNum(o.longitud, 0)} m.`
+      : 'Mueve el poste y observa qué cambia. El problema pide una sola magnitud: la longitud del tendido.', W * 0.04, H * 0.9, W * 0.9, H * 0.033);
   },
   widgets: [
-    { type: 'slider', id: 'x', x: 0.04 * CW, y: 0.555 * CH, w: 0.92 * CW, h: 0.05 * CH, min: 0, max: RIO.D, step: 1, get: () => state.x, set: (v) => setX(v) },
-    { type: 'button', id: 'var', x: 0.04 * CW, y: 0.63 * CH, w: 0.46 * CW, h: 0.08 * CH, fontScale: 0.38, label: () => (state.variant === 'orilla' ? 'Variante: orilla primero' : 'Variante: agua primero'), onClick: () => setVariant(state.variant === 'orilla' ? 'agua' : 'orilla') },
-    { type: 'button', id: 'mode', x: 0.52 * CW, y: 0.63 * CH, w: 0.44 * CW, h: 0.08 * CH, fontScale: 0.38, label: () => (state.mode === 'maqueta' ? 'Ir a escala real' : 'Volver a la maqueta'), onClick: () => applyMode(state.mode === 'maqueta' ? 'real' : 'maqueta') },
-    { type: 'button', id: 'x0', x: 0.04 * CW, y: 0.73 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'x = 0', onClick: () => setX(0) },
-    { type: 'button', id: 'x1', x: 0.355 * CW, y: 0.73 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'x = 500', onClick: () => setX(500) },
-    { type: 'button', id: 'opt', x: 0.67 * CW, y: 0.73 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'Ir al óptimo', onClick: () => setX(RIO.optimo(state.variant).x) },
-    { type: 'toggle', id: 'rev', x: 0.04 * CW, y: 0.83 * CH, w: 0.46 * CW, h: 0.08 * CH, fontScale: 0.38, label: 'Revelar solución', get: () => state.reveal, set: (v) => { state.reveal = v; applyReveal(); } },
-    { type: 'button', id: 'tp', x: 0.52 * CW, y: 0.83 * CH, w: 0.44 * CW, h: 0.08 * CH, fontScale: 0.38, label: () => (state.mode === 'real' ? 'Ir al punto óptimo' : 'Vista desde la planta'), onClick: () => (state.mode === 'real' ? teleportTo(RIO.optimo(state.variant).x) : applyMode('real')) },
+    { type: 'slider', id: 'x', x: 0.04 * CW, y: 0.575 * CH, w: 0.92 * CW, h: 0.05 * CH, min: 0, max: RIO.D, step: 1, get: () => state.x, set: (v) => setX(v) },
+    { type: 'button', id: 'x0', x: 0.04 * CW, y: 0.66 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'Extremo x = 0', onClick: () => setX(0) },
+    { type: 'button', id: 'x1', x: 0.355 * CW, y: 0.66 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'Extremo x = 500', onClick: () => setX(500) },
+    { type: 'button', id: 'opt', x: 0.67 * CW, y: 0.66 * CH, w: 0.29 * CW, h: 0.08 * CH, fontScale: 0.36, label: 'Ir al óptimo', onClick: () => goOptimum() },
+    { type: 'toggle', id: 'rev', x: 0.04 * CW, y: 0.765 * CH, w: 0.46 * CW, h: 0.08 * CH, fontScale: 0.38, label: 'Revelar solución', get: () => state.reveal, set: (v) => { state.reveal = v; applyReveal(); } },
+    { type: 'button', id: 'mode', x: 0.52 * CW, y: 0.765 * CH, w: 0.44 * CW, h: 0.08 * CH, fontScale: 0.38, label: () => (state.mode === 'maqueta' ? 'Ir a escala real' : 'Volver a la maqueta'), onClick: () => applyMode(state.mode === 'maqueta' ? 'real' : 'maqueta') },
   ],
 });
 console.assert(ctrl.W === CW && ctrl.H === CH, 'rejilla de la consola', ctrl.W, ctrl.H);
-rig.add(ctrl.mesh); ctrl.register(input);
+const panelsOn = () => app.isXR || state.mode === 'maqueta';
+rig.add(ctrl.mesh); ctrl.register(input, panelsOn);
 
-const plotTicks = [0, 100, 200, 300, 400, 500];
 const plot = createPlot({
-  f: (x) => RIO.costo(x, 'orilla') / 1000, x0: 0, x1: RIO.D, y0: 55, y1: 80, width: 1.35, height: 0.8,
-  xTicks: plotTicks, yTicks: [55, 60, 65, 70, 75, 80], xLabel: 'x (m)', yLabel: 'costo C (miles de $)', labelSize: 0.042,
+  f: (x) => RIO.costo(x) / 1000, x0: 0, x1: RIO.D, y0: 55, y1: 80, width: 1.35, height: 0.8,
+  xTicks: [0, 100, 200, 300, 400, 500], yTicks: [55, 60, 65, 70, 75, 80], xLabel: 'x (m)', yLabel: 'costo C (miles de $)', labelSize: 0.042,
   tickFmt: (v) => String(v), curveColor: 0xffb347,
 });
 rig.add(plot.group);
+// extremos del intervalo cerrado: círculos llenos, siempre visibles
+{
+  const e = RIO.extremos();
+  plot.addPoint('e0', 0, e.x0 / 1000, { color: 0xffffff, radiusP: 0.016, guides: false });
+  plot.addPoint('e1', RIO.D, e.xD / 1000, { color: 0xffffff, radiusP: 0.016, guides: false });
+}
 function applyReveal() {
-  const o = RIO.optimo(state.variant);
+  const o = RIO.optimo();
   plot.removePoint('min');
   if (state.reveal) plot.addPoint('min', o.x, o.costo / 1000, { color: 0x6fe3a2, labelX: `x* = ${formatoNum(o.x, 0)} m`, labelY: `${formatoNum(o.costo / 1000, 0)}` });
   flag.visible = state.reveal;
-  flag.position.set(o.x, terrainH(o.x, state.variant === 'orilla' ? ZS_NEAR : ZS_FAR), state.variant === 'orilla' ? ZS_NEAR + 6 : ZS_FAR - 6);
+  flag.position.set(o.x, terrainH(o.x, ZS_NEAR + 6), ZS_NEAR + 6);
   flag.scale.setScalar(vz().mark);
   ctrl.invalidate();
-}
-function setVariant(v) {
-  state.variant = v;
-  plot.setFunction((x) => RIO.costo(x, v) / 1000);
-  state.dirty = true; applyReveal(); ctrl.invalidate();
+  state.dirty = true;
 }
 
 // zona de gráfico sensible: arrastrar mueve x
@@ -595,7 +574,7 @@ function xFromPlot(p, hit) {
   else { _n.set(0, 0, 1).transformDirection(plot.group.matrixWorld); plot.group.getWorldPosition(_c); _pl.setFromNormalAndCoplanarPoint(_n, _c); if (!p.ray.intersectPlane(_pl, _p)) return null; w = _p.clone(); }
   return plot.xFromLocal(plot.group.worldToLocal(w).x);
 }
-input.add(plotProxy, { cursor: 'ew-resize', onDown(hit, p) { const x = xFromPlot(p, hit); if (x != null) setX(x); }, onMove(hit, p) { const x = xFromPlot(p, hit); if (x != null) setX(x); } });
+input.add(plotProxy, { cursor: 'ew-resize', onDown(hit, p) { const x = xFromPlot(p, hit); if (x != null) setX(x); }, onMove(hit, p) { const x = xFromPlot(p, hit); if (x != null) setX(x); } }, panelsOn);
 
 // ------------------------------------------------------------------ maqueta: mesa y suelo
 const plinth = new THREE.Group(); scene.add(plinth);
@@ -612,7 +591,7 @@ function setShadowRegion() {
   const maq = state.mode === 'maqueta';
   const c = maq ? new THREE.Vector3(0, TABLE.y, TABLE.z) : (app.isXR ? rig.position.clone() : camera.getWorldPosition(new THREE.Vector3()));
   const half = maq ? 1.5 : 170;
-  sky.setShadow(c, half, { size: maq ? 2048 : 2048, bias: -0.0004, normalBias: maq ? 0.004 : 0.5 });
+  sky.setShadow(c, half, { size: 2048, bias: -0.0004, normalBias: maq ? 0.004 : 0.5 });
   const cam = sunL.shadow.camera; cam.near = maq ? 560 : 330; cam.far = maq ? 640 : 900; cam.updateProjectionMatrix();
 }
 function applyVisual() { const V = vz(); lastLbl = ''; lastMarkTxt = ''; buildRoute(); for (const l of [lblPlant, lblFact]) fitLabel(l, V.label * 1.1); for (const l of [lblW, lblD]) fitLabel(l, V.label * 0.9); }
@@ -627,7 +606,7 @@ function applyMode(m) {
     if (app.isXR) app.teleportRig([0, 0, 0.95], 0);
     scene.fog.density = 0;
     camera.near = 0.04; camera.updateProjectionMatrix();
-    if (!app.isXR) { camera.position.set(0.3, 1.55, 2.25); orbit.target.set(-0.1, 1.1, -0.75); orbit.minDistance = 0.25; orbit.maxDistance = 8; orbit.update(); }
+    if (!app.isXR) { camera.position.set(-0.1, 1.5, 2.75); orbit.target.set(-0.4, 1.05, -0.7); orbit.minDistance = 0.25; orbit.maxDistance = 8; orbit.update(); }
     ctrl.mesh.position.set(-1.45, 1.3, -0.6); ctrl.mesh.rotation.set(0, 0.77, 0);
     plot.group.position.set(-0.55, 1.22, -1.45); plot.group.rotation.set(0, 0, 0);
   } else {
@@ -647,21 +626,24 @@ function applyMode(m) {
   applyVisual(); applyReveal(); setShadowRegion(); state.dirty = true;
   bMode.textContent = maq ? 'Escala real' : 'Maqueta';
 }
+// En escala real lleva al usuario junto al poste, mirando hacia el río
 function teleportTo(x) {
-  const z = state.variant === 'orilla' ? ZS_NEAR + 14 : ZS_FAR - 14;
-  const p = [x, terrainH(x, z), z];
-  const yaw = Math.atan2(-0, -(state.variant === 'orilla' ? -1 : 1));
-  if (app.isXR) app.teleportRig(p, state.variant === 'orilla' ? Math.PI : 0); else { camera.position.set(x - 30, 22, z + (state.variant === 'orilla' ? 60 : -60)); orbit.target.set(x, 2, -50); }
-  void yaw;
+  const z = ZS_NEAR + 14;
+  if (app.isXR) app.teleportRig([x, terrainH(x, z), z], 0);
+  else { camera.position.set(x - 30, 22, z + 60); orbit.target.set(x, 2, -50); }
+}
+function goOptimum() {
+  const o = RIO.optimo();
+  setX(o.x);
+  if (state.mode === 'real') teleportTo(o.x);
 }
 
 // ------------------------------------------------------------------ DOM de escritorio
 const $ = (id) => document.getElementById(id);
-const rX = $('r-x'), oX = $('o-x'), bVar = $('b-var'), bMode = $('b-mode'), bOpt = $('b-opt'), bRev = $('b-rev');
+const rX = $('r-x'), oX = $('o-x'), bMode = $('b-mode'), bOpt = $('b-opt'), bRev = $('b-rev');
 rX.oninput = () => setX(parseFloat(rX.value));
-bVar.onclick = () => setVariant(state.variant === 'orilla' ? 'agua' : 'orilla');
 bMode.onclick = () => applyMode(state.mode === 'maqueta' ? 'real' : 'maqueta');
-bOpt.onclick = () => setX(RIO.optimo(state.variant).x);
+bOpt.onclick = () => goOptimum();
 bRev.onclick = () => { state.reveal = !state.reveal; applyReveal(); };
 app.onXR((on) => { $('controls').style.display = on ? 'none' : ''; $('hud').style.display = on ? 'none' : ''; if (on) applyMode(state.mode); else setShadowRegion(); });
 
@@ -674,23 +656,21 @@ app.onUpdate((dt) => {
     buildRoute(); moveMarker(); labelsDirty = true;
     plot.setMarker(state.x, { color: 0xffffff });
     ctrl.invalidate();
-    bVar.textContent = state.variant === 'orilla' ? 'Variante: orilla primero' : 'Variante: agua primero';
     if (document.activeElement !== rX) rX.value = String(state.x);
     oX.textContent = `${Math.round(state.x)} m`;
     bRev.classList.toggle('on', state.reveal);
   }
   if (labelsDirty && performance.now() - lastLabelT > 110) { labelsDirty = false; lastLabelT = performance.now(); placeMarker(); updateSegmentLabels(); }
   // los paneles solo se muestran donde son útiles
-  const showPanels = app.isXR || state.mode === 'maqueta';
-  ctrl.mesh.visible = plot.group.visible = showPanels;
+  ctrl.mesh.visible = plot.group.visible = panelsOn();
   ctrl.update(performance.now());
   // sombras alrededor del usuario en escala real
   if (state.mode === 'real' && performance.now() - lastShadowStep > 800) { lastShadowStep = performance.now(); setShadowRegion(); }
 });
 
-// arranque
-setVariant('orilla');
-applyMode('maqueta');
+// arranque: ?modo=real abre directamente a escala real
+const modoInicial = new URLSearchParams(location.search).get('modo') === 'real' ? 'real' : 'maqueta';
+applyMode(modoInicial);
 state.x = 150; state.dirty = true;
 loading(null);
-window.__rio = { app, state, world, RIO, plot, applyMode, setX, setVariant };
+window.__rio = { app, state, world, RIO, plot, applyMode, setX };

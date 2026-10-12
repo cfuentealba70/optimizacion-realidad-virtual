@@ -183,8 +183,15 @@ const grupoDe = new Map();
 
 function aMundo(est, v) { return new THREE.Vector3(...v).applyMatrix4(est.grupo.matrixWorld); }
 
+// Parámetros de la dirección para revisar una estación: solo=1 carga únicamente la estación pedida, ui=0 oculta la interfaz,
+// cam=x,y,z y mira=x,y,z ubican la cámara en coordenadas de la estación, vr=1 pone la cámara donde queda la persona en VR
+// y info=1 muestra las llamadas de dibujo y los triángulos del último cuadro.
+const PARAMS = new URLSearchParams(location.search);
+
 async function cargarEstaciones() {
+  const soloUna = PARAMS.get('solo') === '1' ? PARAMS.get('estacion') : null;
   for (const l of LAYOUT) {
+    if (soloUna && l.id !== soloUna) continue;
     const grupo = new THREE.Group();
     grupo.position.set(l.pos[0], 0, l.pos[1]);
     grupo.rotation.y = l.yaw;
@@ -393,4 +400,26 @@ if (inicial) {
 }
 construirControles(); actualizarHud(); marcarMenu();
 loading(null);
+if (inicial && PARAMS.has('cam')) {
+  const n = (k, d) => (PARAMS.has(k) ? PARAMS.get(k).split(',').map(Number) : d);
+  camera.position.copy(aMundo(inicial, n('cam', [0, 3, 8])));
+  orbit.target.copy(aMundo(inicial, n('mira', [0, 1, 0]))); orbit.update();
+} else if (inicial && PARAMS.get('vr') === '1') {
+  const v = inicial.api.vista.vr, p = aMundo(inicial, v.pos), yaw = inicial.layout.yaw + (v.yaw || 0);
+  camera.position.set(p.x, sueloH(p.x, p.z) + (v.pos[1] || 0) + 1.6, p.z);
+  orbit.target.set(p.x - Math.sin(yaw) * 3, camera.position.y - 0.7, p.z - Math.cos(yaw) * 3); orbit.update();
+  camera.fov = 90; camera.updateProjectionMatrix();
+}
+if (PARAMS.get('ui') === '0') for (const id of ['hud', 'menu', 'controls', 'vr-button']) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }
+if (PARAMS.get('info') === '1') {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9;font:13px monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:4px';
+  document.body.appendChild(div);
+  renderer.info.autoReset = false;
+  app.onUpdate(() => {
+    const errores = estaciones.filter((e) => e.error).map((e) => `${e.id}: ${e.error?.message || e.error}`).join(' | ');
+    div.textContent = `llamadas ${renderer.info.render.calls} · triángulos ${renderer.info.render.triangles} · geometrías ${renderer.info.memory.geometries} · texturas ${renderer.info.memory.textures}` + (errores ? ` · ERROR ${errores}` : ' · sin errores');
+    renderer.info.reset();
+  });
+}
 window.__g4 = { app, kit, estaciones, irA, grupoDe, sueloH };

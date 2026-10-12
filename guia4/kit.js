@@ -7,6 +7,7 @@ import { createPlot, dashedLine } from '../src/common/plot3d.js';
 import * as tex from '../src/common/textures.js';
 import { createWater } from '../src/common/water.js';
 import { num, pesos } from '../src/math/guia4.js';
+import { crearHumano, POSES, CLIPS, PRESETS, PIELES, PELOS, OJOS } from './humano.js';
 
 const PPM = 760;
 
@@ -211,6 +212,17 @@ export function crearKit(app) {
 
   // Gráfico de una función con estilo común
   kit.grafico = (opts) => createPlot({ labelSize: 0.04, width: 1.2, height: 0.72, ...opts });
+
+  // Personas articuladas con rostro, manos, ropa, poses y animaciones (ver guia4/humano.js).
+  // kit.persona({ preset: 'obrero', semilla: 3, padre, x, y, z, ry }) devuelve la persona ya ubicada.
+  kit.humano = (opts) => crearHumano(opts);
+  kit.persona = ({ padre = null, x = 0, y = 0, z = 0, ry = 0, ...opts } = {}) => {
+    const h = crearHumano(opts);
+    h.grupo.position.set(x, y, z); h.grupo.rotation.y = ry;
+    if (padre) padre.add(h.grupo);
+    return h;
+  };
+  Object.assign(kit, { POSES, CLIPS, PRESETS, PIELES, PELOS, OJOS });
 
   return kit;
 }

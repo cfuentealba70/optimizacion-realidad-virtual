@@ -38,7 +38,8 @@ export default {
 - Agrega una persona de referencia de 1,75 m cuando ayude a leer la escala.
 - Todo el texto va en español de Chile, sobrio, con coma decimal (`kit.num(v, d)`) y pesos con punto de miles (`kit.pesos(v)`).
 - No modifiques archivos compartidos (`kit.js`, `world.js`, `src/common/*`, `src/math/*`, `css/*`). Si te falta algo, resuélvelo dentro de tu archivo de estación.
-- Rendimiento para Meta Quest 3: menos de 60.000 triángulos por estación, `InstancedMesh` para objetos repetidos, nada de reconstruir geometría en cada cuadro (usa un contador de cambios como `s.cambio` o `reloj.cambio`), y libera (`dispose`) la geometría que reemplaces.
+- Rendimiento para Meta Quest 3: con `solo=1&vr=1&info=1`, la vista de VR de la estación (con el terreno del mundo) debe quedar bajo 180 llamadas de dibujo y 350.000 triángulos. Usa `InstancedMesh` para objetos repetidos, une con `kit.mergeGeometries` la geometría estática que comparte material, no reconstruyas geometría en cada cuadro (usa un contador de cambios como `s.cambio` o `reloj.cambio`) y libera (`dispose`) la geometría que reemplaces.
+- Detalle: cada estación debe verse como un lugar real y cuidado, con objetos propios del contexto, materiales con textura, desgaste y suciedad donde corresponde, y nada facetado ni de juguete. Las personas tienen rostro y hacen algo propio de la escena.
 
 ## Kit (`kit`)
 
@@ -50,6 +51,31 @@ export default {
 - Reloj de las razones de cambio: `kit.reloj({ t0, t1, instante, velocidad })` con `t`, `corriendo`, `cambio`, `tick(dt)`, `fijar(t)`, `alternar()`, `reiniciar()`, `alInstante()`.
 - Panel estándar: `kit.panelEstandar({ etiqueta, titulo, enunciado, ecuaciones: [texto | () => texto], lecturas: [{ etiqueta, valor: () => texto, color, escala }], deslizadores: [{ etiqueta, min, max, paso, get, set, formato, color }], botones: [{ etiqueta, accion } | { etiqueta, tipo: 'interruptor', get, set }], pie: () => texto, pieColor: () => color })`. Después: `panel.mesh` (ubícalo y agrégalo al grupo) y `panel.register(kit.input, est.habilitado)`. Llama `panel.invalidate()` cuando cambien los valores.
 - Gráfico: `kit.grafico({ f, x0, x1, y0, y1, width, height, xTicks, yTicks, xLabel, yLabel, curveColor, tickFmt, yTickFmt })` devuelve `{ group, setMarker(x), addPoint(id, x, y, { color, labelX, labelY, guides, hollow, radiusP }), removePoint(id), setTangent(x, pendiente, { color, len }), xFromLocal(xLocal), width, height }`. Usa `hollow: true` para extremos excluidos del dominio y puntos llenos para extremos incluidos.
+
+## Personas (`kit.persona`)
+
+Las personas se construyen con `guia4/humano.js`: esqueleto articulado, rostro con ojos, párpados que parpadean, pestañas, cejas, nariz, labios y orejas, manos con dedos, ropa con costuras y bolsillos, chaleco reflectante, casco, lentes y audífonos. No dibujes personas con cápsulas y esferas.
+
+```js
+const h = kit.persona({ preset: 'obrero', semilla: 4, padre: grupo, x: 1, z: 2, ry: Math.PI });
+h.posar('tableta');                       // pose fija (transición suave)
+h.reproducir('palear', { bucle: true, eventos: { lanza: () => soltarArena() } });
+h.mirar(objeto3D | Vector3 | null);       // gira cuello, cabeza y ojos hacia el objetivo
+h.alcanzar('D', objeto3D | Vector3, poloMundo, peso); // lleva la muñeca derecha al objetivo (IK de dos huesos)
+h.sostener(herramienta, { D: [x,y,z], I: [x,y,z], arriba: [0,0,1] }); // herramienta en las dos manos (puntos de agarre en sus coordenadas)
+h.manoD.add(piedra);                      // un objeto en una mano (ancla en el centro del puño)
+h.actualizar(dt);                         // llamarlo en actualizar(dt) de la estación, cada cuadro
+```
+
+- Atuendos (`preset`): `obrero`, `obrera`, `capataz`, `ingeniera`, `operador`, `controlador`, `controladora`, `civil`, `civilMujer`. Cualquier opción se puede cambiar: `mujer`, `altura`, `piel` (`kit.PIELES`), `colorPelo` (`kit.PELOS`), `pelo` (`corto`, `rapado`, `entradas`, `cola`), `barba` (`no`, `sombra`, `bigote`, `barba`), `ojos` (`kit.OJOS`), `superior` (`polera`, `camisa`, `parka`), `colorSuperior`, `manga` (`corta`, `larga`), `inferior` (`jeans`, `trabajo`, `tela`), `colorInferior`, `calzado` (`botas`, `zapatos`, `zapatillas`), `chaleco` (`amarillo`, `naranjo` o un color), `casco` (color), `guantes` (color), `lentes`, `audifonos`, `cinturon`. Varía `semilla` para que no haya dos personas iguales.
+- Poses (`kit.POSES`): `reposo`, `firme`, `jarras`, `brazosCruzados`, `tableta`, `alarma`, `sentado(asiento)`, `conducir(asiento)`, `agachado`, `apoyado`. Animaciones (`kit.CLIPS`): `lanzar` (evento `suelta` a los 0,8 s), `caminar` (ciclo de 1,1 s, el desplazamiento lo pone la estación), `palear` (eventos `carga` y `lanza`), `saludar`.
+- Una pose es un objeto `{ hueso: [x, y, z] }` en radianes. Brazos y muslos usan el orden XZY: en el brazo derecho (D, lado x < 0) x < 0 lo lleva adelante y z < 0 lo separa del cuerpo; en el codo x < 0 flexiona; en el muslo x < 0 va adelante; en la rodilla x > 0 flexiona; en columna, cuello y cabeza x > 0 inclina adelante e y > 0 gira a la izquierda. Claves especiales: `_pos` desplaza la cadera, `dedosD`/`dedosI` van de 0 (mano abierta) a 1 (puño) o `{ c, indice }` para señalar, `ikD`/`ikI` `{ p: [x,y,z] en coordenadas de la persona, polo }` llevan la mano a un punto. Puedes definir poses y animaciones propias en el archivo de la estación con el mismo formato (`{ duracion, bucle, eventos, claves: [{ t, pose }] }` o `{ duracion, bucle, fn(t) }`) y pasarlas a `h.posar` y `h.reproducir`.
+- La persona mide `altura` (1,62 a 1,80 m) y su origen está entre los pies, mirando a +z. Cada una tiene unos 20.000 triángulos y unas 10 llamadas de dibujo; usa pocas por estación (1 a 3).
+- `tests/humano.html` muestra las personas de cerca (`?cual=0..7&cam=x,y,z&mira=x,y,z&pose=…&clip=…&t=…&pala=1`).
+
+## Revisar una estación sin el navegador
+
+Con el servidor local corriendo (`npm start`), `node tests/captura.mjs "<ruta>" salida.png [ancho] [alto] [segundos]` guarda una imagen hecha con Chrome sin ventana. Parámetros útiles de `guia4/index.html`: `estacion=<id>`, `solo=1` (carga solo esa estación, mucho más rápido), `ui=0` (sin interfaz), `vr=1` (cámara en `vista.vr.pos`, a 1,6 m de altura), `cam=x,y,z&mira=x,y,z` (cámara en coordenadas de la estación) e `info=1` (llamadas de dibujo, triángulos y errores de carga en la esquina). Una captura tarda alrededor de un minuto.
 
 ## Controles de escritorio (`dom`)
 

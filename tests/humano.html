@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personas · prueba</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>html, body { margin: 0; height: 100%; background: #9fb8d0; overflow: hidden; } #app { position: fixed; inset: 0; }</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+// Galería de prueba de las personas. Parámetros de la dirección:
+//   cam=x,y,z  mira=x,y,z  (cámara)      cual=0..n  (una sola persona en el origen)
+//   pose=nombre  clip=nombre  t=segundos  (pose o instante fijo de una animación)
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createSky } from '../src/common/sky.js';
+import { crearHumano, POSES, CLIPS } from '../guia4/humano.js';
+
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? q.get(k).split(',').map(Number) : d);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.82;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+document.getElementById('app').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const sky = createSky(scene, renderer, { elevation: 34, azimuth: 205, turbidity: 3.2, rayleigh: 1.2, sunIntensity: 3.5, fogDensity: 0.0016 });
+scene.add(new THREE.HemisphereLight(0xcfe0f5, 0x6d6a55, 0.3));
+scene.environmentIntensity = 0.28;
+sky.setShadow(new THREE.Vector3(0, 0, 0), 6, { size: 2048, bias: -0.0004, normalBias: 0.02 });
+const suelo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ color: 0x8b8474, roughness: 1 }));
+suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; scene.add(suelo);
+
+const camera = new THREE.PerspectiveCamera(Number(q.get('fov') || 40), innerWidth / innerHeight, 0.02, 2000);
+camera.position.set(...num('cam', [0, 1.6, 4.2]));
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.set(...num('mira', [0, 1.1, 0])); orbit.update();
+
+const lista = [
+  { preset: 'obrero', semilla: 1 }, { preset: 'obrera', semilla: 2 }, { preset: 'controlador', semilla: 3, barba: 'no', lentes: true },
+  { preset: 'civil', semilla: 4, colorSuperior: '#b5452f', barba: 'barba', pelo: 'corto' }, { preset: 'ingeniera', semilla: 5 },
+  { preset: 'operador', semilla: 6, barba: 'bigote' }, { preset: 'capataz', semilla: 7, pelo: 'entradas', colorPelo: '#8f8c88', barba: 'sombra' },
+  { preset: 'civilMujer', semilla: 8, colorSuperior: '#2f7a6b', piel: '#8f5d3f' },
+];
+const cual = q.has('cual') ? [Number(q.get('cual'))] : lista.map((_, i) => i);
+const personas = cual.map((i, k) => {
+  const h = crearHumano(lista[i]);
+  h.grupo.position.x = cual.length === 1 ? 0 : (k - (cual.length - 1) / 2) * 0.85;
+  h.grupo.traverse((o) => { if (o.isMesh) o.castShadow = o.castShadow; });
+  scene.add(h.grupo);
+  if (q.has('pose')) h.posar(q.get('pose')).transicion(0.01);
+  if (q.has('mirar')) h.mirar(new THREE.Vector3(...num('mirar', [0, 1.6, 5])));
+  return h;
+});
+if (q.has('pala')) for (const h of personas) {
+  // pala de prueba: mango a lo largo de +y, la hoja en y = 0; la mano derecha toma el mango y la izquierda el puño
+  const pala = new THREE.Group();
+  const madera = new THREE.MeshStandardMaterial({ color: 0x9a7448, roughness: 0.8 }), acero = new THREE.MeshStandardMaterial({ color: 0x5d6166, metalness: 0.7, roughness: 0.45 });
+  const mango = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.017, 1.1, 10), madera); mango.position.y = 0.6; pala.add(mango);
+  const hoja = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.3, 0.01), acero); hoja.position.y = -0.05; hoja.rotation.x = 0.25; pala.add(hoja);
+  const puno = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.03, 0.03), madera); puno.position.y = 1.16; pala.add(puno);
+  pala.traverse((o) => { o.castShadow = true; });
+  scene.add(pala);
+  h.sostener(pala, { D: [0, 0.5, 0], I: [0, 1.12, 0], arriba: [0, 0, 1] });
+}
+const clip = q.get('clip'), tFijo = q.has('t') ? Number(q.get('t')) : null;
+if (q.has('ikD')) for (const h of personas) h.alcanzar('D', new THREE.Vector3(...num('ikD', [0, 1.2, 0.4])));
+for (const h of personas) { h.vida(q.has('t') ? 0 : 1); if (clip && tFijo === null) h.reproducir(clip, { bucle: true }); }
+let ultimo = performance.now();
+function cuadro() {
+  const now = performance.now(), dt = Math.min(0.05, (now - ultimo) / 1000); ultimo = now;
+  for (const h of personas) { if (clip && tFijo !== null) h.fijarClip(clip, tFijo); else h.actualizar(dt); }
+  orbit.update();
+  renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(cuadro);
+window.__personas = personas;
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>

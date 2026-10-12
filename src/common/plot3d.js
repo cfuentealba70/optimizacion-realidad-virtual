@@ -39,7 +39,7 @@ export function createPlot(opts) {
   // Fondo
   const back = new THREE.Mesh(
     new THREE.PlaneGeometry(width + 0.34, height + 0.3),
-    new THREE.MeshBasicMaterial({ color: 0x0c1520, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false }),
+    new THREE.MeshBasicMaterial({ color: 0x0c1520, transparent: true, opacity: 0.8, depthWrite: true, toneMapped: false }),
   );
   back.position.set(width / 2 - 0.03, height / 2 - 0.02, -0.004);
   back.renderOrder = 4;
@@ -140,11 +140,13 @@ export function createPlot(opts) {
 
   // Punto fijo destacado (por ejemplo, el máximo) con guías de color hacia ambos ejes
   const fixed = new Map();
-  function addPoint(id, x, y, { color = 0x6fe3a2, labelX = null, labelY = null, radiusP = 0.019, guides = true } = {}) {
+  // hollow: círculo vacío (extremo excluido del dominio)
+  function addPoint(id, x, y, { color = 0x6fe3a2, labelX = null, labelY = null, radiusP = 0.019, guides = true, hollow = false } = {}) {
     removePoint(id);
     const g = new THREE.Group();
     const p = toLocal(x, y, 0.003);
-    const s = new THREE.Mesh(new THREE.SphereGeometry(radiusP, 20, 14), new THREE.MeshBasicMaterial({ color, toneMapped: false }));
+    const geo = hollow ? new THREE.TorusGeometry(radiusP, radiusP * 0.3, 8, 28) : new THREE.SphereGeometry(radiusP, 20, 14);
+    const s = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, toneMapped: false }));
     s.position.copy(p); s.renderOrder = 7;
     g.add(s);
     if (guides) {

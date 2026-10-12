@@ -235,6 +235,44 @@ const KINDS = {
     }
     return { height, rough, normalStrength: 1.5, color: (i) => [col[i] * 150 + 40 * (col[i] > 0), col[i] * 100 + 24 * (col[i] > 0), col[i] * 62 + 12 * (col[i] > 0)] };
   },
+  cardboard(size, seed) { // cartón corrugado: canales finos y fibras
+    const a = fbm(size, 8, 4, seed), f = fbm(size, 48, 2, seed + 3);
+    const height = new Float32Array(size * size), rough = new Float32Array(size * size).fill(0.92);
+    const flutes = 22;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = y * size + x, s = 0.5 + 0.5 * Math.sin((x / size) * Math.PI * 2 * flutes);
+      height[i] = s * 0.35 + f[i] * 0.2;
+    }
+    return { height, rough, normalStrength: 1.1, color: (i) => { const v = 0.82 + (a[i] - 0.5) * 0.18 + (f[i] - 0.5) * 0.08; return [196 * v, 156 * v, 104 * v]; } };
+  },
+  asphalt(size, seed) { // asfalto con árido claro
+    const a = fbm(size, 6, 4, seed), g = fbm(size, 64, 2, seed + 9);
+    const rnd = mulberry32(seed + 77);
+    const speck = new Float32Array(size * size).map(() => (rnd() < 0.05 ? rnd() : 0));
+    const height = new Float32Array(size * size), rough = new Float32Array(size * size);
+    for (let i = 0; i < height.length; i++) { height[i] = g[i] * 0.6 + speck[i] * 0.6; rough[i] = 0.85 + g[i] * 0.1; }
+    return { height, rough, normalStrength: 2.4, color: (i) => { const v = 52 + (a[i] - 0.5) * 22 + g[i] * 14 + speck[i] * 70; return [v, v, v * 1.03]; } };
+  },
+  plaster(size, seed) { // estuco de fachada
+    const a = fbm(size, 10, 5, seed), b = fbm(size, 3, 3, seed + 5);
+    const height = new Float32Array(size * size), rough = new Float32Array(size * size).fill(0.95);
+    for (let i = 0; i < height.length; i++) height[i] = a[i];
+    return { height, rough, normalStrength: 1.4, color: (i) => { const v = 226 + (a[i] - 0.5) * 16 - smooth(0.6, 0.9, b[i]) * 18; return [v, v * 0.97, v * 0.9]; } };
+  },
+  roof(size, seed) { // tejas de arcilla en hileras
+    const n = fbm(size, 16, 3, seed), rows = 6, cols = 6, rnd = mulberry32(seed + 4);
+    const tone = new Float32Array(rows * cols).map(() => rnd());
+    const height = new Float32Array(size * size), rough = new Float32Array(size * size).fill(0.8);
+    const col = new Float32Array(size * size);
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = y * size + x, r = Math.floor((y / size) * rows), fy = ((y / size) * rows) % 1;
+      const off = (r % 2) * 0.5, c = Math.floor(((x / size) * cols + off) % cols), fx = (((x / size) * cols + off) % 1);
+      const curve = Math.sin(fx * Math.PI);
+      height[i] = curve * 0.6 + fy * 0.4;
+      col[i] = tone[(r * cols + c) % tone.length] * 0.25 + n[i] * 0.15 + (1 - fy) * 0.1 + curve * 0.15;
+    }
+    return { height, rough, normalStrength: 3, color: (i) => [150 + col[i] * 120, 70 + col[i] * 45, 45 + col[i] * 25] };
+  },
   noiseNormal(size, seed) { // relieve de agua: ondas superpuestas
     const a = fbm(size, 6, 5, seed, 0.55), b = fbm(size, 12, 3, seed + 3, 0.5);
     const height = new Float32Array(size * size);

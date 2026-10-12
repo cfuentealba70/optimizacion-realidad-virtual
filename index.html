@@ -3,24 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Optimización en realidad virtual · el río y el cable</title>
-<meta name="description" content="Un problema de optimización de Cálculo en una variable modelado en realidad virtual para Meta Quest 3 y para el navegador: el tendido de cable más económico entre una planta eléctrica y una fábrica separadas por un río.">
-<meta property="og:title" content="Optimización en realidad virtual">
-<meta property="og:description" content="El tendido de cable más económico sobre un río, modelado en WebXR para Meta Quest 3 y para el navegador.">
+<title>Optimización y razón de cambio en realidad virtual</title>
+<meta name="description" content="Problemas de optimización y de razón de cambio de Cálculo en una variable modelados en realidad virtual para Meta Quest 3 y para el navegador: una obra con diez estaciones y un río con un cable.">
+<meta property="og:title" content="Optimización y razón de cambio en realidad virtual">
+<meta property="og:description" content="Una obra con diez problemas de la Guía 4 y el tendido de un cable sobre un río, modelados en WebXR para Meta Quest 3 y para el navegador.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/site.css">
 </head>
 <body class="home">
 <main class="wrap">
-  <h1>Optimización en realidad virtual</h1>
-  <p class="lead">Un problema de Cálculo en una variable construido como escena WebXR para Meta Quest 3 y para el navegador de escritorio. Se ve la función objetivo y se mueve la variable para observar cómo cambian las magnitudes del problema.</p>
+  <h1>Optimización y razón de cambio en realidad virtual</h1>
+  <p class="lead">Problemas de Cálculo en una variable construidos como escenas WebXR para Meta Quest 3 y para el navegador de escritorio. En cada uno se ve la función objetivo o la relación entre las razones de cambio, y se mueve la variable o el tiempo para observar cómo cambian las magnitudes del problema.</p>
 
-  <h3>El problema</h3>
+  <section class="destacado" aria-label="La obra">
+    <a href="guia4/index.html"><img class="thumb-grande" src="assets/guia4/obra.jpg" alt="Vista aérea de la obra con el depósito cónico, el estanque, la correa transportadora, el edificio y las demás estaciones" width="1280" height="720" loading="lazy"></a>
+    <div class="body">
+      <p class="etq">Guía 4 · Optimización y razón de cambio</p>
+      <h2>La obra</h2>
+      <p>Diez problemas de la guía, cada uno en su estación a escala real dentro de una obra con sus alrededores. Se recorre caminando o con el menú de estaciones.</p>
+      <a class="btn" href="guia4/index.html">Entrar a la obra</a>
+    </div>
+  </section>
+
+  <h3>Optimización</h3>
+  <ul class="estaciones">
+    <li><a href="guia4/index.html?estacion=cisterna"><img src="assets/guia4/cisterna.jpg" alt="" loading="lazy" width="640" height="360"><span>Cisterna de costo mínimo</span><small>Ejemplo 3</small></a></li>
+    <li><a href="guia4/index.html?estacion=caja"><img src="assets/guia4/caja.jpg" alt="" loading="lazy" width="640" height="360"><span>Caja de volumen máximo</span><small>Ejemplo 4</small></a></li>
+    <li><a href="guia4/index.html?estacion=arena"><img src="assets/guia4/arena.jpg" alt="" loading="lazy" width="640" height="360"><span>Recipiente para arena</span><small>Ejercicio 1.5</small></a></li>
+    <li><a href="guia4/index.html?estacion=postes"><img src="assets/guia4/postes.jpg" alt="" loading="lazy" width="640" height="360"><span>Cable mínimo entre dos postes</span><small>Ejercicio 1.6</small></a></li>
+  </ul>
+
+  <h3>Razón de cambio</h3>
+  <ul class="estaciones">
+    <li><a href="guia4/index.html?estacion=ondas"><img src="assets/guia4/ondas.jpg" alt="" loading="lazy" width="640" height="360"><span>Ondas en un lago</span><small>Ejemplo 6</small></a></li>
+    <li><a href="guia4/index.html?estacion=aviones"><img src="assets/guia4/aviones.jpg" alt="" loading="lazy" width="640" height="360"><span>Aviones que convergen</span><small>Ejemplo 7</small></a></li>
+    <li><a href="guia4/index.html?estacion=grava"><img src="assets/guia4/grava.jpg" alt="" loading="lazy" width="640" height="360"><span>Cono de grava</span><small>Ejemplo 8</small></a></li>
+    <li><a href="guia4/index.html?estacion=escalera"><img src="assets/guia4/escalera.jpg" alt="" loading="lazy" width="640" height="360"><span>Escalera que resbala</span><small>Ejercicio 2.2</small></a></li>
+    <li><a href="guia4/index.html?estacion=deposito"><img src="assets/guia4/deposito.jpg" alt="" loading="lazy" width="640" height="360"><span>Depósito cónico</span><small>Ejercicio 2.4</small></a></li>
+    <li><a href="guia4/index.html?estacion=autos"><img src="assets/guia4/autos.jpg" alt="" loading="lazy" width="640" height="360"><span>Dos autos hacia el cruce</span><small>Ejercicio 2.5</small></a></li>
+  </ul>
+  <p>Qué problemas de la guía se modelan, cuáles no y por qué, junto con los modelos y las respuestas, está en <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/guia4.md">docs/guia4.md</a>.</p>
+
+  <h3>Río y cable</h3>
   <p>Un río rectilíneo de 100 m separa una planta eléctrica de una fábrica ubicada 500 m río arriba, en la orilla opuesta. Tender el cable por la orilla cuesta $90 por metro y sobre el agua $150 por metro. ¿Cuál es la longitud del tendido más económico?</p>
   <p class="eq">C(x, y) = 90x + 150y, con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500</p>
-  <p>x son los metros de cable por la orilla de la planta e y los metros sobre el agua. El intervalo es cerrado e incluye los extremos x = 0 y x = 500.</p>
-
-  <section class="cards" aria-label="Vistas de la escena">
+  <section class="cards" aria-label="Vistas de la escena del río">
     <article class="card">
       <img class="thumb" src="assets/rio-maqueta.jpg" alt="Maqueta de un valle con un río, una planta eléctrica, una fábrica y un cable" width="1280" height="720" loading="lazy">
       <div class="body">
@@ -38,21 +65,20 @@
       </div>
     </article>
   </section>
+  <p>Las fórmulas, la solución y las comprobaciones del río están en <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/modelo.md">docs/modelo.md</a>.</p>
 
   <h3>Con unas gafas Meta Quest 3</h3>
   <ol>
     <li>Abre esta página en el navegador de las gafas.</li>
-    <li>Entra en la escena y pulsa <b>Entrar en VR</b>.</li>
-    <li>Apunta con el mando y aprieta el gatillo. En la escala real, el joystick izquierdo camina y el derecho gira.</li>
+    <li>Entra en una escena y pulsa <b>Entrar en VR</b>.</li>
+    <li>Apunta con el mando y aprieta el gatillo. El joystick izquierdo camina y el derecho gira. En la obra, el menú de estaciones va a tu izquierda.</li>
   </ol>
 
   <h3>En el computador</h3>
   <ul>
     <li>Arrastra con el ratón para girar la vista y usa la rueda para acercarte.</li>
-    <li>Haz clic y arrastra sobre el gráfico, el poste naranja o los deslizadores.</li>
+    <li>Haz clic y arrastra sobre los gráficos, las esferas naranjas o los deslizadores.</li>
   </ul>
-
-  <p>El punto mínimo se marca en el gráfico solo cuando se pide con «Revelar solución», y «Ir al óptimo» lleva el poste hasta ese punto. Las fórmulas, la solución y las comprobaciones están en <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/modelo.md">docs/modelo.md</a>.</p>
 
   <p class="foot">Código con licencia MIT. Funciona sin conexión una vez cargado y no recoge datos de quien lo usa. Hecho con <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.</p>
 </main>

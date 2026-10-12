@@ -1,9 +1,9 @@
 {
   "name": "modelacion-optimizacion-vr",
   "version": "1.0.0",
-  "description": "Problema de optimización de Cálculo (el río y el cable) modelado en realidad virtual.",
+  "description": "Problemas de optimización y razón de cambio de Cálculo en una variable modelados en realidad virtual.",
   "scripts": {
-    "test": "node tests/math.test.mjs",
+    "test": "node tests/math.test.mjs && node tests/guia4.test.mjs",
     "start": "python -m http.server 8123 --bind 127.0.0.1"
   },
   "type": "module",

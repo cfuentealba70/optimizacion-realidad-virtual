@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La obra · optimización y razón de cambio en VR</title>
+<meta name="description" content="Diez problemas de optimización y de razón de cambio de Cálculo en una variable, modelados en realidad virtual en una obra con sus alrededores.">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/site.css">
+<script type="importmap">
+{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+</script>
+</head>
+<body class="scene">
+<div id="app"></div>
+
+<div class="hud" id="hud">
+  <p class="etq" id="hud-etiqueta">Guía 4 · Optimización y razón de cambio</p>
+  <h1 id="hud-titulo">La obra</h1>
+  <details>
+    <summary>Enunciado y uso</summary>
+    <p id="hud-texto"></p>
+    <p>Arrastra con el ratón para girar la vista. Con unas gafas Meta Quest pulsa <b>Entrar en VR</b>, camina con el joystick izquierdo, gira con el derecho y usa el menú que llevas a la izquierda para ir a cada estación.</p>
+  </details>
+  <div class="row"><a href="../index.html">← Inicio</a></div>
+</div>
+
+<nav id="menu" aria-label="Estaciones">
+  <h2>Estaciones <button id="menu-toggle" type="button">ocultar</button></h2>
+  <ul id="menu-lista"></ul>
+</nav>
+
+<div class="controls" id="controls" style="display:none"></div>
+
+<script type="module" src="./world.js"></script>
+</body>
+</html>

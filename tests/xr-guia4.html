@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de sesión VR emulada · la obra</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/site.css">
+<script type="importmap">
+{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+</script>
+</head>
+<body class="scene">
+<div id="app"></div>
+<div class="hud" id="hud"><p class="etq" id="hud-etiqueta"></p><h1 id="hud-titulo"></h1><p id="hud-texto"></p></div>
+<nav id="menu"><h2>Estaciones <button id="menu-toggle" type="button">ocultar</button></h2><ul id="menu-lista"></ul></nav>
+<div class="controls" id="controls" style="display:none"></div>
+<script type="module">
+// Solo para desarrollo: emula unas gafas Meta Quest 3 con IWER (npm install) para probar la sesión VR sin casco.
+import { XRDevice, metaQuest3 } from '../node_modules/iwer/build/iwer.module.js';
+const device = new XRDevice(metaQuest3);
+device.installRuntime({ forceInstall: true });
+device.position.set(0, 1.6, 0);
+window.__xrdev = device;
+await import('../guia4/world.js');
+</script>
+</body>
+</html>

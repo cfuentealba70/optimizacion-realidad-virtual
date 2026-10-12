@@ -62,7 +62,7 @@ export function createPanel(opts) {
   texture.anisotropy = 4;
   texture.generateMipmaps = false;
   texture.minFilter = THREE.LinearFilter;
-  const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false, side: THREE.DoubleSide });
+  const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: true, alphaTest: 0.03, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
   mesh.renderOrder = 10;
 

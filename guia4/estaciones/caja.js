@@ -1275,6 +1275,8 @@ export default {
     return {
       paneles: [panel],
       radioSombra: 4.5,
+      // el mesón está muy cerca de quien mira: en VR el panel y el gráfico se abren más hacia los costados
+      laminaVR: { angulo: 57 },
       alturaCartel: 3.4,
       vista: { escritorio: { camara: [0, 1.86, 2.95], objetivo: [0, 1.02, -0.1] }, vr: { pos: [0, 0, 1.55], yaw: 0 } },
       dom: [

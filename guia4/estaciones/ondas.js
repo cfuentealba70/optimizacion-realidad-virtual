@@ -79,8 +79,9 @@ export default {
     const Z_T = 11.0;                  // desde aquí el cabezal ancho sigue como pasarela
     const XP = 2.5;                    // medio ancho del cabezal
     const Z_INI = R0 + 1.15;           // arranque del muelle en tierra
-    const VR = [0, 0, Z_FIN + 0.8];    // donde queda la persona en VR
-    const P = new THREE.Vector3(0, YA, VR[2] - 6); // punto donde cae la piedra
+    const VR0 = [0, 0, Z_FIN + 0.8];   // borde del cabezal: de aquí se miden la lanzadora y el punto de caída
+    const VR = [0, 0, Z_FIN + 4.2];    // donde queda la persona en VR: un poco atrás, para ver de frente a la lanzadora y al pescador
+    const P = new THREE.Vector3(0, YA, VR0[2] - 6); // punto donde cae la piedra
     const enOrilla = (a, d) => { const r = orilla(a) - d; return [Math.sin(a) * r, Math.cos(a) * r]; };
 
     // ------------------------------------------------------------ malla radial que sigue la orilla
@@ -866,14 +867,14 @@ void main() {`)
     // ------------------------------------------------------------ personas: la que lanza la piedra y un pescador sentado en el borde
     const LANZAR = clipLanzar(kit);
     const miraP = new THREE.Object3D(); miraP.position.set(P.x, YA + 0.04, P.z); esc.add(miraP);
-    const LZ = { x: VR[0] - 1.6, z: VR[2] - 0.4 };
+    const LZ = { x: VR0[0] - 1.6, z: VR0[2] - 0.4 };
     const lanzadora = kit.persona({
       preset: 'civilMujer', semilla: 23, altura: 1.68, manga: 'larga', colorSuperior: '#a3412c', colorInferior: '#2f3e58', colorPelo: kit.PELOS.castanoOscuro,
       piel: kit.PIELES[2], padre: esc, x: LZ.x, y: CUB, z: LZ.z, ry: Math.atan2(P.x - LZ.x, P.z - LZ.z) - 0.25,
     });
     lanzadora.posar(LANZAR.lista).mirar(miraP);
     // pescador: sentado en el costado del cabezal, cerca del frente, con las piernas colgando sobre el agua
-    const PZ = { x: XP - 0.1, z: Z_FIN + 0.33, ry: Math.atan2(0.85, -0.5) };
+    const PZ = { x: XP - 1.5, z: Z_FIN + 0.33, ry: Math.atan2(0.85, -0.5) }; // a la derecha del centro: no queda tras el gráfico de VR
     const pescador = kit.persona({
       preset: 'civil', semilla: 41, altura: 1.74, superior: 'parka', colorSuperior: '#55603f', inferior: 'trabajo', colorInferior: '#4b4639', calzado: 'botas',
       barba: 'barba', pelo: 'corto', colorPelo: kit.PELOS.canoso, piel: kit.PIELES[3], padre: esc, x: PZ.x, y: CUB, z: PZ.z, ry: PZ.ry,
@@ -1037,14 +1038,15 @@ void main() {`)
       uAgua.uA.value = rm > 0 ? 0.02 * (0.35 + 0.65 / Math.sqrt(1 + 2.5 * rm)) : 0;
       uAgua.uL.value = 0.32 + 0.1 * rm;
       cotaR.visible = rm > 0.03;
-      if (cotaR.visible) kit.moverBarra(cotaR, [P.x, YA + 0.016, P.z], [P.x + rm, YA + 0.016, P.z]);
+      // el radio se mide hacia el fondo del lago: su rótulo queda al centro de la vista, lejos del panel y del gráfico de VR
+      if (cotaR.visible) kit.moverBarra(cotaR, [P.x, YA + 0.016, P.z], [P.x, YA + 0.016, P.z - rm]);
       salpicar(s.fase ? -1 : t);
     }
     function rotulos() {
       const t = reloj.t, r = M.r(t), rm = r * PIE;
       lr.visible = rm > 0.2; lA.visible = rm > 0.32;
-      kit.cambiarEtiqueta(lr, `r = ${kit.num(r, 1)} pies`); lr.position.set(P.x + rm / 2 + 0.05, YA + 0.24, P.z + 0.05);
-      kit.cambiarEtiqueta(lA, `A = ${kit.num(M.area(t), 1)} pies²`); lA.position.set(P.x - Math.min(rm * 0.45, 0.9), YA + 0.42, P.z - Math.min(rm * 0.4, 0.8));
+      kit.cambiarEtiqueta(lr, `r = ${kit.num(r, 1)} pies`); lr.position.set(P.x + 0.12, YA + 0.24, P.z - rm / 2);
+      kit.cambiarEtiqueta(lA, `A = ${kit.num(M.area(t), 1)} pies²`); lA.position.set(P.x, YA + 1.3, P.z + 0.15); // sobre el centro, bastante más alto que r: no se pisan con ningún radio
     }
 
     // ------------------------------------------------------------ lanzamiento: la piedra sale de la mano de la lanzadora y cae en P

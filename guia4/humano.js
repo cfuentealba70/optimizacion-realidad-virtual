@@ -1028,7 +1028,7 @@ export function crearHumano(opciones = {}) {
       const t = u * 2 - 1, s = v * 1.0;
       let ph, pr;
       if (s <= 0.85) { const q = s / 0.85; ph = lerp(0.1, -0.2, q); pr = 0.002 + 0.0175 * q ** 1.45; }
-      else { const q = (s - 0.85) / 0.15; ph = -0.2 - 0.065 * Math.sin((q * Math.PI) / 2); pr = 0.0195 * Math.cos((q * Math.PI) / 2) ** 0.7; }
+      else { const q = (s - 0.85) / 0.15; ph = -0.2 - 0.065 * Math.sin((q * Math.PI) / 2); pr = 0.0195 * Math.max(0, Math.cos((Math.min(1, q) * Math.PI) / 2)) ** 0.7; }
       const ancho = 0.04 + 0.055 * s + 0.1 * Math.exp(-((s - 0.87) ** 2) / 0.006);
       const th = t * ancho;
       const ala = 0.004 * Math.exp(-((Math.abs(t) - 0.72) ** 2) / 0.02) * Math.exp(-((s - 0.86) ** 2) / 0.004);

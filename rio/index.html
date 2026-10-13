@@ -3,36 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Río y cable en VR · función objetivo del costo</title>
-<meta name="description" content="Modelo en realidad virtual de un problema de optimización: el tendido de cable más económico entre una planta eléctrica y una fábrica separadas por un río.">
+<title>Río y cable · optimización en VR</title>
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/site.css">
-<script type="importmap">
-{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
+<script>
+  // El río es ahora una estación de la obra: esta dirección lleva a ella y conserva el modo pedido.
+  const real = new URLSearchParams(location.search).get('modo') === 'real';
+  location.replace('../guia4/index.html?estacion=rio' + (real ? '&modo=real' : ''));
 </script>
 </head>
-<body class="scene">
-<div id="app"></div>
-
-<div class="hud" id="hud">
-  <h1>Río y cable · función objetivo</h1>
-  <p><b>Función objetivo:</b> C(x, y) = 90x + 150y, con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500, incluyendo ambos extremos. x son los metros de cable por la orilla e y los metros sobre el agua.</p>
-  <details>
-    <summary>El problema y cómo usarlo</summary>
-    <p>Un río rectilíneo de 100 m separa una planta eléctrica de una fábrica ubicada 500 m río arriba, en la orilla opuesta. Tender el cable por la orilla cuesta $90 por metro y sobre el agua $150 por metro. ¿Cuál es la longitud del tendido más económico?</p>
-    <p>Arrastra el poste naranja a lo largo de la orilla o usa el deslizador. Mira cómo cambian <b>x</b>, <b>y</b>, la <b>longitud</b> x + y y el <b>costo</b>: el problema pregunta por una sola de ellas. Prueba los extremos x = 0 y x = 500 y compáralos con el punto crítico.</p>
-    <p><b>Escala real</b> te pone a caminar junto al río. Con unas gafas Meta Quest abre esta página en su navegador y pulsa <b>Entrar en VR</b>.</p>
-  </details>
-  <div class="row"><a href="../index.html">← Inicio</a></div>
-</div>
-
-<div class="controls" id="controls">
-  <label>x <input type="range" id="r-x" min="0" max="500" step="1" value="150"><output id="o-x">150 m</output></label>
-  <button class="btn" id="b-mode">Escala real</button>
-  <button class="btn" id="b-opt">Ir al óptimo</button>
-  <button class="btn" id="b-rev">Revelar solución</button>
-</div>
-
-<script type="module" src="./scene.js"></script>
+<body class="home">
+<main class="wrap">
+  <p>El problema del río y el cable está ahora en la obra, junto a las demás estaciones. <a href="../guia4/index.html?estacion=rio">Ir a la estación del río</a>.</p>
+</main>
 </body>
 </html>

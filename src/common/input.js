@@ -13,6 +13,10 @@ export function createInput({ renderer, camera, rig, domElement, orbit }) {
   const items = [];
   const pointers = [];
   let onCursor = null;
+  // Vistas de escritorio: si se definen, el lienzo se reparte en rectángulos con su propia cámara y sus capas
+  // ([{ rect: { left, top, width, height } en píxeles de la ventana, camera, mascara }]).
+  let vistas = null;
+  let mascaraXR = 0xffffffff;
 
   function itemOf(obj) {
     let o = obj;
@@ -28,6 +32,7 @@ export function createInput({ renderer, camera, rig, domElement, orbit }) {
     const targets = [];
     for (const it of items) if (it.enabled === undefined || (typeof it.enabled === 'function' ? it.enabled() : it.enabled)) targets.push(it.object);
     if (!targets.length) return null;
+    raycaster.layers.mask = p.kind === 'mouse' ? (p.vista?.mascara ?? 0xffffffff) : mascaraXR;
     raycaster.set(p.origin, p.dir);
     const hits = raycaster.intersectObjects(targets, true);
     for (const h of hits) {
@@ -71,14 +76,21 @@ export function createInput({ renderer, camera, rig, domElement, orbit }) {
   const mouse = makePointer('mouse');
   mouse.ndcValid = false;
   function setNdc(e) {
-    const r = domElement.getBoundingClientRect();
+    let r = domElement.getBoundingClientRect();
+    if (vistas) {
+      // durante un arrastre se mantiene la vista donde empezó
+      const v = mouse.down && mouse.vista ? mouse.vista
+        : vistas().find((q) => e.clientX >= q.rect.left && e.clientX <= q.rect.left + q.rect.width && e.clientY >= q.rect.top && e.clientY <= q.rect.top + q.rect.height);
+      if (!v) { mouse.vista = null; mouse.ndcValid = false; return; }
+      mouse.vista = v; r = v.rect;
+    } else mouse.vista = null;
     _ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     mouse.ndcValid = true;
   }
   domElement.addEventListener('pointermove', (e) => { setNdc(e); });
   domElement.addEventListener('pointerdown', (e) => {
     if (renderer.xr.isPresenting) return;
-    setNdc(e); updateMouseRay(); pressStart(mouse);
+    setNdc(e); if (!mouse.ndcValid) return; updateMouseRay(); pressStart(mouse);
     if (mouse.captured) { try { domElement.setPointerCapture(e.pointerId); } catch { /* sin captura */ } }
   });
   const up = () => { if (mouse.down) pressEnd(mouse); };
@@ -88,7 +100,7 @@ export function createInput({ renderer, camera, rig, domElement, orbit }) {
 
   function updateMouseRay() {
     if (!mouse.ndcValid) return;
-    raycaster.setFromCamera(_ndc, camera);
+    raycaster.setFromCamera(_ndc, mouse.vista?.camera || camera);
     mouse.origin.copy(raycaster.ray.origin);
     mouse.dir.copy(raycaster.ray.direction);
     mouse.ray.set(mouse.origin, mouse.dir);
@@ -169,6 +181,8 @@ export function createInput({ renderer, camera, rig, domElement, orbit }) {
 
   return {
     pointers, controllers, raycaster,
+    setVistas(fn) { vistas = fn; },
+    setMascaraXR(m) { mascaraXR = m; },
     // h: { onEnter(hit,p), onHover(hit,p), onLeave(p), onDown(hit,p), onMove(hit|null,p), onUp(hit|null,p), cursor, blockOrbit }
     add(object, h, enabled) {
       const it = { object, h, enabled };

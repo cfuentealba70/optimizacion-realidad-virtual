@@ -1265,7 +1265,7 @@ export default {
       } else for (let i = 0; i < 6; i++) cotas.setMatrixAt(i, cero);
       cotas.instanceMatrix.needsUpdate = true;
       kit.cambiarEtiqueta(lh, `h = ${kit.num(h, 2)} pies · ${kit.num(hm, 2)} m`);
-      lh.position.set(MIRA.x - 0.25, hm + 0.22, MIRA.z + 0.1);
+      lh.position.set(MIRA.x - 0.25, Math.max(hm + 0.22, 0.95), MIRA.z + 0.1); // con el cono bajo, el rótulo no baja hasta el panel de VR
       ld.visible = ver;
       kit.cambiarEtiqueta(ld, `diámetro 2r = ${kit.num(2 * (h / 2), 2)} pies`);
       ld.position.set(0, 0.3, zc + 0.05);

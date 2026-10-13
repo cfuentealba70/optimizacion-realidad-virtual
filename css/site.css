@@ -88,6 +88,47 @@ body.menu-cerrado #menu ul { display: none; }
 .hud .etq { font-size: 12px; color: var(--accent); letter-spacing: .05em; text-transform: uppercase; margin: 0 0 2px; }
 @media (max-width: 760px) { #menu { width: 210px; } }
 
+/* Mundo: la interfaz ocupa franjas propias alrededor de la escena y nada se superpone a ella.
+   El lienzo cubre la ventana detrás de la grilla y se dibuja solo en los rectángulos #escena y #grafico. */
+body.mundo { display: grid; height: 100vh; overflow: hidden;
+  grid-template-columns: auto minmax(0, 1fr) clamp(300px, 30vw, 460px);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "barra barra barra" "enun enun enun" "menu escena lamina" "menu controles lamina"; }
+body.mundo #app { position: fixed; inset: 0; z-index: 0; }
+body.mundo > header, body.mundo > section, body.mundo > nav, body.mundo > main, body.mundo > aside, body.mundo > .controls { position: relative; z-index: 1; }
+body.mundo #barra { grid-area: barra; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 14px; background: #0e1724; border-bottom: 1px solid var(--edge); }
+body.mundo #barra .titulo { margin-right: auto; min-width: 0; }
+body.mundo #barra .etq { font-size: 11.5px; color: var(--accent); letter-spacing: .05em; text-transform: uppercase; margin: 0; }
+body.mundo #barra h1 { font-size: 18px; margin: 0; line-height: 1.25; }
+body.mundo #barra .btn { padding: 7px 12px; font-size: 13px; }
+body.mundo #barra button[aria-expanded="true"] { background: rgba(92, 128, 176, .98); }
+body.mundo #info { font: 12px monospace; color: var(--dim); }
+body.mundo #info:empty { display: none; }
+body.mundo #vr-slot { display: flex; }
+body.mundo #vr-button { position: static !important; left: auto !important; right: auto !important; bottom: auto !important; padding: 8px 14px !important; font: 600 12.5px 'Segoe UI', Arial, sans-serif !important; border-radius: 10px !important; opacity: 1 !important; }
+body.mundo #enunciado { grid-area: enun; background: #101b2a; border-bottom: 1px solid var(--edge); padding: 10px 16px; font-size: 14px; line-height: 1.5; color: var(--text); }
+body.mundo #enunciado p { margin: 4px 0; max-width: 1100px; }
+body.mundo #enunciado .uso { color: var(--dim); font-size: 13px; }
+body.mundo #menu { grid-area: menu; position: relative; inset: auto; width: 250px; max-height: none; overflow: auto; border-radius: 0; border: 0; border-right: 1px solid var(--edge); background: #0e1724; padding: 10px; backdrop-filter: none; }
+body.mundo.menu-cerrado #menu { display: none; }
+body.mundo #escena { grid-area: escena; min-height: 0; min-width: 0; pointer-events: none; }
+body.mundo #lamina { grid-area: lamina; display: flex; flex-direction: column; min-height: 0; overflow: auto; border-left: 1px solid var(--edge); background: transparent; }
+body.mundo #paneles { background: #0e1724; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+body.mundo #paneles canvas { display: block; width: 100%; height: auto; border-radius: 10px; touch-action: none; }
+body.mundo #paneles p { margin: 6px 4px; color: var(--dim); font-size: 14px; line-height: 1.5; }
+body.mundo #lamina .grafico { flex: 0 0 auto; width: 100%; pointer-events: none; border-top: 1px solid var(--edge); }
+body.mundo.sin-ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "escena"; }
+body.mundo.sin-ui > :not(#app):not(#escena):not(script) { display: none !important; }
+body.mundo #lamina::after { content: ""; flex: 1; background: #0e1724; }
+body.mundo .controls { grid-area: controles; position: relative; left: auto; bottom: auto; transform: none; max-width: none; border-radius: 0; border: 0; border-top: 1px solid var(--edge); background: #0e1724; backdrop-filter: none; padding: 8px 12px; }
+@media (max-width: 820px) {
+  body.mundo { height: auto; min-height: 100vh; overflow: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 56vh auto auto;
+    grid-template-areas: "barra" "enun" "menu" "escena" "controles" "lamina"; }
+  body.mundo #menu { width: auto; max-height: 34vh; border-right: 0; border-bottom: 1px solid var(--edge); }
+  body.mundo #lamina { border-left: 0; overflow: visible; }
+  body.mundo #lamina::after { display: none; }
+}
+
 /* Portada: obra destacada y lista de estaciones */
 .destacado { display: grid; grid-template-columns: 1.5fr 1fr; gap: 0; background: var(--panel); border: 1px solid var(--edge); border-radius: 18px; overflow: hidden; margin: 8px 0 10px; }
 .destacado .thumb-grande { display: block; width: 100%; height: 100%; aspect-ratio: 16/9; object-fit: cover; }

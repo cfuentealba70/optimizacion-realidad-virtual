@@ -126,7 +126,9 @@ export function createApp(opts = {}) {
       camera.getWorldPosition(camPos);
       for (const b of billboards) b.lookAt(camPos);
     }
-    renderer.render(scene, camera);
+    // una página puede repartir el lienzo en varias vistas cuando no hay sesión de realidad virtual
+    if (app.renderizar && !renderer.xr.isPresenting) app.renderizar(renderer, scene, camera);
+    else renderer.render(scene, camera);
   }
   renderer.setAnimationLoop((t, f) => frame(t, f));
   // Algunos entornos (pestañas ocultas) detienen requestAnimationFrame: respaldo con temporizador

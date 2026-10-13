@@ -895,10 +895,10 @@ export default {
       parte(0, a, b); parte(1, mas(a, tick, -1), mas(a, tick)); parte(2, mas(b, tick, -1), mas(b, tick));
     }
     const linea = (k, a, b) => cotas.poner(15 + k, entre(a, b));
-    ponerCota(2, [X1, YC, ZC + 0.75], [X2, YC, ZC + 0.75], [0, 0.13, 0]);
+    ponerCota(2, [X1, YC, ZC + 1.5], [X2, YC, ZC + 1.5], [0, 0.13, 0]);
     ponerCota(3, [X1 - 0.62, 0, 0], [X1 - 0.62, H1, 0], [0.13, 0, 0]);
     ponerCota(4, [X2 + 0.66, 0, 0], [X2 + 0.66, H2, 0], [0.13, 0, 0]);
-    [[[X1, 0.03, 0.2], [X1, 0.03, ZC + 0.9]], [[X2, 0.03, 0.25], [X2, 0.03, ZC + 0.9]], [[X1 - 0.12, H1, 0], [X1 - 0.75, H1, 0]], [[X2 + 0.14, H2, 0], [X2 + 0.79, H2, 0]]].forEach(([a, b], k) => linea(k, a, b));
+    [[[X1, 0.03, 0.2], [X1, 0.03, ZC + 1.65]], [[X2, 0.03, 0.25], [X2, 0.03, ZC + 1.65]], [[X1 - 0.12, H1, 0], [X1 - 0.75, H1, 0]], [[X2 + 0.14, H2, 0], [X2 + 0.79, H2, 0]]].forEach(([a, b], k) => linea(k, a, b));
 
     const naranjaEt = { bg: '#ffb347', color: '#1a1206' }, celesteEt = { bg: '#5cc8ff', color: '#08202c' };
     const lx = etq('x', 0.48, naranjaEt), lr = etq('30 − x', 0.48, celesteEt);
@@ -908,7 +908,7 @@ export default {
     const l30 = etq(`30 pies (${enM(30)})`, 0.3);
     const lW = etq('W', 0.4, { bg: '#6fe3a2', color: '#08251a' });
     l12.position.set(X1 - 0.62 - 0.5, H1 / 2, 0); l28.position.set(X2 + 0.66 + 0.5, H2 / 2, 0);
-    l30.position.set(0, 0.3, ZC + 0.75); lW.position.set(-2.3, 6.1, 0);
+    l30.position.set(0, 0.3, ZC + 1.5); lW.position.set(-2.3, 6.1, 0); // la cota total va delante de las de x y 30 − x, sin tocarlas
     g.add(lx, lr, ly, lz, l12, l28, l30, lW);
 
     // la etiqueta de cada cable va al lado del cable que no da al triángulo
@@ -918,6 +918,8 @@ export default {
       const len = Math.hypot(dx, dy); dx /= len; dy /= len;
       let nx = -dy, ny = dx;
       if (nx * (pie[0] - mx) + ny * (pie[1] - my) > 0) { nx = -nx; ny = -ny; }
+      // con la estaca junto a un poste el cable queda casi vertical: el rótulo va hacia el centro, no sobre el del poste
+      if (Math.abs(dx) < 0.35 && nx * (0 - mx) < 0) { nx = -nx; ny = -ny; }
       l.position.set(mx + nx * 0.55, my + ny * 0.55, 0.12);
     }
 
@@ -1062,9 +1064,9 @@ export default {
       linea(4, [xs, 0.03, 0.42], [xs, 0.03, ZC + 0.14]);
       cotas.listo();
       kit.cambiarEtiqueta(lx, `x = ${kit.num(x, 1)} pies\n${enM(x)}`);
-      lx.position.set(Math.max(X1 - 0.3, (X1 + xs) / 2), 0.45, ZC);
+      lx.position.set(Math.max(X1 - 0.3, (X1 + xs) / 2), 0.95, ZC); // sobre la línea de los paneles de VR
       kit.cambiarEtiqueta(lr, `30 − x = ${kit.num(M.d - x, 1)} pies\n${enM(M.d - x)}`);
-      lr.position.set(Math.min(X2 + 0.3, (xs + X2) / 2), 0.45, ZC);
+      lr.position.set(Math.min(X2 + 0.3, (xs + X2) / 2), 1.12, ZC);
       const yv = M.y(x), zv = M.z(x), W = M.largo(x);
       kit.cambiarEtiqueta(ly, `y = ${kit.num(yv, 2)} pies\n${enM(yv)}`);
       kit.cambiarEtiqueta(lz, `z = ${kit.num(zv, 2)} pies\n${enM(zv)}`);

@@ -882,10 +882,11 @@ export default {
         kit.cambiarEtiqueta(ly, `y = ${kit.num(y, 2)} m`);
         kit.cambiarEtiqueta(lt, `θ = ${kit.num((th * 180) / PI, 1)}°`);
       }
-      lx.position.set(-x / 2, 0.55, 1.2);
+      // x va junto a su cota en el suelo y θ sobre la bisectriz del ángulo, más arriba: no se pisan para ningún x
+      lx.position.set(-x / 2, 0.3, 1.25);
       ly.position.set(-0.9, Math.max(0.6, y / 2), 1.2);
-      lt.position.set(-x + 1.8, 0.8, 0.9);
-      lL.position.set(-x / 2 - 0.6, y / 2 + 0.6, 0.3);
+      lt.position.set(-x + 2.0 * Math.cos(th / 2), 2.0 * Math.sin(th / 2) + 0.25, 0.9);
+      lL.position.set(-x / 2 - 0.6, y / 2 + 1.15, 0.3); // sobre la escalera, lejos del rótulo de x aunque esta quede tendida
     }
 
     // ---------------------------------------------------------------- gráfico y panel (cerca del punto de vista en VR)

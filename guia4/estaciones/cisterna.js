@@ -525,8 +525,9 @@ export default {
       // cotas a lo largo del borde frontal inferior y de la arista frontal derecha
       kit.moverBarra(cotaX, [-L / 2, 0.08, e2 + 0.35], [L / 2, 0.08, e2 + 0.35]);
       kit.moverBarra(cotaH, [e2 + 0.35, y0, e2 + 0.35], [e2 + 0.35, yc, e2 + 0.35]);
-      kit.cambiarEtiqueta(lx, `x = ${kit.num(s.x, 1)} dm`); lx.position.set(Math.min(L / 2, L / 4 + 0.12), 0.42, e2 + 0.45);
-      kit.cambiarEtiqueta(lh, `h = ${kit.num(M.h(s.x), 1)} dm`); lh.position.set(e2 + 0.55, y0 + H / 2, e2 + 0.55);
+      kit.cambiarEtiqueta(lx, `x = ${kit.num(s.x, 1)} dm`); lx.position.set(Math.min(L / 2, L / 4 + 0.12), 0.62, e2 + 0.45);
+      // con h baja el rótulo sube sobre la arista: así no se junta con el de x ni queda tras el gráfico de VR
+      kit.cambiarEtiqueta(lh, `h = ${kit.num(M.h(s.x), 1)} dm`); lh.position.set(e2 + 0.55, H >= 2.2 ? y0 + H / 2 : y0 + H + 0.4, e2 + 0.55);
       asaX.position.set(L / 2 + esp, 0.2, L / 2 + esp);
       ojoMuro.position.set(-e2 + 0.15, y0 + Math.min(H * 0.45, 1.45), Math.min(e2 * 0.7, 0.9));
       ojoAlto.position.set(-e2 + 0.1, yc, Math.min(e2 * 0.4, 0.5));
@@ -1075,8 +1076,10 @@ export default {
     return {
       paneles: [panel],
       radioSombra: 12,
+      // con x grande la cisterna se ensancha hacia quien mira: en VR el panel y el gráfico se abren más
+      laminaVR: { angulo: 58 },
       alturaCartel: 9.5,
-      vista: { escritorio: { camara: [-5.5, 4.2, 8.5], objetivo: [-0.8, 1.6, -1.0] }, vr: { pos: [0, 0, 6.4], yaw: 0 } },
+      vista: { escritorio: { camara: [-5.5, 4.2, 8.5], objetivo: [-0.8, 1.6, -1.0] }, vr: { pos: [0, 0, 7.4], yaw: 0 } },
       dom: [
         { tipo: 'rango', etiqueta: 'x', min: 10, max: 40, paso: 0.5, get: () => s.x, set: (v) => fijarX(v), formato: (v) => `${kit.num(v, 1)} dm` },
         { tipo: 'boton', etiqueta: 'Ir al óptimo', accion: () => fijarX(M.optimo().x) },

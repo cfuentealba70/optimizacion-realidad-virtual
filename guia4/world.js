@@ -10,7 +10,9 @@ import { createPanel, THEME, font } from '../src/common/panel.js';
 import { crearKit } from './kit.js';
 
 loading('Preparando la obra…');
-await new Promise((r) => setTimeout(r, 30));
+// cede el turno al navegador para que muestre el aviso de carga (con un mensaje: los temporizadores se retrasan en pestañas ocultas)
+const ceder = () => new Promise((r) => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0); });
+await ceder();
 
 // Posición (x, z) y orientación de cada estación. El usuario mira cada estación desde su lado +z local.
 const LAYOUT = [
@@ -24,6 +26,7 @@ const LAYOUT = [
   { id: 'aviones', pos: [10, 30], yaw: Math.PI },
   { id: 'deposito', pos: [-68, 22], yaw: 1.35 },
   { id: 'autos', pos: [150, 110], yaw: 0 },
+  { id: 'rio', pos: [-58, -44], yaw: 0.92 },
 ];
 const PLAZA = { pos: [0, 0], yaw: Math.PI };
 
@@ -187,7 +190,7 @@ async function cargarEstaciones() {
     est.activa = () => activa === est;
     try {
       loading(`Construyendo: ${l.id}…`);
-      await new Promise((r) => setTimeout(r, 10));
+      await ceder();
       const mod = await import(`./estaciones/${l.id}.js`);
       est.def = mod.default;
       est.api = est.def.crear(kit, est) || {};
@@ -200,10 +203,16 @@ async function cargarEstaciones() {
       est.def = { id: l.id, titulo: l.id, etiqueta: '', resumen: '' };
       est.api = { vista: { escritorio: { camara: [0, 4, 10], objetivo: [0, 1, 0] }, vr: { pos: [0, 0, 6], yaw: 0 } } };
     }
-    // cartel con el nombre, visible desde lejos
+    // cartel con el nombre, visible desde lejos (se oculta mientras hay una estación abierta)
     const nombre = kit.etiqueta(est.def.titulo || l.id, 0.55, { bg: 'rgba(255,179,71,0.92)', color: '#1a1206' });
     nombre.position.set(0, est.api.alturaCartel ?? 4.2, 0).applyMatrix4(grupo.matrixWorld);
+    nombre.userData.cartel = true;
     scene.add(nombre);
+    est.cartel = nombre;
+    // gráficos de la estación: en el escritorio se dibujan en su propio recuadro, junto al panel
+    est.graficos = [];
+    grupo.traverse((o) => { if (o.userData.tipo === 'grafico') est.graficos.push(o); });
+    if (!est.error) { acomodarVR(est); est.acomodarVR = (v) => acomodarVR(est, v); }
     // 3) los objetos pequeños no proyectan sombra (ahorra llamadas de dibujo en el paso de sombras)
     const esfera = new THREE.Sphere(), escala = new THREE.Vector3();
     grupo.updateMatrixWorld(true);
@@ -218,10 +227,39 @@ async function cargarEstaciones() {
   }
 }
 
+// En realidad virtual, el panel queda abajo a la izquierda y el gráfico abajo a la derecha de quien mira, inclinados hacia
+// sus ojos, a unos 42° del centro. Así el centro de la vista queda libre para la escena y sus rótulos en todas las estaciones.
+function acomodarVR(est, vista = null) {
+  const v = vista || est.api.vista.vr;
+  const yaw = v.yaw || 0, base = new THREE.Vector3(v.pos[0], (v.pos[1] || 0), v.pos[2]);
+  const adelante = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), izquierda = new THREE.Vector3(-Math.cos(yaw), 0, Math.sin(yaw));
+  // una estación puede abrir más el ángulo o subir la altura si su escena ocupa los costados bajos (api.laminaVR)
+  const L = { angulo: 47, distancia: 1.3, escala: 0.78, altura: 1.02, ...(est.api.laminaVR || {}) };
+  const poner = (obj, lado, ancho, alto, centro) => {
+    est.grupo.attach(obj);
+    const a = THREE.MathUtils.degToRad(L.angulo), d = L.distancia, k = L.escala;
+    const p = base.clone().addScaledVector(adelante, d * Math.cos(a)).addScaledVector(izquierda, lado * d * Math.sin(a));
+    const giro = yaw + lado * a;           // de frente a la persona
+    obj.rotation.set(0, 0, 0); obj.quaternion.setFromEuler(new THREE.Euler(-0.38, giro, 0, 'YXZ'));
+    obj.scale.setScalar(k);
+    // la posición indicada es la del centro del objeto, que queda bajo la línea de los ojos
+    const c = centro.clone().multiplyScalar(k).applyQuaternion(obj.quaternion);
+    obj.position.copy(p).add(new THREE.Vector3(0, L.altura, 0)).sub(c);
+    void ancho; void alto;
+  };
+  const paneles = est.api.paneles || [];
+  paneles.forEach((pn, i) => poner(pn.mesh, 1, pn.width, pn.height, new THREE.Vector3(0, i * -(pn.height + 0.05), 0)));
+  est.graficos.forEach((g, i) => {
+    const f = g.userData.fondo;
+    poner(g, -1, f.geometry.parameters.width, f.geometry.parameters.height, f.position.clone().add(new THREE.Vector3(0, i * (f.geometry.parameters.height + 0.05), 0)));
+  });
+}
+
 // ------------------------------------------------------------------ navegación
 let activa = null;
 let vuelo = null; // animación de cámara en escritorio
 function irA(est) {
+  if (activa && activa !== est) { try { activa.api?.alSalir?.(); } catch (err) { console.error(activa.id, err); } }
   activa = est;
   const v = est ? est.api.vista : null;
   if (renderer.xr.isPresenting) {
@@ -237,6 +275,8 @@ function irA(est) {
   construirControles();
   actualizarHud();
   marcarMenu();
+  montarLamina();
+  for (const e of estaciones) if (e.cartel) e.cartel.visible = !est;
   menuVR.invalidate();
   const url = new URL(location.href);
   if (est) url.searchParams.set('estacion', est.id); else url.searchParams.delete('estacion');
@@ -253,7 +293,7 @@ const menuVR = createPanel({
     ctx.fillText('Apunta y aprieta el gatillo para ir', W * 0.06, H * 0.105);
   },
   widgets: BOT.map((b, i) => ({
-    type: 'toggle', id: 'm' + i, x: MW * 0.06, y: MH * (0.13 + i * 0.077), w: MW * 0.88, h: MH * 0.066, fontScale: 0.42,
+    type: 'toggle', id: 'm' + i, x: MW * 0.06, y: MH * (0.12 + i * 0.068), w: MW * 0.88, h: MH * 0.058, fontScale: 0.42,
     label: () => (b.id ? (grupoDe.get(b.id)?.def?.titulo || b.id) : 'Plaza de inicio'),
     get: () => (b.id ? activa?.id === b.id : activa === null), set: () => irA(b.id ? grupoDe.get(b.id) : null),
   })),
@@ -318,12 +358,109 @@ function construirControles() {
     }
   }
 }
-$('menu-toggle').onclick = () => document.body.classList.toggle('menu-cerrado');
+$('menu-toggle').onclick = () => { const c = document.body.classList.toggle('menu-cerrado'); $('menu-toggle').setAttribute('aria-expanded', String(!c)); };
+$('btn-enunciado').onclick = () => { const s = $('enunciado'); s.hidden = !s.hidden; $('btn-enunciado').setAttribute('aria-expanded', String(!s.hidden)); };
+$('vr-slot').appendChild(app.vrButton);
+
+// ------------------------------------------------------------------ vistas de escritorio
+// El lienzo cubre la ventana y se dibuja en rectángulos que no se superponen: la escena en #escena y cada gráfico de la
+// estación abierta en su recuadro de la lámina. El panel de la estación se muestra en la lámina con su propio lienzo.
+// En realidad virtual el panel y los gráficos vuelven a estar en el espacio, frente a la persona.
+const CAPA_GRAF = 6, CAPA_PANEL = 7;
+const $esc = $('escena'), $pan = $('paneles'), $lam = $('lamina');
+const rectDe = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; };
+let insets = []; // [{ grafico, div, cam }]
+function sincronizarCapas() {
+  for (const est of estaciones) {
+    for (const g of est.graficos || []) g.traverse((o) => o.layers.set(CAPA_GRAF));
+    for (const p of est.api?.paneles || []) p.mesh.layers.set(CAPA_PANEL);
+  }
+}
+function encuadrarGrafico(ins, r) {
+  const f = ins.grafico.userData.fondo;
+  f.updateWorldMatrix(true, false);
+  const c = new THREE.Vector3().setFromMatrixPosition(f.matrixWorld);
+  const q = f.getWorldQuaternion(new THREE.Quaternion()), s = f.getWorldScale(new THREE.Vector3());
+  const pw = f.geometry.parameters.width * s.x, ph = f.geometry.parameters.height * s.y;
+  const cam = ins.cam;
+  cam.position.copy(c).addScaledVector(new THREE.Vector3(0, 0, 1).applyQuaternion(q), 1);
+  cam.up.copy(new THREE.Vector3(0, 1, 0).applyQuaternion(q)); cam.lookAt(c);
+  const A = r.width / Math.max(1, r.height);
+  let hw = (pw / 2) * 1.02, hh = (ph / 2) * 1.02;
+  if (hw / hh > A) hh = hw / A; else hw = hh * A;
+  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.near = 0.5; cam.far = 1.6;
+  cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+}
+const colorLamina = new THREE.Color(0x0e1724);
+app.renderizar = (r, sc, cam) => {
+  const H = window.innerHeight, re = rectDe($esc);
+  const aj = (q) => { const y = H - q.top - q.height; r.setViewport(q.left, y, q.width, q.height); r.setScissor(q.left, y, q.width, q.height); };
+  r.setScissorTest(true);
+  if (re.width > 2 && re.height > 2) {
+    aj(re);
+    const asp = re.width / re.height;
+    if (Math.abs(cam.aspect - asp) > 1e-3) { cam.aspect = asp; cam.updateProjectionMatrix(); }
+    r.render(sc, cam);
+  }
+  for (const ins of insets) {
+    const rg = rectDe(ins.div);
+    if (rg.width < 2 || rg.height < 2 || rg.top > H || rg.top + rg.height < 0) continue;
+    encuadrarGrafico(ins, rg); aj(rg);
+    const fondo = sc.background, auto = r.shadowMap.autoUpdate;
+    sc.background = colorLamina; r.shadowMap.autoUpdate = false;
+    r.render(sc, ins.cam);
+    sc.background = fondo; r.shadowMap.autoUpdate = auto;
+  }
+  r.setScissorTest(false);
+  r.setViewport(0, 0, window.innerWidth, H);
+};
+input.setVistas(() => [{ rect: rectDe($esc), camera, mascara: 1 }, ...insets.map((i) => ({ rect: rectDe(i.div), camera: i.cam, mascara: 1 << CAPA_GRAF }))]);
+input.setMascaraXR(1 | (1 << CAPA_GRAF) | (1 << CAPA_PANEL));
+// arrastrar sobre un gráfico no gira la escena
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (insets.some((i) => { const r = rectDe(i.div); return e.clientX >= r.left && e.clientX <= r.left + r.width && e.clientY >= r.top && e.clientY <= r.top + r.height; })) orbit.enabled = false;
+}, true);
+window.addEventListener('pointerup', () => { if (!renderer.xr.isPresenting) orbit.enabled = true; });
+
+function montarLamina() {
+  $pan.replaceChildren();
+  for (const i of insets) i.div.remove();
+  insets = [];
+  if (!activa) {
+    const p = document.createElement('p');
+    p.textContent = 'Elige una estación en el menú. Cada una modela un problema de optimización o de razón de cambio con su función objetivo o con la relación entre las razones, un panel y un gráfico.';
+    $pan.appendChild(p);
+    return;
+  }
+  if (renderer.xr.isPresenting) return;
+  for (const p of activa.api?.paneles || []) {
+    const c = p.canvas;
+    c.setAttribute('role', 'application'); c.setAttribute('aria-label', 'Panel de la estación');
+    const hit = (e) => { const r = c.getBoundingClientRect(); return { uv: { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height } }; };
+    c.onpointerdown = (e) => { p.handlers.onDown(hit(e), null); try { c.setPointerCapture(e.pointerId); } catch { /* sin captura */ } };
+    c.onpointermove = (e) => { if (p.activeId) p.handlers.onMove(hit(e), null); else p.handlers.onHover(hit(e)); };
+    c.onpointerup = () => p.handlers.onUp();
+    c.onpointerleave = () => { if (!p.activeId) p.handlers.onLeave(); };
+    $pan.appendChild(c);
+  }
+  for (const g of activa.graficos || []) {
+    const div = document.createElement('div');
+    div.className = 'grafico';
+    div.setAttribute('aria-label', 'Gráfico de la estación');
+    const prm = g.userData.fondo.geometry.parameters;
+    div.style.aspectRatio = String((prm.width / prm.height).toFixed(3));
+    $lam.appendChild(div);
+    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.5, 1.6);
+    cam.layers.set(CAPA_GRAF);
+    insets.push({ grafico: g, div, cam });
+  }
+}
 
 app.onXR((on) => {
   menuVR.mesh.visible = on;
-  for (const id of ['hud', 'controls', 'menu']) $(id).style.display = on ? 'none' : '';
-  if (on) irA(activa); else construirControles();
+  for (const id of ['barra', 'enunciado', 'menu', 'lamina', 'controls']) $(id).style.visibility = on ? 'hidden' : '';
+  if (on) { camera.layers.enable(CAPA_GRAF); camera.layers.enable(CAPA_PANEL); } else { camera.layers.disable(CAPA_GRAF); camera.layers.disable(CAPA_PANEL); }
+  if (on) irA(activa); else { construirControles(); montarLamina(); }
 });
 
 // ------------------------------------------------------------------ bucle
@@ -363,12 +500,14 @@ app.onUpdate((dt) => {
   // sombras alrededor de la estación activa o de la cámara
   if (now - ultimaSombra > 700) {
     ultimaSombra = now;
-    const c = activa ? activa.grupo.position : tmp;
-    const half = activa?.api?.radioSombra ?? 30;
+    const so = activa?.api?.sombra?.();
+    const c = so ? so.centro : activa ? activa.grupo.position : tmp;
+    const half = so ? so.half : activa?.api?.radioSombra ?? 30;
     sky.setShadow(new THREE.Vector3(c.x, 0, c.z), half, { size: 2048, bias: -0.0004, normalBias: 0.05 });
     const sc = sky.light.shadow.camera; sc.near = 600 - half * 2 - 60; sc.far = 600 + half * 2 + 60; sc.updateProjectionMatrix();
   }
   if (now - ultimoDom > 120) { ultimoDom = now; for (const f of controlesDom) f(); }
+  sincronizarCapas();
   menuVR.update(now);
   if (entorno) { try { entorno.actualizar(dt); } catch (err) { console.error('Entorno', err); errorEntorno = err; entorno = null; } }
 });
@@ -378,7 +517,7 @@ let entorno = null, errorEntorno = null;
 async function cargarEntorno() {
   try {
     loading('Preparando el entorno…');
-    await new Promise((r) => setTimeout(r, 10));
+    await ceder();
     const { crearEntorno } = await import('./entorno.js');
     entorno = crearEntorno({ app, kit, sueloH, roadMask, LAYOUT, SITE, CERCO, distCerco, SENDEROS, estaciones, enVR, rev: PARAMS.get('rev') });
   } catch (err) {
@@ -399,7 +538,8 @@ if (inicial) {
   camera.position.copy(aMundo(inicial, v.escritorio.camara));
   orbit.target.copy(aMundo(inicial, v.escritorio.objetivo)); orbit.update();
 }
-construirControles(); actualizarHud(); marcarMenu();
+construirControles(); actualizarHud(); marcarMenu(); sincronizarCapas(); montarLamina();
+for (const e of estaciones) if (e.cartel) e.cartel.visible = !activa;
 loading(null);
 if (inicial && PARAMS.has('cam')) {
   const n = (k, d) => (PARAMS.has(k) ? PARAMS.get(k).split(',').map(Number) : d);
@@ -410,6 +550,8 @@ if (inicial && PARAMS.has('cam')) {
   camera.position.set(p.x, sueloH(p.x, p.z) + (v.pos[1] || 0) + 1.6, p.z);
   orbit.target.set(p.x - Math.sin(yaw) * 3, camera.position.y - 0.7, p.z - Math.cos(yaw) * 3); orbit.update();
   camera.fov = 90; camera.updateProjectionMatrix();
+  // en la revisión de VR el panel y el gráfico se ven en el espacio, como en las gafas
+  camera.layers.enable(CAPA_GRAF); camera.layers.enable(CAPA_PANEL);
 } else if (!inicial && PARAMS.has('cam')) {
   const n = (k, d) => (PARAMS.has(k) ? PARAMS.get(k).split(',').map(Number) : d);
   camera.position.set(...n('cam', [0, 1.7, 8]));
@@ -421,11 +563,9 @@ if (inicial && PARAMS.has('cam')) {
   orbit.target.set(app.xrStart.position[0], 0.9, app.xrStart.position[2] - 3); orbit.update();
   camera.fov = 90; camera.updateProjectionMatrix();
 }
-if (PARAMS.get('ui') === '0') for (const id of ['hud', 'menu', 'controls', 'vr-button']) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }
+if (PARAMS.get('ui') === '0') document.body.classList.add('sin-ui');
 if (PARAMS.get('info') === '1') {
-  const div = document.createElement('div');
-  div.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9;font:13px monospace;color:#fff;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:4px';
-  document.body.appendChild(div);
+  const div = $('info');
   renderer.info.autoReset = false;
   app.onUpdate(() => {
     const errores = estaciones.filter((e) => e.error).map((e) => `${e.id}: ${e.error?.message || e.error}`).concat(errorEntorno ? [`entorno: ${errorEntorno.message || errorEntorno}`] : []).join(' | ');
@@ -433,4 +573,55 @@ if (PARAMS.get('info') === '1') {
     renderer.info.reset();
   });
 }
-window.__g4 = { app, kit, estaciones, irA, grupoDe, sueloH, entorno, distCerco };
+// ------------------------------------------------------------------ revisión de solapamientos (desarrollo)
+// Proyecta en la pantalla los rótulos, paneles y gráficos visibles de una estación y lista los pares que se superponen,
+// desde la cámara de escritorio o desde el lugar donde queda la persona en realidad virtual.
+function visibleEnArbol(o) { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; }
+function dentroDeGrafico(o) { for (let p = o.parent; p; p = p.parent) if (p.userData.tipo === 'grafico') return true; return false; }
+function camaraVR(est, pitch = -0.28) {
+  const v = est.api.vistaVR?.() || est.api.vista.vr, p = aMundo(est, v.pos), yaw = est.layout.yaw + (v.yaw || 0);
+  const cam = new THREE.PerspectiveCamera(98, 1.0, 0.05, 5000);
+  cam.position.set(p.x, sueloH(p.x, p.z) + (v.pos[1] || 0) + 1.6, p.z);
+  cam.rotation.set(pitch, yaw, 0, 'YXZ'); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+  return cam;
+}
+function rectPantalla(obj, cam) {
+  obj.updateWorldMatrix(true, true);
+  const caja = new THREE.Box3().setFromObject(obj);
+  if (caja.isEmpty()) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, delante = 0;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < 8; i++) {
+    v.set(i & 1 ? caja.max.x : caja.min.x, i & 2 ? caja.max.y : caja.min.y, i & 4 ? caja.max.z : caja.min.z).project(cam);
+    if (v.z < 1 && v.z > -1) delante++;
+    x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+  }
+  if (delante < 8 || x1 < -1 || x0 > 1 || y1 < -1 || y0 > 1) return null;
+  return [Math.max(-1, x0), Math.max(-1, y0), Math.min(1, x1), Math.min(1, y1)];
+}
+function solapes(id, { vr = false, umbral = 0.04 } = {}) {
+  const est = grupoDe.get(id);
+  const cam = vr ? camaraVR(est) : camera;
+  const items = [];
+  const raiz = [est.grupo, ...scene.children.filter((o) => o.userData.cartel)];
+  for (const r of raiz) r.traverse((o) => {
+    if (!visibleEnArbol(o)) return;
+    if (o.userData.tipo === 'etiqueta' && !dentroDeGrafico(o)) items.push({ o, tipo: 'rótulo', nombre: o.userData.texto || '' });
+    else if (vr && o.userData.tipo === 'panel') items.push({ o, tipo: 'panel', nombre: 'panel' });
+    else if (vr && o.userData.tipo === 'grafico') items.push({ o: o.userData.fondo, tipo: 'gráfico', nombre: 'gráfico' });
+  });
+  for (const it of items) it.r = rectPantalla(it.o, cam);
+  const vis = items.filter((i) => i.r);
+  const area = (r) => (r[2] - r[0]) * (r[3] - r[1]);
+  const pares = [];
+  for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+    const a = vis[i].r, b = vis[j].r;
+    const w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]);
+    if (w <= 0 || h <= 0) continue;
+    const f = (w * h) / Math.min(area(a), area(b));
+    if (f > umbral) pares.push(`${vis[i].tipo} «${vis[i].nombre}» / ${vis[j].tipo} «${vis[j].nombre}» (${Math.round(f * 100)} %)`);
+  }
+  return { vistos: vis.map((i) => `${i.tipo} «${i.nombre}»`), pares };
+}
+
+window.__g4 = { app, kit, estaciones, irA, grupoDe, sueloH, entorno, distCerco, solapes };

@@ -33,6 +33,7 @@ export function createPlot(opts) {
 
   let f = f0;
   const group = new THREE.Group();
+  group.userData.tipo = 'grafico';
   const sx = width / (x1 - x0), sy = height / (y1 - y0);
   const toLocal = (x, y, z = 0) => new THREE.Vector3((x - x0) * sx, (y - y0) * sy, z);
 
@@ -44,6 +45,7 @@ export function createPlot(opts) {
   back.position.set(width / 2 - 0.03, height / 2 - 0.02, -0.004);
   back.renderOrder = 4;
   group.add(back);
+  group.userData.fondo = back;
 
   // Cuadrícula (líneas finas) y graduación
   const gridPts = [];
@@ -64,16 +66,25 @@ export function createPlot(opts) {
   group.add(axX, axY);
 
   const fmtY = yTickFmt || tickFmt;
+  const graduacion = []; // etiquetas de los ejes: se ocultan si chocan con el rótulo de un punto destacado
   for (const t of xTicks) {
     const l = createLabel(tickFmt(t), { size: labelSize, color: '#cfe0f0', weight: 500 });
     l.position.copy(toLocal(t, y0)).add(new THREE.Vector3(0, -0.038, 0.002));
-    group.add(l);
+    group.add(l); graduacion.push(l);
   }
   for (const t of yTicks) {
     const l = createLabel(fmtY(t), { size: labelSize, color: '#cfe0f0', weight: 500 });
     const w = l.userData.size[0];
     l.position.copy(toLocal(x0, t)).add(new THREE.Vector3(-w / 2 - 0.012, 0, 0.002));
-    group.add(l);
+    group.add(l); graduacion.push(l);
+  }
+  const rect = (l) => { const [w, h] = l.userData.size; return [l.position.x - w / 2, l.position.y - h / 2, l.position.x + w / 2, l.position.y + h / 2]; };
+  const chocan = (a, b) => a[0] < b[2] - 0.002 && b[0] < a[2] - 0.002 && a[1] < b[3] - 0.002 && b[1] < a[3] - 0.002;
+  function revisarGraduacion() {
+    const rotulos = [];
+    for (const g of fixed.values()) g.traverse((o) => { if (o.userData.rotuloPunto) rotulos.push(rect(o)); });
+    // los rótulos de dos puntos no se pisan: el segundo se corre hacia afuera
+    for (const l of graduacion) l.visible = !rotulos.some((r) => chocan(rect(l), r));
   }
   const lx = createLabel(xLabel, { size: labelSize * 1.1, color: '#ffffff', weight: 700 });
   lx.position.set(width / 2, -0.095, 0.002);
@@ -153,23 +164,33 @@ export function createPlot(opts) {
       g.add(dashedLine(new THREE.Vector3(p.x, 0, 0.002), new THREE.Vector3(p.x, p.y, 0.002), { color, radius: 0.0032 }));
       g.add(dashedLine(new THREE.Vector3(0, p.y, 0.002), new THREE.Vector3(p.x, p.y, 0.002), { color, radius: 0.0032 }));
     }
+    const otros = [];
+    for (const q of fixed.values()) q.traverse((o) => { if (o.userData.rotuloPunto) otros.push(o); });
+    const libre = (l) => !otros.some((o) => chocan(rect(l), rect(o)));
     if (labelX) {
       const l = createLabel(labelX, { size: labelSize * 1.05, color: '#0b1520', bg: '#' + new THREE.Color(color).getHexString(), weight: 700 });
-      l.position.set(p.x, -0.1 - 0.0, 0.004); l.position.y = -0.058;
+      l.position.set(p.x, -0.058, 0.004);
+      // si choca con el rótulo de otro punto, se corre hacia abajo
+      for (let k = 0; k < 3 && !libre(l); k++) l.position.y -= l.userData.size[1] + 0.006;
+      l.userData.rotuloPunto = true;
       g.add(l);
     }
     if (labelY) {
       const l = createLabel(labelY, { size: labelSize * 1.05, color: '#0b1520', bg: '#' + new THREE.Color(color).getHexString(), weight: 700 });
       l.position.set(-l.userData.size[0] / 2 - 0.02, p.y, 0.004);
+      for (let k = 0; k < 3 && !libre(l); k++) l.position.x -= l.userData.size[0] + 0.01;
+      l.userData.rotuloPunto = true;
       g.add(l);
     }
     group.add(g);
     fixed.set(id, g);
+    revisarGraduacion();
     return g;
   }
   function removePoint(id) {
     const g = fixed.get(id);
     if (g) { group.remove(g); g.traverse((o) => { o.geometry?.dispose(); o.material?.map?.dispose?.(); o.material?.dispose?.(); }); fixed.delete(id); }
+    revisarGraduacion();
   }
 
   // Línea tangente en x con pendiente m (segmento corto)

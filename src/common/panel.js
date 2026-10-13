@@ -65,6 +65,7 @@ export function createPanel(opts) {
   const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: true, alphaTest: 0.03, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
   mesh.renderOrder = 10;
+  mesh.userData.tipo = 'panel';
 
   const panel = { mesh, width, height, W, H, ppm, canvas, ctx, widgets, hoverId: null, activeId: null, dirty: true, last: 0, title };
 
@@ -211,11 +212,13 @@ export function createLabel(text, { size = 0.06, color = '#fff', bg = null, weig
   mesh.renderOrder = 12;
   mesh.userData.billboard = billboard;
   mesh.userData.size = [w, h];
+  mesh.userData.tipo = 'etiqueta';
   return mesh;
 }
 
 export function setLabelText(mesh, text, opts) {
   const n = createLabel(text, opts);
+  n.material.dispose();
   mesh.material.map.dispose();
   mesh.geometry.dispose();
   mesh.material.map = n.material.map;

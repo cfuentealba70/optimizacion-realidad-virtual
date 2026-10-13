@@ -1204,15 +1204,19 @@ export default {
       ponerSoporte(sopA, A[0], A[2]); ponerSoporte(sopB, B[0], B[2]);
       kit.moverBarra(bx, A, Op); kit.moverBarra(by, B, Op); kit.moverBarra(bs, A, B);
       rayaTex.repeat.set(1, Math.max(1, (sv * MI) / 0.012));
-      const visible = sv > 18;
-      bx.visible = by.visible = bs.visible = lx.visible = ly.visible = ls.visible = visible;
+      // cerca del aeropuerto las distancias del mapa son más cortas que los rótulos: las cotas siguen, sus rótulos no
+      const visible = sv > 18, rotulosCotas = sv > 150;
+      bx.visible = by.visible = bs.visible = visible;
+      lx.visible = ly.visible = ls.visible = rotulosCotas;
       kit.cambiarEtiqueta(lx, `x = ${kit.num(M.x(t), 1)} mi`); lx.position.set((A[0] + OX) / 2, VUELO + 0.026, OZ + 0.03);
       kit.cambiarEtiqueta(ly, `y = ${kit.num(M.y(t), 1)} mi`); ly.position.set(OX - 0.07, VUELO + 0.026, (B[2] + OZ) / 2);
       kit.cambiarEtiqueta(ls, `s = ${kit.num(sv, 1)} mi`);
       v1.set((A[0] + B[0]) / 2, VUELO, (A[2] + B[2]) / 2); v2.set(v1.x - OX, 0, v1.z - OZ).normalize();
       ls.position.set(v1.x + v2.x * 0.05, VUELO + 0.03, v1.z + v2.z * 0.05);
-      lA.position.set(A[0], VUELO + 0.045, A[2]); lB.position.set(B[0], VUELO + 0.045, B[2]);
-      lA.visible = lB.visible = lO.visible = !conf;
+      // los rótulos de los aviones van a alturas distintas para no pisarse cuando se juntan
+      lA.position.set(A[0], VUELO + 0.045, A[2]); lB.position.set(B[0], VUELO + 0.1, B[2]);
+      lA.visible = lB.visible = !conf;
+      lO.visible = !conf && rotulosCotas;
       anillo.visible = lConf.visible = conf;
     }
 
@@ -1297,6 +1301,8 @@ export default {
       paneles: [panel],
       radioSombra: 11,
       alturaCartel: 4.2,
+      // la mesa ocupa el frente y los costados bajos: en VR el panel y el gráfico van más abiertos y más altos
+      laminaVR: { angulo: 64, altura: 1.3, distancia: 1.45 },
       vista: { escritorio: { camara: [0.25, 1.9 + PISO, 2.75], objetivo: [0, 0.95 + PISO, -0.5] }, vr: { pos: [0, PISO, 1.6], yaw: 0 } },
       dom: [
         vel(),

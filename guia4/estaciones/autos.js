@@ -1188,11 +1188,13 @@ export default {
       kit.cambiarEtiqueta(rot.y, `y = ${kit.num(ym, 0)} m`);
       kit.cambiarEtiqueta(rot.s, `s = ${kit.num(M.s(t) * 1000, 0)} m`);
       anclas.x[0] = (ax + O.x) / 2; anclas.x[2] = O.z + 2.5;
-      anclas.y[0] = O.x - 2.5; anclas.y[2] = (bz + O.z) / 2;
+      anclas.y[0] = O.x + 2.5; anclas.y[2] = (bz + O.z) / 2; // del lado del camino que no da al gráfico de VR
       anclas.s[0] = (ax + O.x) / 2; anclas.s[2] = (O.z + bz) / 2;
       anclas.a[0] = ax; anclas.a[2] = O.z;
       anclas.b[0] = O.x; anclas.b[2] = bz;
-      rot.x.visible = xm > 4; rot.y.visible = ym > 4; rot.s.visible = M.s(t) * 1000 > 6;
+      // cerca del cruce las cotas son más cortas que sus rótulos y se juntarían con los de los autos y el cruce
+      rot.x.visible = xm > 30; rot.y.visible = ym > 30; rot.s.visible = M.s(t) * 1000 > 40;
+      rot.o.visible = xm > 40 && ym > 40;
     }
     // los rótulos conservan un tamaño aparente legible a cualquier distancia
     const cam = V();
@@ -1203,7 +1205,7 @@ export default {
         const alto = Math.min(7, Math.max(0.32, d * 0.026));
         l.userData.alto = alto;
         l.scale.setScalar(alto / l.userData.size[1]);
-        l.position.set(a[0], a[1] + alto * 0.6, a[2]);
+        l.position.set(a[0], a[1] + alto * (k === 'a' || k === 'b' ? 1.0 : 0.6), a[2]); // los rótulos de los autos van más altos que las cotas del suelo
       }
     }
 
@@ -1311,6 +1313,8 @@ export default {
     return {
       paneles: [panel],
       radioSombra: 34,
+      // desde la torre los caminos llegan por abajo a ambos lados: en VR el panel y el gráfico van casi a los costados
+      laminaVR: { angulo: 70, altura: 1.22 },
       radioVisible: 450,
       alturaCartel: 14,
       vista: {

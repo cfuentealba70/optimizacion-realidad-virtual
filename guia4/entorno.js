@@ -786,7 +786,7 @@ export function crearEntorno(ctx) {
   for (const par of (ctx.rev || '').split(',')) { const [k, v] = par.split(':'); if (k) rev[k] = v === undefined ? true : Number(v); }
   const raiz = new THREE.Group(); raiz.name = 'entorno'; scene.add(raiz);
   const ruido = new ImprovedNoise();
-  const OBJ = atlasObjetos(), VEG = atlasVegetacion(), CAL = atlasCalcos();
+  const OBJ = atlasObjetos(), VEG = atlasVegetacionCompartido(), CAL = atlasCalcos();
   const RO = OBJ.R, RV = VEG.R, RC = CAL.R;
 
   const matObj = parcheAtlas(new THREE.MeshStandardMaterial({
@@ -1640,4 +1640,55 @@ export function crearEntorno(ctx) {
     moverCaminantes(Math.min(dt, 0.1), vr);
   }
   return { actualizar, raiz, caminantes, especies, grupos, zonas };
+}
+
+// ------------------------------------------------------------------ bosque reutilizable
+// El atlas de vegetación se pinta una sola vez y lo comparten la obra y las estaciones que plantan sus propios árboles.
+let vegCompartida = null;
+function atlasVegetacionCompartido() { vegCompartida ||= atlasVegetacion(); return vegCompartida; }
+
+// Árboles de la obra (roble, álamo, pino, arbusto) en puntos dados, en coordenadas del padre: [{ x, y, z, esp, s }].
+// Cerca de la cámara se usa la versión con ramas y racimos de hojas y lejos la versión simple. Llamar actualizar(dt, cámara, vr).
+export function crearBosque(padre, puntos, { radio = 140, radioVR = 75, semilla = 5 } = {}) {
+  const VEG = atlasVegetacionCompartido(), RV = VEG.R;
+  const mat = parcheAtlas(new THREE.MeshStandardMaterial({
+    map: VEG.tex, normalMap: VEG.texN, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.84, metalness: 0, vertexColors: true, side: THREE.DoubleSide, alphaTest: 0.42, alphaToCoverage: true,
+  }), { viento: true, sinVolteo: true, clave: 'veg' });
+  const rnd = mulberry32(semilla), grupo = new THREE.Group(), especies = [];
+  grupo.name = 'bosque'; padre.add(grupo);
+  for (const esp of ['roble', 'alamo', 'pino', 'arbusto']) {
+    const lista = puntos.filter((p) => p.esp === esp);
+    if (!lista.length) continue;
+    const cerca = geometriaArbol(esp, RV, false), lejos = esp === 'arbusto' ? null : geometriaArbol(esp, RV, true);
+    const mi = new THREE.InstancedMesh(cerca.geo, mat, lista.length), ml = lejos ? new THREE.InstancedMesh(lejos.geo, mat, lista.length) : null;
+    const mats = lista.map((p) => new THREE.Matrix4().compose(V(p.x, p.y - 0.12, p.z), new THREE.Quaternion().setFromEuler(new THREE.Euler((rnd() - 0.5) * 0.04, rnd() * TAU, (rnd() - 0.5) * 0.04)), V(p.s, p.s * (0.88 + rnd() * 0.24), p.s)));
+    const cols = lista.map(() => { const t = 0.86 + rnd() * 0.22; return new THREE.Color(t * (0.96 + rnd() * 0.08), t, t * (0.94 + rnd() * 0.1)); });
+    for (const m of [mi, ml]) if (m) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; grupo.add(m); }
+    especies.push({ cerca: mi, lejos: ml, mats, cols, pos: lista.map((p) => [p.x, p.z]) });
+  }
+  let tiempo = 0, ultima = null, ultimaVR = null;
+  const local = V();
+  // la distancia se mide en unidades del bosque: en una maqueta a escala los árboles se ven como árboles lejanos
+  function lod(c, vr) {
+    const r = vr ? radioVR : radio;
+    for (const e of especies) {
+      let a = 0, b = 0;
+      for (let i = 0; i < e.mats.length; i++) {
+        const lejos = e.lejos && Math.hypot(e.pos[i][0] - c.x, e.pos[i][1] - c.z) > r;
+        if (lejos) { e.lejos.setMatrixAt(b, e.mats[i]); e.lejos.setColorAt(b++, e.cols[i]); }
+        else { e.cerca.setMatrixAt(a, e.mats[i]); e.cerca.setColorAt(a++, e.cols[i]); }
+      }
+      e.cerca.count = a; e.cerca.instanceMatrix.needsUpdate = true; if (e.cerca.instanceColor) e.cerca.instanceColor.needsUpdate = true;
+      if (e.lejos) { e.lejos.count = b; e.lejos.instanceMatrix.needsUpdate = true; if (e.lejos.instanceColor) e.lejos.instanceColor.needsUpdate = true; }
+    }
+  }
+  return {
+    grupo,
+    actualizar(dt, camara, vr) {
+      tiempo += dt; mat.userData.tiempo.value = tiempo;
+      grupo.updateWorldMatrix(true, false);
+      local.copy(camara); grupo.worldToLocal(local);
+      if (!ultima || local.distanceTo(ultima) > 6 || vr !== ultimaVR) { lod(local, vr); ultima = local.clone(); ultimaVR = vr; }
+    },
+  };
 }

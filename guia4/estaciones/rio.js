@@ -425,7 +425,7 @@ export default {
     // ---------------------------------------------------------------- mesa de la maqueta, techo de lona y bancas
     const mesa = new THREE.Group(); g.add(mesa);
     {
-      const tablero = kit.caja(1.95, 0.06, 1.15, kit.mat('wood', { repeat: [2, 1], color: 0x6b5843, roughness: 0.6 }), { y: TABLE.y - 0.09, z: TABLE.z, padre: mesa });
+      const tablero = kit.caja(1.95, 0.06, 1.15, kit.mat('wood', { repeat: [0.55, 0.6], color: 0x8a6e52, roughness: 0.5, normalScale: 0.25 }), { y: TABLE.y - 0.09, z: TABLE.z, padre: mesa });
       void tablero;
       const patas = kit.mat('metal', { color: 0x3a3f45, roughness: 0.45, metalness: 0.8 });
       for (const sx of [-0.9, 0.9]) for (const sz of [-0.5, 0.5]) kit.caja(0.07, TABLE.y - 0.12, 0.07, patas, { x: sx, y: (TABLE.y - 0.12) / 2, z: TABLE.z + sz, padre: mesa });

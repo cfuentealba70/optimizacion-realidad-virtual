@@ -32,7 +32,7 @@ const LAYOUT = [
 ];
 const PLAZA = { pos: [0, 0], yaw: Math.PI };
 const PARAMS0 = new URLSearchParams(location.search);
-const AMBIENTE_HDR = Number(PARAMS0.get('amb') || 0.3);
+const AMBIENTE_HDR = Number(PARAMS0.get('amb') || 0.5);
 
 // ------------------------------------------------------------------ aplicación
 const app = createApp({
@@ -43,7 +43,8 @@ const app = createApp({
 });
 const { scene, renderer, camera, orbit, rig, input } = app;
 // Con la iluminación fotográfica, el mapeo neutro de Khronos conserva el tono y la saturación de las texturas mejor que ACES o AgX
-if (fotosActivas) { renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = Number(PARAMS0.get('exp') || 0.8); }
+// (ACES de three.js multiplica la exposición por 1/0,6; el neutro no, por eso la exposición es mayor que antes)
+if (fotosActivas) { renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = Number(PARAMS0.get('exp') || 1.15); }
 app.locomotion.enabled = true; app.locomotion.speed = 4; app.locomotion.fly = false;
 const sky = createSky(scene, renderer, { elevation: 34, azimuth: 205, turbidity: 3.2, rayleigh: 1.2, sunIntensity: 3.5, fogDensity: 0.0016 });
 scene.add(new THREE.HemisphereLight(0xcfe0f5, 0x6d6a55, 0.3));

@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,253
+Bienvenida, bienvenido a la obra.
+
+2
+00:00:03,203 --> 00:00:11,821
+En este terreno hay once estaciones: diez problemas de optimización y de razón de cambio de la guía, y el problema del río y el cable.
+
+3
+00:00:11,821 --> 00:00:17,300
+Para ir a una estación, elígela en el menú de estaciones o camina hasta ella.
+
+4
+00:00:17,300 --> 00:00:24,215
+En el computador, arrastra con el ratón sobre la escena para girar la vista y usa la rueda para acercarte.
+
+5
+00:00:24,215 --> 00:00:33,417
+Con las gafas, camina con el joystick izquierdo, gira con el derecho y usa el menú que llevas a la izquierda: apunta y aprieta el gatillo.
+
+6
+00:00:33,417 --> 00:00:42,446
+En cada estación hay un panel con las ecuaciones y un gráfico de la función, y puedes mover la variable del problema para ver cómo cambia todo a la vez.
+
+7
+00:00:42,446 --> 00:00:48,896
+Puedes repetir esta explicación cuando quieras, o desactivar la narración con el botón de narración.
+

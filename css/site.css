@@ -112,6 +112,12 @@ body.mundo #enunciado .uso { color: var(--dim); font-size: 13px; }
 body.mundo #menu { grid-area: menu; position: relative; inset: auto; width: 250px; max-height: none; overflow: auto; border-radius: 0; border: 0; border-right: 1px solid var(--edge); background: #0e1724; padding: 10px; backdrop-filter: none; }
 body.mundo.menu-cerrado #menu { display: none; }
 body.mundo #escena { grid-area: escena; min-height: 0; min-width: 0; pointer-events: none; }
+/* subtítulos de la narración: al pie de la escena, sin tapar el panel ni el gráfico */
+body.mundo #escena { position: relative; }
+body.mundo #subtitulo { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: max-content; max-width: min(86%, 860px); margin: 0;
+  padding: 7px 14px; border-radius: 8px; background: rgba(8, 14, 22, .8); color: #f2f6fb; font-size: 15px; line-height: 1.4; text-align: center; pointer-events: none; }
+body.mundo #subtitulo[hidden] { display: none; }
+body.mundo #barra button[aria-pressed="false"] { opacity: .75; }
 body.mundo #lamina { grid-area: lamina; display: flex; flex-direction: column; min-height: 0; overflow: auto; border-left: 1px solid var(--edge); background: transparent; }
 body.mundo #paneles { background: #0e1724; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 body.mundo #paneles canvas { display: block; width: 100%; height: auto; border-radius: 10px; touch-action: none; }

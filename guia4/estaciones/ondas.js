@@ -2,6 +2,9 @@
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ONDAS as M } from '../../src/math/guia4.js';
 
+// La derivada que pide el problema queda oculta en el panel hasta que se activa «Revelar respuesta»
+const OCULTO = '? (revela)';
+
 const PIE = 0.3048;   // metros por pie
 const YA = -0.36;     // nivel del agua: el estanque está excavado bajo el suelo del mundo (y = 0)
 const TAU = Math.PI * 2;
@@ -1120,7 +1123,7 @@ void main() {`)
         { etiqueta: 'radio r', valor: () => `${kit.num(M.r(reloj.t), 2)} pies`, color: '#ffb347', escala: 0.72 },
         { etiqueta: 'área A = πr²', valor: () => `${kit.num(M.area(reloj.t), 2)} pies²`, color: '#5cc8ff', escala: 0.64 },
         { etiqueta: 'dr/dt', valor: () => `${kit.num(M.drdt, 2)} pie/s`, color: '#ffb347', escala: 0.68 },
-        { etiqueta: 'dA/dt = 2πr · dr/dt', valor: () => `${kit.num(M.dAdt(reloj.t), 2)} pies²/s`, color: '#5cc8ff', escala: 0.6 },
+        { etiqueta: 'dA/dt = 2πr · dr/dt', valor: () => (s.revelar ? `${kit.num(M.dAdt(reloj.t), 2)} pies²/s` : OCULTO), color: '#5cc8ff', escala: 0.6 },
         { etiqueta: 'r en metros', valor: () => `${kit.num(M.r(reloj.t) * PIE, 2)} m`, color: '#9fb4c8', escala: 0.72 },
       ],
       deslizadores: [{ etiqueta: 'Tiempo t', min: 0, max: 12, paso: 0.01, get: () => reloj.t, set: (v) => fijarT(v), formato: (v) => `${kit.num(v, 2)} s` }],

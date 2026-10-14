@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:08,321
+En esta mesa de control aéreo se ven dos aviones que vuelan a la misma altura, por rutas perpendiculares que se cruzan en el punto O.
+
+2
+00:00:08,271 --> 00:00:14,427
+Uno está a doscientas veinticinco millas de O y vuela a cuatrocientas cincuenta millas por hora.
+
+3
+00:00:14,427 --> 00:00:18,550
+El otro está a trescientas millas y vuela a seiscientas.
+
+4
+00:00:18,550 --> 00:00:25,984
+Reproduce el reloj o mueve el tiempo para ver cómo se acercan, y ajusta la velocidad del reloj si lo necesitas.
+
+5
+00:00:25,984 --> 00:00:33,497
+En el gráfico de la distancia entre los aviones, la pendiente de la tangente es la rapidez con que esa distancia cambia.
+
+6
+00:00:33,497 --> 00:00:40,066
+Con Ir al instante te ubicas en el momento del problema, y con Revelar respuesta compruebas tu cálculo.
+
+7
+00:00:40,066 --> 00:00:45,518
+Si sigues avanzando el tiempo, verás qué ocurre cuando ambos llegan al punto O.
+

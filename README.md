@@ -2,7 +2,7 @@
 
 Problemas de Cálculo en una variable modelados como escenas WebXR. Funcionan en el navegador de escritorio y en las gafas Meta Quest 3.
 
-**La obra (Guía 4).** Un mundo con diez estaciones a escala real, una por problema de la guía cuyo contexto se puede representar de manera realista: cisterna de costo mínimo, caja de volumen máximo, recipiente para arena y cable mínimo entre dos postes (optimización), y ondas en un lago, aviones que convergen, cono de grava, escalera que resbala, depósito cónico y dos autos hacia un cruce (razón de cambio). Cada estación tiene su panel con la función objetivo o la relación entre las razones, un gráfico y la respuesta, que aparece solo cuando se pide. La selección de problemas, los modelos y las observaciones sobre la guía están en [docs/guia4.md](docs/guia4.md).
+**La obra (Guía 4).** Un mundo con diez estaciones a escala real, una por problema de la guía cuyo contexto se puede representar de manera realista: cisterna de costo mínimo, caja de volumen máximo, recipiente para arena y cable mínimo entre dos postes (optimización), y ondas en un lago, aviones que convergen, cono de grava, escalera que resbala, depósito cónico y dos autos hacia un cruce (razón de cambio). Cada estación tiene su panel con la función objetivo o la relación entre las razones, un gráfico y la respuesta, que aparece solo cuando se pide: en los problemas de razón de cambio, la derivada que pide el enunciado queda oculta en el panel hasta activar «Revelar respuesta». Al llegar a cada estación, una voz en español explica de qué trata el problema y qué opciones ofrece la escena, con subtítulos en el computador; se puede repetir o desactivar con los botones **Repetir** y **Narración** (también en el menú de las gafas). La selección de problemas, los modelos y las observaciones sobre la guía están en [docs/guia4.md](docs/guia4.md).
 
 **Río y cable.** Un valle con una planta eléctrica y una fábrica separadas por un río de 100 m. La función objetivo es C(x, y) = 90x + 150y, con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500. Se arrastra el poste a lo largo de la orilla y se comparan x, y, la longitud del tendido y el costo. Hay una maqueta sobre una mesa y una vista a escala real.
 
@@ -14,7 +14,7 @@ Sitio publicado: https://cfuentealba70.github.io/optimizacion-realidad-virtual/
 
 En las Quest 3, abre https://cfuentealba70.github.io/optimizacion-realidad-virtual/ en el navegador de las gafas, entra en una escena y pulsa **Entrar en VR**. Con el mando se apunta y se aprieta el gatillo. El joystick izquierdo camina y el derecho gira. En la obra, el menú de estaciones va a la izquierda; `guia4/index.html?estacion=<id>` abre directamente una estación y `rio/index.html?modo=real` abre el río a escala real.
 
-En el computador, el ratón gira la vista y se puede arrastrar sobre el gráfico, el poste naranja y los deslizadores.
+En el computador, el ratón gira la vista y se puede arrastrar sobre el gráfico, el poste naranja y los deslizadores. Los navegadores no reproducen audio antes del primer clic: la narración de la primera escena empieza con el primer gesto. `?narracion=0` la desactiva y `?foto=0` vuelve a las texturas procedurales, más livianas.
 
 Para probar en local hace falta Python 3:
 
@@ -34,13 +34,14 @@ src/math/             modelos matemáticos (problems.js para el río y guia4.js 
 src/common/           aplicación base, entrada por rayos, paneles, gráficos 3D, cielo, agua y texturas
 vendor/three/         three.js (r186) y los complementos usados
 css/                  estilos
-assets/               ícono y vistas previas de la portada
+assets/               ícono, vistas previas, texturas fotográficas (texturas/), iluminación HDR (hdri/) y narraciones (audio/)
+tools/                generar_narracion.py: genera los MP3 y los subtítulos de assets/audio/narraciones.json
 docs/                 modelo matemático y solución
 tests/                pruebas de la matemática y páginas de prueba con un casco emulado
 .nojekyll             necesario para publicar en GitHub Pages
 ```
 
-No hay paso de compilación. Las texturas y el terreno se generan en el navegador al cargar, de modo que no hay archivos de imagen salvo las vistas previas de la portada.
+No hay paso de compilación. Los materiales de suelo, hormigón, madera, metal, ladrillo y estuco usan texturas fotográficas escaneadas (color, relieve y un mapa de oclusión, rugosidad y metal, de 1024 px); el suelo se proyecta en metros reales sobre cualquier objeto, y el terreno mezcla pasto y tierra a dos escalas para que no se note la repetición. La luz ambiental y los reflejos vienen de una fotografía HDR de un campo abierto. Las narraciones se regeneran con `python tools/generar_narracion.py` (requiere `pip install edge-tts`) después de editar los textos en `assets/audio/narraciones.json`.
 
 ## Pruebas
 
@@ -53,4 +54,4 @@ npm test
 
 ## Licencia
 
-Código bajo licencia MIT. three.js se distribuye con su propia licencia MIT en `vendor/three/LICENSE`.
+Código bajo licencia MIT. three.js se distribuye con su propia licencia MIT en `vendor/three/LICENSE`. Las texturas son de [ambientCG](https://ambientcg.com) y la fotografía HDR es de [Poly Haven](https://polyhaven.com/a/farm_field), ambas con licencia CC0 (detalles en `assets/texturas/LICENCIA.txt` y `assets/hdri/LICENCIA.txt`).

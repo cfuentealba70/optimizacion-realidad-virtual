@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:04,837
+Una persona lanza una piedra al lago y se forman ondas circulares.
+
+2
+00:00:04,787 --> 00:00:09,960
+El radio del círculo exterior crece a razón constante de un pie por segundo.
+
+3
+00:00:09,960 --> 00:00:15,944
+El círculo naranjo es el frente de la onda, y la capa celeste es el área que encierra.
+
+4
+00:00:15,944 --> 00:00:23,696
+Usa Lanzar la piedra para ver el lanzamiento, Reproducir para que el tiempo avance, o mueve el deslizador del tiempo.
+
+5
+00:00:23,696 --> 00:00:28,404
+Observa que el radio crece siempre al mismo ritmo, pero el área no.
+
+6
+00:00:28,404 --> 00:00:34,361
+En el gráfico del área, la pendiente de la tangente es la rapidez con que crece el área.
+
+7
+00:00:34,361 --> 00:00:38,763
+Con Ir a erre igual a cuatro pies llegas al instante del problema.
+
+8
+00:00:38,763 --> 00:00:43,763
+El panel mantiene oculta esa rapidez hasta que actives Revelar respuesta.
+

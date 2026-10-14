@@ -1,6 +1,9 @@
 // Ejercicio 2.5. Un auto va al este a 90 km/h y otro al sur a 60 km/h, ambos hacia el cruce de dos carreteras.
 import { AUTOS as M } from '../../src/math/guia4.js';
 
+// La derivada que pide el problema queda oculta en el panel hasta que se activa «Revelar respuesta»
+const OCULTO = '? (revela)';
+
 // Convención local: cruce en el origen, camino este-oeste sobre el eje x (el auto A avanza hacia +x)
 // y camino norte-sur sobre el eje z (el auto B viene del norte, z negativo, y avanza hacia +z).
 const YR = 0.18;          // altura de la calzada
@@ -1237,7 +1240,7 @@ export default {
         { etiqueta: 's: entre los autos', valor: () => fmtD(M.s(reloj.t)), color: '#6fe3a2', escala: 0.56 },
         { etiqueta: 'dx/dt', valor: () => `${kit.num(M.vx, 0)} km/h`, color: '#ffb347', escala: 0.7 },
         { etiqueta: 'dy/dt', valor: () => `${kit.num(M.vy, 0)} km/h`, color: '#5cc8ff', escala: 0.7 },
-        { etiqueta: 'ds/dt', valor: () => `${kit.num(M.dsdt(reloj.t), 1)} km/h`, color: '#6fe3a2', escala: 0.7 },
+        { etiqueta: 'ds/dt', valor: () => (s.revelar ? `${kit.num(M.dsdt(reloj.t), 1)} km/h` : OCULTO), color: '#6fe3a2', escala: 0.7 },
       ],
       deslizadores: [
         { etiqueta: 'Tiempo t', min: T0, max: T1, paso: 0.00001, get: () => reloj.t, set: (v) => reloj.fijar(v), formato: (v) => `${kit.num(v, 5)} h · ${kit.num(v * 3600, 1)} s` },

@@ -1,0 +1,36 @@
+1
+00:00:00,100 --> 00:00:05,741
+Aquí se construye un recipiente sin tapa para guardar diez metros cúbicos de arena.
+
+2
+00:00:05,691 --> 00:00:08,962
+El largo de la base es el doble de su ancho.
+
+3
+00:00:08,962 --> 00:00:14,760
+El fondo cuesta treinta mil pesos el metro cuadrado, y los costados, veinte mil.
+
+4
+00:00:14,760 --> 00:00:19,015
+La variable es el ancho de la base, que llamamos doble ve.
+
+5
+00:00:19,015 --> 00:00:23,750
+Al cambiarlo, el alto se ajusta solo para mantener el volumen.
+
+6
+00:00:23,750 --> 00:00:30,119
+Una base pequeña obliga a levantar costados muy altos, y una base grande encarece el fondo.
+
+7
+00:00:30,119 --> 00:00:36,941
+Arrastra la esfera naranja, mueve el deslizador o el punto del gráfico, y busca el menor costo.
+
+8
+00:00:36,941 --> 00:00:40,917
+Con Mostrar arena ves el material dentro del recipiente.
+
+9
+00:00:40,917 --> 00:00:45,571
+Después, compruébalo con Ir al óptimo o con Revelar solución.
+

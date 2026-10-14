@@ -5,9 +5,11 @@ import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createApp, loading } from '../src/common/app.js';
 import { createSky } from '../src/common/sky.js';
-import { surfaceMaterial, makeSurface, fbm, mulberry32 } from '../src/common/textures.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+import { surfaceMaterial, makeSurface, fbm, mulberry32, fotoTex, fotosActivas } from '../src/common/textures.js';
 import { createPanel, THEME, font } from '../src/common/panel.js';
 import { crearKit } from './kit.js';
+import { crearNarrador } from './narrador.js';
 
 loading('Preparando la obra…');
 // cede el turno al navegador para que muestre el aviso de carga (con un mensaje: los temporizadores se retrasan en pestañas ocultas)
@@ -29,6 +31,8 @@ const LAYOUT = [
   { id: 'rio', pos: [-58, -44], yaw: 0.92 },
 ];
 const PLAZA = { pos: [0, 0], yaw: Math.PI };
+const PARAMS0 = new URLSearchParams(location.search);
+const AMBIENTE_HDR = Number(PARAMS0.get('amb') || 0.3);
 
 // ------------------------------------------------------------------ aplicación
 const app = createApp({
@@ -38,11 +42,25 @@ const app = createApp({
   exposure: 0.82, background: 0x9fb8d0, far: 30000, near: 0.05,
 });
 const { scene, renderer, camera, orbit, rig, input } = app;
+// Con la iluminación fotográfica, el mapeo neutro de Khronos conserva el tono y la saturación de las texturas mejor que ACES o AgX
+if (fotosActivas) { renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = Number(PARAMS0.get('exp') || 0.8); }
 app.locomotion.enabled = true; app.locomotion.speed = 4; app.locomotion.fly = false;
 const sky = createSky(scene, renderer, { elevation: 34, azimuth: 205, turbidity: 3.2, rayleigh: 1.2, sunIntensity: 3.5, fogDensity: 0.0016 });
 scene.add(new THREE.HemisphereLight(0xcfe0f5, 0x6d6a55, 0.3));
 // El cielo físico es muy brillante como luz ambiental: se atenúa para que los materiales conserven su color
 scene.environmentIntensity = 0.28;
+// Con texturas fotográficas, la luz ambiental y los reflejos vienen de una fotografía HDR de un campo abierto (Poly Haven, CC0),
+// que aporta el cielo y también la luz que rebota en el suelo. El sol de la foto se recorta para no duplicar el sol direccional.
+if (fotosActivas) {
+  new HDRLoader().setDataType(THREE.FloatType).load(new URL('../assets/hdri/farm_field_1k.hdr', import.meta.url).href, (hdr) => {
+    const d = hdr.image.data;
+    for (let i = 0; i < d.length; i += 4) { const m = Math.max(d[i], d[i + 1], d[i + 2]); if (m > 4) { const k = 4 / m; d[i] *= k; d[i + 1] *= k; d[i + 2] *= k; } }
+    hdr.mapping = THREE.EquirectangularReflectionMapping; hdr.needsUpdate = true;
+    const pm = new THREE.PMREMGenerator(renderer), rt = pm.fromEquirectangular(hdr);
+    hdr.dispose(); pm.dispose();
+    scene.environment = rt.texture; scene.environmentIntensity = AMBIENTE_HDR;
+  });
+}
 
 // ------------------------------------------------------------------ terreno
 const noise = new ImprovedNoise();
@@ -78,17 +96,24 @@ const G = 760, GS = 160;
 const gGeo = new THREE.PlaneGeometry(G, G, GS, GS);
 gGeo.rotateX(-Math.PI / 2); gGeo.translate(SITE.x + 40, 0, SITE.z);
 {
-  const pos = gGeo.attributes.position, col = new Float32Array(pos.count * 3);
+  const pos = gGeo.attributes.position, col = new Float32Array(pos.count * 3), mezcla = new Float32Array(pos.count);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i), h = sueloH(x, z);
     pos.setY(i, h);
     const n = noise.noise(x / 25, 5.1, z / 25) * 0.5 + 0.5, dry = sstep(0.55, 0.85, noise.noise(x / 60, 9.3, z / 60) * 0.5 + 0.5);
-    let r = 0.2 + 0.1 * n + dry * 0.12, g = 0.31 + 0.13 * n + dry * 0.04, b = 0.1 + 0.05 * n;
     const obra = (1 - sstep(-16, -3, distCerco(x, z))) * (0.86 + 0.14 * n); // la obra tiene tierra apisonada y pasto ralo junto al cerco
-    r = r * (1 - obra * 0.55) + 0.42 * obra * 0.55; g = g * (1 - obra * 0.55) + 0.38 * obra * 0.55; b = b * (1 - obra * 0.55) + 0.3 * obra * 0.55;
-    col[i * 3] = r * 0.9; col[i * 3 + 1] = g * 0.95; col[i * 3 + 2] = b * 0.85;
+    mezcla[i] = obra;
+    if (fotosActivas) {
+      // con texturas fotográficas el color de vértice solo matiza: pasto más seco en algunas zonas
+      col[i * 3] = 0.95 + 0.1 * n + dry * 0.04; col[i * 3 + 1] = 0.96 + 0.08 * n; col[i * 3 + 2] = 0.94 + 0.06 * n - dry * 0.04;
+    } else {
+      let r = 0.2 + 0.1 * n + dry * 0.12, g = 0.31 + 0.13 * n + dry * 0.04, b = 0.1 + 0.05 * n;
+      r = r * (1 - obra * 0.55) + 0.42 * obra * 0.55; g = g * (1 - obra * 0.55) + 0.38 * obra * 0.55; b = b * (1 - obra * 0.55) + 0.3 * obra * 0.55;
+      col[i * 3] = r * 0.9; col[i * 3 + 1] = g * 0.95; col[i * 3 + 2] = b * 0.85;
+    }
   }
   gGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  gGeo.setAttribute('aObra', new THREE.BufferAttribute(mezcla, 1));
   gGeo.computeVertexNormals();
 }
 const gravelN = makeSurface('gravel', { size: 256, seed: 3, repeat: [G / 4, G / 4], roughness: false }).normalMap;
@@ -101,7 +126,68 @@ function grayDetail(rep) {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.repeat.set(rep, rep); t.anisotropy = 4;
   return t;
 }
-const ground = new THREE.Mesh(gGeo, new THREE.MeshStandardMaterial({ vertexColors: true, map: grayDetail(G / 7), normalMap: gravelN, normalScale: new THREE.Vector2(0.45, 0.45), roughness: 1 }));
+// Terreno con texturas fotográficas: pasto fuera de la obra y tierra apisonada dentro, muestreadas en coordenadas del mundo a
+// dos escalas que se mezclan con la distancia, con variación de tono a gran escala para que no se note la repetición.
+function materialTerreno() {
+  const mat = new THREE.MeshStandardMaterial({
+    vertexColors: true, roughness: 1, map: fotoTex('grass', 'color', true), normalMap: fotoTex('grass', 'normal', false),
+    roughnessMap: fotoTex('grass', 'orm', false), aoMap: fotoTex('grass', 'orm', false), aoMapIntensity: 0.7, normalScale: new THREE.Vector2(0.9, 0.9),
+  });
+  const macro = (() => {
+    const S = 256, a = fbm(S, 4, 5, 71), b = fbm(S, 9, 4, 72);
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'), img = g.createImageData(S, S);
+    for (let i = 0; i < a.length; i++) { img.data[i * 4] = a[i] * 255; img.data[i * 4 + 1] = b[i] * 255; img.data[i * 4 + 2] = 0; img.data[i * 4 + 3] = 255; }
+    g.putImageData(img, 0, 0);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace;
+    return t;
+  })();
+  const U = {
+    tPastoC: { value: mat.map }, tPastoN: { value: mat.normalMap }, tPastoO: { value: mat.roughnessMap },
+    tTierraC: { value: fotoTex('obra', 'color', true) }, tTierraN: { value: fotoTex('obra', 'normal', false) }, tTierraO: { value: fotoTex('obra', 'orm', false) },
+    tMacro: { value: macro },
+  };
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aObra;\nvarying float vObra;\nvarying vec2 vMundo;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObra = aObra;\nvMundo = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform sampler2D tPastoC, tPastoN, tPastoO, tTierraC, tTierraN, tTierraO, tMacro;
+varying float vObra;
+varying vec2 vMundo;
+vec4 dosEscalas(sampler2D t, vec2 a, vec2 b, float k) { return mix(texture2D(t, a), texture2D(t, b), k); }`)
+      .replace('#include <map_fragment>', `
+vec2 pm = vec2(vMundo.x, -vMundo.y);
+float dist = length(vMundo - cameraPosition.xz);
+vec4 mac = texture2D(tMacro, pm / 160.0), mac2 = texture2D(tMacro, pm / 41.0 + 0.37);
+float lejos = clamp(smoothstep(10.0, 48.0, dist) + (mac2.g - 0.5) * 0.5, 0.0, 1.0);
+vec2 uA = pm / 2.4, uB = mat2(0.8, -0.6, 0.6, 0.8) * pm / 8.5 + 0.21;
+float ob = smoothstep(0.32, 0.68, vObra + (mac2.r - 0.5) * 0.55);
+// dentro de la obra hay pasto pisado y manchones de tierra apisonada; afuera, pasto con zonas algo más secas
+float mz = ob * smoothstep(0.5, 0.72, mac2.r * 0.55 + mac.g * 0.45);
+vec3 cP = dosEscalas(tPastoC, uA, uB, lejos).rgb, cT = dosEscalas(tTierraC, uA * 1.1, uB * 1.1, lejos).rgb;
+vec4 oP = dosEscalas(tPastoO, uA, uB, lejos), oT = dosEscalas(tTierraO, uA * 1.1, uB * 1.1, lejos);
+vec3 pasto = cP * mix(vec3(0.97, 1.0, 0.92), vec3(0.82, 0.84, 0.8), ob);
+vec3 alb = mix(pasto, cT * vec3(0.62, 0.58, 0.6), mz);
+alb *= 0.8 + 0.4 * mac.r;
+alb = mix(alb, alb * vec3(1.1, 1.03, 0.8), smoothstep(0.6, 0.9, mac.g) * (1.0 - mz) * 0.3);
+diffuseColor.rgb *= alb;
+vec4 ormMezcla = mix(oP, oT, mz);`)
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp(roughness * mix(ormMezcla.g * 2.8, ormMezcla.g * 1.7, mz), 0.55, 1.0);')
+      .replace('#include <normal_fragment_maps>', `
+vec3 nP = dosEscalas(tPastoN, uA, uB, lejos).xyz * 2.0 - 1.0, nT = dosEscalas(tTierraN, uA * 1.1, uB * 1.1, lejos).xyz * 2.0 - 1.0;
+vec3 mapN = normalize(mix(nP, nT, mz));
+mapN.xy *= normalScale * (1.0 - 0.6 * lejos);
+normal = normalize(tbn * mapN);`)
+      .replace('texture2D( aoMap, vAoMapUv ).r', 'ormMezcla.r');
+  };
+  mat.customProgramCacheKey = () => 'terreno-v1';
+  return mat;
+}
+const ground = new THREE.Mesh(gGeo, fotosActivas ? materialTerreno()
+  : new THREE.MeshStandardMaterial({ vertexColors: true, map: grayDetail(G / 7), normalMap: gravelN, normalScale: new THREE.Vector2(0.45, 0.45), roughness: 1 }));
 ground.receiveShadow = true;
 scene.add(ground);
 
@@ -155,7 +241,7 @@ const SENDEROS = [];
   g.strokeStyle = 'rgba(60,56,50,0.5)'; g.lineWidth = 7; g.beginPath(); g.arc(S / 2, S / 2, S * 0.493, 0, Math.PI * 2); g.stroke();
   const mapa = new THREE.CanvasTexture(c); mapa.colorSpace = THREE.SRGBColorSpace; mapa.anisotropy = 4;
   const mat = surfaceMaterial('concrete', { size: 256, seed: 5, repeat: [4, 4], color: 0xffffff, roughness: 1, normalScale: 0.5 });
-  mat.map = mapa;
+  mat.map = mapa; mat.color.setRGB(0.92, 0.92, 0.92);
   const plaza = new THREE.Mesh(new THREE.CircleGeometry(7, 48), mat);
   plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.03; plaza.receiveShadow = true; scene.add(plaza);
 }
@@ -278,10 +364,26 @@ function irA(est) {
   montarLamina();
   for (const e of estaciones) if (e.cartel) e.cartel.visible = !est;
   menuVR.invalidate();
+  narrar(est);
   const url = new URL(location.href);
   if (est) url.searchParams.set('estacion', est.id); else url.searchParams.delete('estacion');
   history.replaceState(null, '', url);
 }
+
+// ------------------------------------------------------------------ narración en audio de cada escena
+const SIN_NARRACION = PARAMS0.get('ui') === '0' || PARAMS0.get('narracion') === '0';
+const narrador = crearNarrador({
+  base: new URL('../assets/audio/', import.meta.url).href,
+  alTexto: (t) => { const el = $('subtitulo'); if (el) { el.textContent = t; el.hidden = !t || !subtitulosVisibles(); } },
+  alEstado: () => { actualizarBotonesNarracion(); menuVR?.invalidate?.(); },
+});
+const subtitulosVisibles = () => !renderer.xr.isPresenting;
+function narrar(est) { if (!SIN_NARRACION) narrador.reproducir(est ? est.api?.narracion?.() || est.id : 'obra'); }
+function actualizarBotonesNarracion() {
+  const b = $('btn-narracion');
+  if (b) { b.textContent = narrador.activo() ? 'Narración: sí' : 'Narración: no'; b.setAttribute('aria-pressed', String(narrador.activo())); }
+}
+kit.narrar = (id) => { if (!SIN_NARRACION) narrador.reproducir(id); };
 
 // ------------------------------------------------------------------ menú en VR (sujeto al usuario)
 const BOT = [{ id: null, t: 'Plaza' }, ...LAYOUT.map((l) => ({ id: l.id }))];
@@ -290,13 +392,17 @@ const menuVR = createPanel({
   width: 0.62, height: 0.95, ppm: 760, title: 'ESTACIONES',
   draw(ctx, W, H) {
     ctx.fillStyle = THEME.dim; ctx.font = font(H * 0.026, 400); ctx.textAlign = 'left';
-    ctx.fillText('Apunta y aprieta el gatillo para ir', W * 0.06, H * 0.105);
+    ctx.fillText('Apunta y aprieta el gatillo para ir', W * 0.06, H * 0.104);
   },
-  widgets: BOT.map((b, i) => ({
-    type: 'toggle', id: 'm' + i, x: MW * 0.06, y: MH * (0.12 + i * 0.068), w: MW * 0.88, h: MH * 0.058, fontScale: 0.42,
+  widgets: [...BOT.map((b, i) => ({
+    type: 'toggle', id: 'm' + i, x: MW * 0.06, y: MH * (0.13 + i * 0.061), w: MW * 0.88, h: MH * 0.051, fontScale: 0.42,
     label: () => (b.id ? (grupoDe.get(b.id)?.def?.titulo || b.id) : 'Plaza de inicio'),
     get: () => (b.id ? activa?.id === b.id : activa === null), set: () => irA(b.id ? grupoDe.get(b.id) : null),
   })),
+  { type: 'toggle', id: 'narr', x: MW * 0.06, y: MH * (0.13 + BOT.length * 0.061 + 0.008), w: MW * 0.42, h: MH * 0.051, fontScale: 0.4,
+    label: () => (narrador.activo() ? 'Narración: sí' : 'Narración: no'), get: () => narrador.activo(), set: () => narrador.setActivo(!narrador.activo()) },
+  { type: 'button', id: 'rep', x: MW * 0.52, y: MH * (0.13 + BOT.length * 0.061 + 0.008), w: MW * 0.42, h: MH * 0.051, fontScale: 0.4,
+    label: 'Repetir', onClick: () => narrador.repetir() }],
 });
 menuVR.mesh.position.set(-0.55, 1.05, -0.45);
 menuVR.mesh.rotation.set(-0.5, 0.75, 0.0, 'YXZ');
@@ -306,6 +412,7 @@ menuVR.mesh.visible = false;
 
 // ------------------------------------------------------------------ DOM
 const $ = (id) => document.getElementById(id);
+
 function construirMenuDom() {
   const ul = $('menu-lista');
   ul.innerHTML = '';
@@ -460,7 +567,8 @@ app.onXR((on) => {
   menuVR.mesh.visible = on;
   for (const id of ['barra', 'enunciado', 'menu', 'lamina', 'controls']) $(id).style.visibility = on ? 'hidden' : '';
   if (on) { camera.layers.enable(CAPA_GRAF); camera.layers.enable(CAPA_PANEL); } else { camera.layers.disable(CAPA_GRAF); camera.layers.disable(CAPA_PANEL); }
-  if (on) irA(activa); else { construirControles(); montarLamina(); }
+  if (on) { narrador.liberar(); irA(activa); } else { construirControles(); montarLamina(); }
+  const sub = $('subtitulo'); if (sub && on) sub.hidden = true;
 });
 
 // ------------------------------------------------------------------ bucle
@@ -488,7 +596,7 @@ app.onUpdate((dt) => {
       est.grupo.visible = d < radio + (est.api?.radioSombra ?? 10) || est === activa;
       if (d < dmin) { dmin = d; cercana = est; }
     }
-    if (renderer.xr.isPresenting && cercana && dmin < 16 && cercana !== activa) { activa = cercana; menuVR.invalidate(); }
+    if (renderer.xr.isPresenting && cercana && dmin < 16 && cercana !== activa) { activa = cercana; menuVR.invalidate(); narrar(activa); }
   }
   for (const est of estaciones) {
     if (!est.api || est.error) continue;
@@ -541,6 +649,10 @@ if (inicial) {
 construirControles(); actualizarHud(); marcarMenu(); sincronizarCapas(); montarLamina();
 for (const e of estaciones) if (e.cartel) e.cartel.visible = !activa;
 loading(null);
+$('btn-narracion').onclick = () => narrador.setActivo(!narrador.activo());
+$('btn-repetir').onclick = () => narrador.repetir();
+actualizarBotonesNarracion();
+narrar(inicial);
 if (inicial && PARAMS.has('cam')) {
   const n = (k, d) => (PARAMS.has(k) ? PARAMS.get(k).split(',').map(Number) : d);
   camera.position.copy(aMundo(inicial, n('cam', [0, 3, 8])));

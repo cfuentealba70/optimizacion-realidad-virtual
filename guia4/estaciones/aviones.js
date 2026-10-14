@@ -5,6 +5,9 @@
 // consola. La geometría fija se agrupa por material (una malla por material) para respetar el presupuesto de las Quest 3.
 import { AVIONES as M } from '../../src/math/guia4.js';
 
+// La derivada que pide el problema queda oculta en el panel hasta que se activa «Revelar respuesta»
+const OCULTO = '? (revela)';
+
 const MI = 0.0025;  // metros de maqueta por milla
 const PISO = 0.18;  // altura del piso técnico sobre el terreno
 const TAU = Math.PI * 2;
@@ -1264,7 +1267,7 @@ export default {
         { etiqueta: 's (entre A y B)', valor: () => `${kit.num(M.s(reloj.t), 1)} mi`, color: '#ffd34d' },
         { etiqueta: 'dx/dt', valor: () => `${kit.num(M.vx, 0)} mi/h`, color: '#ffb347', escala: 0.7 },
         { etiqueta: 'dy/dt', valor: () => `${kit.num(M.vy, 0)} mi/h`, color: '#5cc8ff', escala: 0.7 },
-        { etiqueta: 'ds/dt', valor: () => (conflicto() ? '—' : `${kit.num(M.dsdt(reloj.t), 1)} mi/h`), color: '#ffd34d', escala: 0.7 },
+        { etiqueta: 'ds/dt', valor: () => (conflicto() ? '—' : s.revelar ? `${kit.num(M.dsdt(reloj.t), 1)} mi/h` : OCULTO), color: '#ffd34d', escala: 0.7 },
       ],
       deslizadores: [
         { etiqueta: 'Tiempo t', min: -0.1, max: M.llegada(), paso: 0.005, get: () => reloj.t, set: (v) => reloj.fijar(v), formato: (v) => `${kit.num(v, 3)} h  (${kit.num(v * 60, 1)} min)` },

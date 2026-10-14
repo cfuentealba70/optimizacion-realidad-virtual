@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:03,733
+Esta es la maqueta del problema del río y el cable.
+
+2
+00:00:03,683 --> 00:00:12,978
+Una planta eléctrica está en una orilla de un río de cien metros de ancho, y la fábrica está quinientos metros río arriba, en la orilla opuesta.
+
+3
+00:00:12,978 --> 00:00:22,167
+El cable puede ir primero por la orilla, a noventa pesos el metro, y después cruzar el agua en diagonal, a ciento cincuenta pesos el metro.
+
+4
+00:00:22,167 --> 00:00:25,824
+La variable equis es el tramo que va por la orilla.
+
+5
+00:00:25,824 --> 00:00:35,265
+Arrastra el poste naranja sobre la maqueta, mueve el deslizador o el punto del gráfico, y observa cómo cambian los dos tramos y el costo total.
+
+6
+00:00:35,265 --> 00:00:43,896
+Los botones de los extremos llevan el poste a equis igual a cero y a equis igual a quinientos, para que compares esos costos con el mínimo.
+
+7
+00:00:43,896 --> 00:00:48,311
+Con Ir a escala real recorrerás el valle en su tamaño verdadero.
+
+8
+00:00:48,311 --> 00:00:56,529
+Cuando tengas tu respuesta, compárala con Revelar solución, y recuerda que el problema pregunta por la longitud del tendido.
+

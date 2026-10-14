@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:10,328
+Una cinta transportadora descarga grava a razón de treinta pies cúbicos por minuto, y el montón forma un cono cuyo diámetro de la base es siempre igual a su altura.
+
+2
+00:00:10,278 --> 00:00:14,946
+Reproduce el tiempo o mueve el deslizador para ver crecer el montón.
+
+3
+00:00:14,946 --> 00:00:21,103
+Aunque la grava cae a ritmo constante, observa si la altura sube siempre igual de rápido.
+
+4
+00:00:21,103 --> 00:00:27,207
+En el gráfico de la altura, la pendiente de la tangente es la rapidez con que sube el montón.
+
+5
+00:00:27,207 --> 00:00:31,555
+Con Ir a hache igual a diez pies llegas al instante del problema.
+
+6
+00:00:31,555 --> 00:00:36,555
+El panel mantiene oculta esa rapidez hasta que actives Revelar respuesta.
+

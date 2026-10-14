@@ -1,6 +1,9 @@
 // Ejemplo 8. Una correa transportadora vierte grava a 30 pies³/min y forma un cono con diámetro igual a la altura.
 import { GRAVA as M } from '../../src/math/guia4.js';
 
+// La derivada que pide el problema queda oculta en el panel hasta que se activa «Revelar respuesta»
+const OCULTO = '? (revela)';
+
 const PIE = 0.3048; // metros por pie
 
 export default {
@@ -1302,7 +1305,7 @@ export default {
         { etiqueta: 'altura h', valor: () => `${kit.num(M.h(reloj.t), 2)} pies`, color: '#5cc8ff' },
         { etiqueta: 'radio r = h/2', valor: () => `${kit.num(M.r(reloj.t), 2)} pies`, color: '#ffb347' },
         { etiqueta: 'dV/dt', valor: () => `${kit.num(M.dVdt, 0)} pies³/min`, color: '#c9a7ff', escala: 0.66 },
-        { etiqueta: 'dh/dt', valor: () => `${kit.num(M.dhdt(reloj.t), 3)} pies/min`, color: '#5cc8ff', escala: 0.66 },
+        { etiqueta: 'dh/dt', valor: () => (s.revelar ? `${kit.num(M.dhdt(reloj.t), 3)} pies/min` : OCULTO), color: '#5cc8ff', escala: 0.66 },
       ],
       deslizadores: [
         { etiqueta: 'Tiempo t', min: 0, max: 12, paso: 0.02, get: () => reloj.t, set: (v) => reloj.fijar(v), formato: (v) => `${kit.num(v, 2)} min` },

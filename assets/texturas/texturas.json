@@ -1,0 +1,214 @@
+{
+ "grass": {
+  "id": "Grass004",
+  "media": [
+   0.1269,
+   0.1613,
+   0.0343
+  ],
+  "rugosidad": 0.263,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.0685,
+   0.1285,
+   0.0159
+  ],
+  "rugProc": 0.949
+ },
+ "obra": {
+  "id": "Ground037",
+  "media": [
+   0.3306,
+   0.3062,
+   0.1114
+  ],
+  "rugosidad": 0.463,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": null,
+  "rugProc": 0.95
+ },
+ "soil": {
+  "id": "Ground103",
+  "media": [
+   0.2032,
+   0.1441,
+   0.0855
+  ],
+  "rugosidad": 0.66,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.1701,
+   0.096,
+   0.0501
+  ],
+  "rugProc": 0.949
+ },
+ "gravel": {
+  "id": "Gravel041",
+  "media": [
+   0.2825,
+   0.2723,
+   0.1926
+  ],
+  "rugosidad": 0.475,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.2482,
+   0.2275,
+   0.1892
+  ],
+  "rugProc": 0.898
+ },
+ "concrete": {
+  "id": "Concrete034",
+  "media": [
+   0.2636,
+   0.2636,
+   0.2636
+  ],
+  "rugosidad": 0.516,
+  "ao": false,
+  "metal": false,
+  "gris": true,
+  "proc": [
+   0.3095,
+   0.3028,
+   0.283
+  ],
+  "rugProc": 0.898
+ },
+ "wood": {
+  "id": "Wood066",
+  "media": [
+   0.292,
+   0.292,
+   0.292
+  ],
+  "rugosidad": 0.329,
+  "ao": false,
+  "metal": false,
+  "gris": true,
+  "proc": [
+   0.3245,
+   0.1277,
+   0.0439
+  ],
+  "rugProc": 0.698
+ },
+ "metal": {
+  "id": "Metal032",
+  "media": [
+   0.2635,
+   0.2635,
+   0.2635
+  ],
+  "rugosidad": 0.408,
+  "ao": false,
+  "metal": true,
+  "gris": true,
+  "proc": [
+   0.3089,
+   0.3458,
+   0.4016
+  ],
+  "rugProc": 0.456
+ },
+ "ribbed": {
+  "id": "CorrugatedSteel005",
+  "media": [
+   0.2652,
+   0.2652,
+   0.2652
+  ],
+  "rugosidad": 0.406,
+  "ao": true,
+  "metal": true,
+  "gris": true,
+  "proc": [
+   0.2476,
+   0.2842,
+   0.3238
+  ],
+  "rugProc": 0.549
+ },
+ "asphalt": {
+  "id": "Asphalt031",
+  "media": [
+   0.1954,
+   0.1953,
+   0.1952
+  ],
+  "rugosidad": 0.524,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.048,
+   0.048,
+   0.0509
+  ],
+  "rugProc": 0.9
+ },
+ "brick": {
+  "id": "Bricks085",
+  "media": [
+   0.3109,
+   0.1993,
+   0.1444
+  ],
+  "rugosidad": 0.58,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.3822,
+   0.1104,
+   0.0762
+  ],
+  "rugProc": 0.922
+ },
+ "plaster": {
+  "id": "Plaster002",
+  "media": [
+   0.2638,
+   0.2638,
+   0.2638
+  ],
+  "rugosidad": 0.548,
+  "ao": false,
+  "metal": false,
+  "gris": true,
+  "proc": [
+   0.7529,
+   0.7029,
+   0.5939
+  ],
+  "rugProc": 0.949
+ },
+ "sand": {
+  "id": "Ground054",
+  "media": [
+   0.3329,
+   0.2594,
+   0.1563
+  ],
+  "rugosidad": 0.665,
+  "ao": true,
+  "metal": false,
+  "gris": false,
+  "proc": [
+   0.4328,
+   0.3344,
+   0.1981
+  ],
+  "rugProc": 0.949
+ }
+}

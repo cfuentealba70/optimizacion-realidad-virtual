@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,534
+Ahora estás en el valle, a escala real.
+
+2
+00:00:03,484 --> 00:00:10,279
+El río mide cien metros de ancho y la fábrica está quinientos metros río arriba, en la otra orilla.
+
+3
+00:00:10,279 --> 00:00:17,859
+La línea naranja sobre la orilla es el tramo de cable por tierra, y la línea a rayas cruza el agua hasta la fábrica.
+
+4
+00:00:17,859 --> 00:00:22,220
+El poste naranja marca el punto donde el cable deja la orilla.
+
+5
+00:00:22,220 --> 00:00:28,962
+Muévelo con el deslizador o con el gráfico, y mira cómo cambian la longitud y el costo de cada tramo.
+
+6
+00:00:28,962 --> 00:00:37,127
+Con las gafas, el joystick izquierdo te lleva rápido por el valle, y el derecho te permite subir para mirarlo desde arriba.
+
+7
+00:00:37,127 --> 00:00:40,372
+Con Volver a la maqueta regresas a la mesa.
+

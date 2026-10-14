@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:04,398
+Este depósito tiene forma de cono con el vértice hacia abajo.
+
+2
+00:00:04,348 --> 00:00:08,257
+Mide diez metros de altura y quince metros de radio.
+
+3
+00:00:08,257 --> 00:00:16,715
+Por el vértice sale agua a un metro cúbico por segundo, y por la tubería entra agua con un caudal constante, que llamamos ce.
+
+4
+00:00:16,715 --> 00:00:25,664
+El problema pide el caudal ce para que el nivel suba a cuatro metros por segundo, en el instante en que el agua tiene un metro de profundidad.
+
+5
+00:00:25,664 --> 00:00:33,271
+Mueve el caudal y el nivel con los deslizadores, arrastra la esfera celeste, o activa Simular para ver el llenado.
+
+6
+00:00:33,271 --> 00:00:41,210
+Busca el caudal con el que la curva del gráfico pasa por la guía de cuatro metros por segundo, justo en un metro de profundidad.
+
+7
+00:00:41,210 --> 00:00:45,890
+Con Ir a hache igual a un metro y con Revelar compruebas tu resultado.
+

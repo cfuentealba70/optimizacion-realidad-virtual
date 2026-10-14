@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,666
+Desde esta torre ves dos caminos que se cruzan.
+
+2
+00:00:03,616 --> 00:00:11,821
+Un auto viaja hacia el este a noventa kilómetros por hora, y otro viaja hacia el sur a sesenta, y ambos se dirigen al cruce.
+
+3
+00:00:11,821 --> 00:00:16,356
+Reproduce el tiempo o mueve el deslizador para verlos avanzar.
+
+4
+00:00:16,356 --> 00:00:22,406
+Las distancias de cada auto al cruce disminuyen, y por eso sus derivadas son negativas.
+
+5
+00:00:22,406 --> 00:00:29,800
+El gráfico muestra la distancia entre los dos autos, y la pendiente de su tangente es la rapidez con que se acercan.
+
+6
+00:00:29,800 --> 00:00:37,646
+Con Ir al instante te ubicas en el momento en que el primer auto está a doscientos metros del cruce y el segundo a ciento cincuenta.
+
+7
+00:00:37,646 --> 00:00:42,246
+Después, activa Revelar respuesta para comprobar tu cálculo.
+

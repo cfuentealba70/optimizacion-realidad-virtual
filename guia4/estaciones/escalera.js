@@ -4,6 +4,9 @@
 // suelo y una vecina se asoma por una ventana del tercer piso.
 import { ESCALERA as M } from '../../src/math/guia4.js';
 
+// La derivada que pide el problema queda oculta en el panel hasta que se activa «Revelar respuesta»
+const OCULTO = '? (revela)';
+
 export default {
   id: 'escalera',
   tipo: 'razon',
@@ -914,9 +917,9 @@ export default {
         { etiqueta: 'base x', valor: () => `${kit.num(M.x(reloj.t), 2)} m`, color: '#ffb347' },
         { etiqueta: 'altura y', valor: () => `${kit.num(M.y(reloj.t), 2)} m`, color: '#5cc8ff' },
         { etiqueta: 'dx/dt', valor: () => fmtRate(M.dxdt, 'm/s'), color: '#ffb347', escala: 0.72 },
-        { etiqueta: 'dy/dt', valor: () => fmtRate(M.dydt(reloj.t), 'm/s'), color: '#5cc8ff', escala: 0.72 },
-        { etiqueta: 'dA/dt', valor: () => fmtRate(M.dAdt(reloj.t), 'm²/s'), color: '#c9a7ff', escala: 0.66 },
-        { etiqueta: 'dθ/dt', valor: () => fmtRate(M.dthdt(reloj.t), 'rad/s'), color: '#ffd34d', escala: 0.66 },
+        { etiqueta: 'dy/dt', valor: () => (s.revelar ? fmtRate(M.dydt(reloj.t), 'm/s') : OCULTO), color: '#5cc8ff', escala: 0.72 },
+        { etiqueta: 'dA/dt', valor: () => (s.revelar ? fmtRate(M.dAdt(reloj.t), 'm²/s') : OCULTO), color: '#c9a7ff', escala: 0.66 },
+        { etiqueta: 'dθ/dt', valor: () => (s.revelar ? fmtRate(M.dthdt(reloj.t), 'rad/s') : OCULTO), color: '#ffd34d', escala: 0.66 },
       ],
       deslizadores: [
         { etiqueta: 'Tiempo t', min: 0, max: M.fin, paso: 0.01, get: () => reloj.t, set: (v) => reloj.fijar(v), formato: (v) => `${kit.num(v, 2)} s` },

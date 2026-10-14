@@ -452,6 +452,8 @@ export default {
     let sombra = { centro: new THREE.Vector3(), half: 1.5 };
     // mover = false cambia la escena sin llevar la cámara ni a la persona (al crear la estación o al salir de ella)
     function applyMode(m, { mover = true } = {}) {
+      // al ir al valle, la narración explica la escala real (al volver a la maqueta no se repite)
+      if (m === 'real' && state.mode !== 'real' && mover) kit.narrar?.('rio_real');
       state.mode = m;
       const maq = m === 'maqueta';
       g.updateWorldMatrix(true, false);
@@ -504,6 +506,7 @@ export default {
       // la maqueta está muy cerca de quien mira: en VR el panel y el gráfico van más abiertos
       laminaVR: { angulo: 62 },
       vistaVR: () => (state.mode === 'real' ? vistaReal() : api.vista.vr),
+      narracion: () => (state.mode === 'real' ? 'rio_real' : 'rio'),
       vista: {
         escritorio: { camara: [0.05, 1.95, 1.45], objetivo: [-0.05, 0.92, -0.62] },
         vr: { pos: [0, 0, 0.95], yaw: 0 },

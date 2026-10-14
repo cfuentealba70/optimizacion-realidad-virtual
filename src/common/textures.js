@@ -310,9 +310,114 @@ export function makeSurface(kind, { size = 256, seed = 1, repeat = [1, 1], rough
   return out;
 }
 
+// ------------------------------------------------------------------ texturas fotográficas
+// Materiales escaneados de ambientCG (CC0) en assets/texturas: color, normal y un mapa ORM (oclusión, rugosidad, metal).
+// El color del material se calibra para que el tono medio sea el mismo que daba la textura procedural con el tinte pedido,
+// de modo que cada estación conserva sus colores. Los tipos «gris» traen solo el detalle y toman el color del tinte.
+// Con ?foto=0 en la dirección se vuelve a las texturas procedurales.
+const FOTO_URL = new URL('../../assets/texturas/', import.meta.url).href;
+export const FOTO = {
+  grass: { media: [0.1269, 0.1613, 0.0343], proc: [0.0685, 0.1285, 0.0159], rug: 0.263, rugProc: 0.949, ao: true },
+  obra: { media: [0.3306, 0.3062, 0.1114], proc: [0.3306, 0.3062, 0.1114], rug: 0.463, rugProc: 0.95, ao: true },
+  soil: { media: [0.2032, 0.1441, 0.0855], proc: [0.1701, 0.096, 0.0501], rug: 0.66, rugProc: 0.949, ao: true },
+  gravel: { media: [0.2825, 0.2723, 0.1926], proc: [0.2482, 0.2275, 0.1892], rug: 0.475, rugProc: 0.898, ao: true },
+  concrete: { media: [0.2636, 0.2636, 0.2636], proc: [0.3095, 0.3028, 0.283], rug: 0.516, rugProc: 0.898, gris: true },
+  wood: { media: [0.292, 0.292, 0.292], proc: [0.3245, 0.1277, 0.0439], rug: 0.329, rugProc: 0.698, gris: true },
+  metal: { media: [0.2635, 0.2635, 0.2635], proc: [0.3089, 0.3458, 0.4016], rug: 0.408, rugProc: 0.456, gris: true, metal: true },
+  ribbed: { media: [0.2652, 0.2652, 0.2652], proc: [0.2476, 0.2842, 0.3238], rug: 0.406, rugProc: 0.549, gris: true, metal: true, ao: true },
+  asphalt: { media: [0.1954, 0.1953, 0.1952], proc: [0.048, 0.048, 0.0509], rug: 0.524, rugProc: 0.9, ao: true },
+  brick: { media: [0.3109, 0.1993, 0.1444], proc: [0.3822, 0.1104, 0.0762], rug: 0.58, rugProc: 0.922, ao: true },
+  plaster: { media: [0.6743, 0.6743, 0.6743], proc: [0.7529, 0.7029, 0.5939], rug: 0.548, rugProc: 0.949, gris: true },
+  sand: { media: [0.3329, 0.2594, 0.1563], proc: [0.4328, 0.3344, 0.1981], rug: 0.665, rugProc: 0.949, ao: true },
+};
+export const fotosActivas = typeof location === 'undefined' || !/[?&]foto=0\b/.test(location.search);
+const cargador = new THREE.TextureLoader();
+const fotoBase = new Map();
+
+// Textura compartida por tipo y mapa; cada material recibe un clon con su propia repetición
+export function fotoTex(kind, nombre, srgb, repeat = [1, 1]) {
+  const key = kind + '/' + nombre;
+  let b = fotoBase.get(key);
+  if (!b) {
+    b = { clones: [], listo: false };
+    b.tex = cargador.load(FOTO_URL + key + '.jpg', () => { b.listo = true; for (const c of b.clones) c.needsUpdate = true; b.clones.length = 0; },
+      undefined, (e) => console.warn('No se pudo cargar la textura', key, e));
+    b.tex.wrapS = b.tex.wrapT = THREE.RepeatWrapping;
+    b.tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    b.tex.anisotropy = 8;
+    fotoBase.set(key, b);
+  }
+  const t = b.tex.clone();
+  t.repeat.set(repeat[0], repeat[1]);
+  // copy() deja el clon marcado para subir; si la imagen aún no llega se espera al aviso de carga
+  if (b.listo) t.needsUpdate = true; else { t.version = 0; b.clones.push(t); }
+  return t;
+}
+
+// Superficies de suelo: la textura se proyecta desde arriba en metros del mundo, divididos por la escala del objeto
+// (así una maqueta a escala conserva el tamaño relativo del grano), con independencia de las coordenadas UV de la malla.
+const SUELO = { gravel: 1.6, soil: 2.5, sand: 2.0, asphalt: 3.2, grass: 2.4, obra: 2.6 };
+function uvMundo(mat, lado) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => {
+    if (prev) prev(sh, r);
+    sh.uniforms.uLado = { value: lado };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uLado;')
+      .replace('#include <uv_vertex>', `#include <uv_vertex>
+vec4 wpS = vec4(position, 1.0);
+#ifdef USE_INSTANCING
+wpS = instanceMatrix * wpS;
+#endif
+wpS = modelMatrix * wpS;
+vec2 uvS = vec2(wpS.x, -wpS.z) / (uLado * max(1e-6, length(modelMatrix[0].xyz)));
+#ifdef USE_MAP
+vMapUv = uvS;
+#endif
+#ifdef USE_NORMALMAP
+vNormalMapUv = uvS;
+#endif
+#ifdef USE_ROUGHNESSMAP
+vRoughnessMapUv = uvS;
+#endif
+#ifdef USE_AOMAP
+vAoMapUv = uvS;
+#endif`);
+  };
+  const key = mat.customProgramCacheKey.bind(mat);
+  mat.customProgramCacheKey = () => key() + '|uvMundo';
+  return mat;
+}
+
+// Color del material para que el tono medio coincida con el de la textura procedural teñida
+function colorFoto(f, color) {
+  const tinte = new THREE.Color(color);
+  const obj = [f.proc[0] * tinte.r, f.proc[1] * tinte.g, f.proc[2] * tinte.b];
+  if (f.gris) return new THREE.Color(obj[0] / f.media[0], obj[1] / f.media[1], obj[2] / f.media[2]);
+  const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  const s = Math.min(3, Math.max(0.25, lum(obj) / Math.max(1e-4, lum(f.media))));
+  const h = obj.map((v, i) => Math.min(1.6, Math.max(0.6, (v / Math.max(1e-4, lum(obj))) / (f.media[i] / lum(f.media)))));
+  return new THREE.Color(s * (1 + (h[0] - 1) * 0.5), s * (1 + (h[1] - 1) * 0.5), s * (1 + (h[2] - 1) * 0.5));
+}
+
+export function fotoMaterial(kind, { repeat = [1, 1], color = 0xffffff, normalScale = 1, roughness = 1, metalness = 0, extra = {}, mundo = true, lado = 0 } = {}) {
+  const f = FOTO[kind];
+  const orm = fotoTex(kind, 'orm', false, repeat);
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorFoto(f, color), map: fotoTex(kind, 'color', true, repeat),
+    normalMap: fotoTex(kind, 'normal', false, repeat), normalScale: new THREE.Vector2(normalScale, normalScale),
+    roughnessMap: orm, roughness: roughness * (f.rugProc / f.rug),
+    aoMap: f.ao ? orm : null, aoMapIntensity: 0.85,
+    metalness, metalnessMap: f.metal && metalness > 0 ? orm : null, ...extra,
+  });
+  // en el suelo la repetición pedida para las UV de la malla no se usa: el grano tiene su tamaño real (o el lado indicado)
+  return mundo && SUELO[kind] ? uvMundo(mat, lado || SUELO[kind]) : mat;
+}
+
 // Material PBR a partir de un tipo de superficie
 export function surfaceMaterial(kind, opts = {}) {
   const { size, seed, repeat, color = 0xffffff, normalScale = 1, roughness = 1, metalness = 0, extra = {} } = opts;
+  if (fotosActivas && FOTO[kind]) return fotoMaterial(kind, { repeat: repeat || [1, 1], color, normalScale, roughness, metalness, extra, mundo: opts.mundo ?? true, lado: opts.lado || 0 });
   const s = makeSurface(kind, { size, seed, repeat });
   return new THREE.MeshStandardMaterial({
     color, map: s.map, normalMap: s.normalMap, normalScale: new THREE.Vector2(normalScale, normalScale),

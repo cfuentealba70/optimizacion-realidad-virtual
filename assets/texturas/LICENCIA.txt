@@ -1,0 +1,13 @@
+Texturas de ambientCG (https://ambientcg.com), licencia CC0 1.0 Universal (dominio público).
+grass: Grass004
+obra: Ground037
+soil: Ground103
+gravel: Gravel041
+concrete: Concrete034
+wood: Wood066
+metal: Metal032
+ribbed: CorrugatedSteel005
+asphalt: Asphalt031
+brick: Bricks085
+plaster: Plaster002
+sand: Ground054

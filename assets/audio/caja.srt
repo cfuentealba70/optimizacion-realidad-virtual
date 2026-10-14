@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:06,858
+En este taller se arma una caja sin tapa a partir de un cartón cuadrado de veinticuatro pulgadas de lado.
+
+2
+00:00:06,808 --> 00:00:13,151
+En cada esquina se corta un cuadrado de lado equis, y luego se doblan los bordes hacia arriba.
+
+3
+00:00:13,151 --> 00:00:19,627
+Si cortas poco, la caja queda muy baja, y si cortas mucho, la base se achica.
+
+4
+00:00:19,627 --> 00:00:27,327
+Arrastra la esfera naranja de la esquina, mueve el deslizador o el punto del gráfico, y mira cómo cambia el volumen.
+
+5
+00:00:27,327 --> 00:00:35,053
+Con Desplegar ves el cartón plano con los cortes, y con Llenar con arena puedes comparar el volumen de distintas cajas.
+
+6
+00:00:35,053 --> 00:00:40,305
+Al final, comprueba tu resultado con Ir al óptimo o con Revelar solución.
+

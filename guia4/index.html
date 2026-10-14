@@ -21,6 +21,8 @@
   </div>
   <button class="btn" id="btn-enunciado" type="button" aria-expanded="false" aria-controls="enunciado">Enunciado y uso</button>
   <button class="btn" id="menu-toggle" type="button" aria-expanded="true" aria-controls="menu">Estaciones</button>
+  <button class="btn" id="btn-narracion" type="button" aria-pressed="true" title="Activar o desactivar la voz que explica cada escena">Narración: sí</button>
+  <button class="btn" id="btn-repetir" type="button" title="Escuchar otra vez la explicación de esta escena">Repetir</button>
   <a class="btn" href="../index.html">Inicio</a>
   <span id="info"></span>
   <div id="vr-slot"></div>
@@ -28,11 +30,11 @@
 
 <section id="enunciado" hidden>
   <p id="hud-texto"></p>
-  <p class="uso">Arrastra con el ratón sobre la escena para girar la vista y usa la rueda para acercarte. El panel y el gráfico de la estación están a la derecha y responden al ratón. Con unas gafas Meta Quest pulsa <b>Entrar en VR</b>: camina con el joystick izquierdo, gira con el derecho y usa el menú que llevas a la izquierda para ir a cada estación.</p>
+  <p class="uso">Arrastra con el ratón sobre la escena para girar la vista y usa la rueda para acercarte. El panel y el gráfico de la estación están a la derecha y responden al ratón. Con unas gafas Meta Quest pulsa <b>Entrar en VR</b>: camina con el joystick izquierdo, gira con el derecho y usa el menú que llevas a la izquierda para ir a cada estación. Al llegar a cada estación, una voz explica el problema y las opciones de la escena: puedes repetirla o desactivarla con los botones <b>Repetir</b> y <b>Narración</b>.</p>
 </section>
 
 <nav id="menu" aria-label="Estaciones"><ul id="menu-lista"></ul></nav>
-<main id="escena" aria-label="Escena en tres dimensiones"></main>
+<main id="escena" aria-label="Escena en tres dimensiones"><p id="subtitulo" aria-live="polite" hidden></p></main>
 <aside id="lamina" aria-label="Panel y gráfico de la estación">
   <div id="paneles"></div>
 </aside>

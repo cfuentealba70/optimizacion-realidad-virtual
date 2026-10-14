@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:06,192
+Una escalera de trece metros está apoyada contra la pared del edificio y empieza a resbalar.
+
+2
+00:00:06,142 --> 00:00:10,199
+Su base se aleja de la pared a cinco metros por segundo.
+
+3
+00:00:10,199 --> 00:00:15,957
+Reproduce el deslizamiento o mueve el tiempo, y mira cómo baja la parte superior.
+
+4
+00:00:15,957 --> 00:00:25,678
+Además de la altura, el problema pregunta por el área del triángulo que forman la escalera, el suelo y la pared, y por el ángulo de la escalera con el suelo.
+
+5
+00:00:25,678 --> 00:00:31,728
+En el gráfico de la altura, la pendiente de la curva es la rapidez con que baja la escalera.
+
+6
+00:00:31,728 --> 00:00:36,369
+Con Ir a equis igual a doce metros llegas al instante del problema.
+
+7
+00:00:36,369 --> 00:00:41,702
+Las tres rapideces quedan ocultas en el panel hasta que actives Revelar respuesta.
+

@@ -414,6 +414,11 @@ menuVR.mesh.visible = false;
 // ------------------------------------------------------------------ DOM
 const $ = (id) => document.getElementById(id);
 
+// orden de la guía: primero los ejemplos y después los ejercicios, por número («Ejemplo 3», «Ejercicio 1.7»)
+function ordenGuia(est) {
+  const m = /^(Ejemplo|Ejercicio)\s+(\d+)(?:\.(\d+))?/.exec(est.def?.etiqueta || '');
+  return m ? (m[1] === 'Ejemplo' ? 0 : 1000) + Number(m[2]) * 10 + Number(m[3] || 0) : 9999;
+}
 function construirMenuDom() {
   const ul = $('menu-lista');
   ul.innerHTML = '';
@@ -423,7 +428,7 @@ function construirMenuDom() {
   const grupos = [['optimizacion', 'Optimización'], ['razon', 'Razón de cambio']];
   for (const [tipo, nombre] of grupos) {
     const h = document.createElement('li'); h.className = 'grupo'; h.textContent = nombre; ul.appendChild(h);
-    for (const est of estaciones.filter((e) => (e.def.tipo || 'optimizacion') === tipo)) {
+    for (const est of estaciones.filter((e) => (e.def.tipo || 'optimizacion') === tipo).sort((a, b) => ordenGuia(a) - ordenGuia(b))) {
       const li = document.createElement('li');
       li.innerHTML = `<button class="btn" data-id="${est.id}"><span>${est.def.titulo}</span><small>${est.def.etiqueta || ''}</small></button>`;
       ul.appendChild(li);

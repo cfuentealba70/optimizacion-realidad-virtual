@@ -16,7 +16,7 @@ const LEJOS = [0, 0, -2400];          // dónde queda el valle a escala real, en
 export default {
   id: 'rio',
   tipo: 'optimizacion',
-  etiqueta: 'Evaluación · Optimización',
+  etiqueta: 'Ejercicio 1.7 · Optimización',
   titulo: 'Río y cable',
   resumen: 'Un río rectilíneo de 100 m de ancho separa una planta eléctrica de una fábrica ubicada 500 m río arriba, en la orilla opuesta. Tender el cable por la orilla cuesta $90 por metro y sobre el agua $150 por metro. ¿Cuál es la longitud del tendido más económico? La función objetivo es C(x, y) = 90x + 150y, con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500.',
 

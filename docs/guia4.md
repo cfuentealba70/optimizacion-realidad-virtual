@@ -19,6 +19,7 @@ Un problema entra al mundo cuando su contexto se puede ver y manipular a escala 
 | Ejercicio 1.4 | Puntos de una parábola cercanos a un punto | Fuera: sin contexto |
 | Ejercicio 1.5 | Recipiente sin tapa para arena | **Estación «Recipiente para arena»** |
 | Ejercicio 1.6 | Dos postes con cables a una estaca | **Estación «Cable mínimo entre dos postes»** |
+| Ejercicio 1.7 | Cable de una planta eléctrica a una fábrica a través de un río | **Estación «Río y cable»**, con maqueta y vista a escala real |
 | Ejemplo 6 | Ondas en un lago | **Estación «Ondas en un lago»** |
 | Ejemplo 7 | Dos aviones que convergen | **Estación «Aviones que convergen»** |
 | Ejemplo 8 | Cono de grava desde una correa | **Estación «Cono de grava»** |
@@ -37,6 +38,8 @@ Un problema entra al mundo cuando su contexto se puede ver y manipular a escala 
 **Recipiente para arena (Ejercicio 1.5).** Con ancho w, largo 2w y alto h, el volumen 2w²h = 10 da h = 5/w². C(w) = 60.000w² + 600.000/w. C′(w) = 0 en w = ∛5 ≈ 1,71 m, con largo ≈ 3,42 m, alto ≈ 1,71 m y costo ≈ $526.323.
 
 **Postes y cables (Ejercicio 1.6).** W(x) = √(x² + 12²) + √((30 − x)² + 28²) para 0 ≤ x ≤ 30 pies. W′(x) = 0 equivale a x/12 = (30 − x)/28, de donde x = 9 pies y W = 50 pies. Los extremos valen W(0) ≈ 53,04 y W(30) ≈ 60,31.
+
+**Río y cable (Ejercicio 1.7).** C(x, y) = 90x + 150y con y = √((500 − x)² + 100²) y 0 ≤ x ≤ 500 m. C′(x) = 90 − 150(500 − x)/√((500 − x)² + 100²) se anula cuando (500 − x)/y = 3/5, es decir en x = 425 m con y = 125 m. El costo mínimo es $57.000 y el tendido mide 550 m. Los extremos valen C(0) ≈ $76.485 y C(500) = $60.000. Las comprobaciones están en [modelo.md](modelo.md).
 
 **Ondas (Ejemplo 6).** A = πr² y dA/dt = 2πr·dr/dt. Con r = 4 pies y dr/dt = 1 pie/s, dA/dt = 8π ≈ 25,13 pies²/s.
 

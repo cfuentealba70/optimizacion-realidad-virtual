@@ -3,20 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prueba de sesión VR emulada · la obra</title>
+<title>Prueba VR emulada · La obra · optimización y razón de cambio en VR</title>
+<meta name="description" content="Problemas de optimización y de razón de cambio de Cálculo en una variable, modelados en realidad virtual en una obra con sus alrededores.">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/site.css">
 <script type="importmap">
 { "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }
 </script>
 </head>
-<body class="scene">
+<body class="scene mundo">
 <div id="app"></div>
-<div class="hud" id="hud"><p class="etq" id="hud-etiqueta"></p><h1 id="hud-titulo"></h1><p id="hud-texto"></p></div>
-<nav id="menu"><h2>Estaciones <button id="menu-toggle" type="button">ocultar</button></h2><ul id="menu-lista"></ul></nav>
+
+<header id="barra">
+  <div class="titulo">
+    <p class="etq" id="hud-etiqueta">Optimización y razón de cambio</p>
+    <h1 id="hud-titulo">La obra</h1>
+  </div>
+  <button class="btn" id="btn-enunciado" type="button" aria-expanded="false" aria-controls="enunciado">Enunciado y uso</button>
+  <button class="btn" id="menu-toggle" type="button" aria-expanded="true" aria-controls="menu">Estaciones</button>
+  <button class="btn" id="btn-narracion" type="button" aria-pressed="true" title="Activar o desactivar la voz que explica cada escena">Narración: sí</button>
+  <button class="btn" id="btn-repetir" type="button" title="Escuchar otra vez la explicación de esta escena">Repetir</button>
+  <a class="btn" href="../index.html">Inicio</a>
+  <span id="info"></span>
+  <div id="vr-slot"></div>
+</header>
+
+<section id="enunciado" hidden>
+  <p id="hud-texto"></p>
+  <p class="uso">Arrastra con el ratón sobre la escena para girar la vista y usa la rueda para acercarte. El panel y el gráfico de la estación están a la derecha y responden al ratón. Con unas gafas Meta Quest pulsa <b>Entrar en VR</b>: camina con el joystick izquierdo, gira con el derecho y usa el menú que llevas a la izquierda para ir a cada estación. Al llegar a cada estación, una voz explica el problema y las opciones de la escena: puedes repetirla o desactivarla con los botones <b>Repetir</b> y <b>Narración</b>.</p>
+</section>
+
+<nav id="menu" aria-label="Estaciones"><ul id="menu-lista"></ul></nav>
+<main id="escena" aria-label="Escena en tres dimensiones"><p id="subtitulo" aria-live="polite" hidden></p></main>
+<aside id="lamina" aria-label="Panel y gráfico de la estación">
+  <div id="paneles"></div>
+</aside>
 <div class="controls" id="controls" style="display:none"></div>
+
 <script type="module">
-// Solo para desarrollo: emula unas gafas Meta Quest 3 con IWER (npm install) para probar la sesión VR sin casco.
+// Solo para desarrollo: la misma página de la obra (guia4/index.html) con unas Meta Quest 3 emuladas por IWER (npm install),
+// para probar la sesión VR sin casco. Se regenera copiando guia4/index.html y cambiando solo este bloque.
 import { XRDevice, metaQuest3 } from '../node_modules/iwer/build/iwer.module.js';
 const device = new XRDevice(metaQuest3);
 device.installRuntime({ forceInstall: true });

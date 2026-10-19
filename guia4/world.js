@@ -517,6 +517,11 @@ const SIN_UI_AO = () => renderer.xr.isPresenting;
 const ao = { listo: false, activo: AO_PARAM !== '0', forzado: AO_PARAM === '1', w: 0, h: 0, compositor: null, gtao: null, lento: 0, previo: 0, desde: 0 };
 async function prepararAO() {
   if (!ao.activo || ao.listo) return;
+  // en gafas autónomas (Quest, Pico) la página se abre primero en un navegador plano: ahí no se usa, salvo con ao=1
+  if (!ao.forzado) {
+    if (/OculusBrowser|Quest|Pico/i.test(navigator.userAgent)) { ao.activo = false; return; }
+    try { if (await navigator.xr?.isSessionSupported('immersive-vr')) { ao.activo = false; return; } } catch { /* sin WebXR */ }
+  }
   try {
     const [{ EffectComposer }, { RenderPass }, { GTAOPass }, { OutputPass }] = await Promise.all([
       import('three/addons/postprocessing/EffectComposer.js'), import('three/addons/postprocessing/RenderPass.js'),

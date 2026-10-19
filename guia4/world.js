@@ -265,8 +265,10 @@ const enVR = () => renderer.xr.isPresenting || VR_REVISION;
 
 async function cargarEstaciones() {
   const solo = PARAMS.get('solo') === '1', soloUna = solo ? PARAMS.get('estacion') : null;
+  const lista = LAYOUT.filter((l) => !solo || l.id === soloUna);
   for (const l of LAYOUT) {
     if (solo && l.id !== soloUna) continue;
+    const n = lista.indexOf(l);
     const grupo = new THREE.Group();
     grupo.position.set(l.pos[0], 0, l.pos[1]);
     grupo.rotation.y = l.yaw;
@@ -276,7 +278,7 @@ async function cargarEstaciones() {
     est.habilitado = () => grupo.visible;
     est.activa = () => activa === est;
     try {
-      loading(`Construyendo: ${l.id}…`);
+      loading(`Construyendo la estación ${n + 1} de ${lista.length}…`, 0.08 + 0.8 * (n / Math.max(1, lista.length)));
       await ceder();
       const mod = await import(`./estaciones/${l.id}.js`);
       est.def = mod.default;
@@ -505,6 +507,48 @@ function encuadrarGrafico(ins, r) {
   cam.updateProjectionMatrix(); cam.updateMatrixWorld();
 }
 const colorLamina = new THREE.Color(0x0e1724);
+
+// ------------------------------------------------------------------ oclusión ambiental en el escritorio (GTAO)
+// Oscurece con suavidad los rincones, las uniones y la base de los objetos, lo que asienta la escena. Solo en el escritorio: en
+// realidad virtual la imagen se dibuja directo. Con ao=0 no se usa, con ao=1 se fuerza; si no, se apaga sola cuando el equipo no
+// alcanza unos 30 cuadros por segundo. Los módulos se cargan después de la obra, para no retrasar la primera imagen.
+const AO_PARAM = PARAMS0.get('ao');
+const SIN_UI_AO = () => renderer.xr.isPresenting;
+const ao = { listo: false, activo: AO_PARAM !== '0', forzado: AO_PARAM === '1', w: 0, h: 0, compositor: null, gtao: null, lento: 0, previo: 0, desde: 0 };
+async function prepararAO() {
+  if (!ao.activo || ao.listo) return;
+  try {
+    const [{ EffectComposer }, { RenderPass }, { GTAOPass }, { OutputPass }] = await Promise.all([
+      import('three/addons/postprocessing/EffectComposer.js'), import('three/addons/postprocessing/RenderPass.js'),
+      import('three/addons/postprocessing/GTAOPass.js'), import('three/addons/postprocessing/OutputPass.js'),
+    ]);
+    const rt = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 });
+    const comp = new EffectComposer(renderer, rt);
+    comp.addPass(new RenderPass(scene, camera));
+    const g = new GTAOPass(scene, camera, 2, 2);
+    g.blendIntensity = 1;
+    g.updateGtaoMaterial({ radius: 1.3, distanceExponent: 1.1, thickness: 1.8, scale: 1.45, samples: 16, distanceFallOff: 1.0 });
+    g.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 7, radiusExponent: 1, rings: 2, samples: 16 });
+    comp.addPass(g);
+    comp.addPass(new OutputPass());
+    Object.assign(ao, { compositor: comp, gtao: g, listo: true, desde: performance.now() });
+  } catch (err) { console.warn('Oclusión ambiental no disponible', err); ao.activo = false; }
+}
+function dibujarConAO(r, re) {
+  const w = Math.max(2, Math.round(re.width)), h = Math.max(2, Math.round(re.height));
+  if (w !== ao.w || h !== ao.h) { ao.compositor.setSize(w, h); ao.w = w; ao.h = h; }
+  // las sombras se calculan una vez por cuadro (el pase de normales de la oclusión no las repite)
+  const auto = r.shadowMap.autoUpdate;
+  r.shadowMap.autoUpdate = false; r.shadowMap.needsUpdate = auto;
+  ao.compositor.render();
+  r.shadowMap.autoUpdate = auto;
+  // si el equipo no alcanza ~30 cuadros por segundo durante unos segundos, se vuelve a la imagen directa
+  const ahora = performance.now(), dtc = ahora - ao.previo; ao.previo = ahora;
+  if (!ao.forzado && !document.hidden && dtc < 1000 && ahora - ao.desde > 4000) {
+    ao.lento = dtc > 36 ? ao.lento + 1 : Math.max(0, ao.lento - 2);
+    if (ao.lento > 90) { ao.activo = false; console.info('Oclusión ambiental desactivada: el equipo no alcanza 30 cuadros por segundo.'); }
+  }
+}
 app.renderizar = (r, sc, cam) => {
   const H = window.innerHeight, re = rectDe($esc);
   const aj = (q) => { const y = H - q.top - q.height; r.setViewport(q.left, y, q.width, q.height); r.setScissor(q.left, y, q.width, q.height); };
@@ -513,7 +557,7 @@ app.renderizar = (r, sc, cam) => {
     aj(re);
     const asp = re.width / re.height;
     if (Math.abs(cam.aspect - asp) > 1e-3) { cam.aspect = asp; cam.updateProjectionMatrix(); }
-    r.render(sc, cam);
+    if (ao.listo && ao.activo) dibujarConAO(r, re); else r.render(sc, cam);
   }
   for (const ins of insets) {
     const rg = rectDe(ins.div);
@@ -630,7 +674,7 @@ app.onUpdate((dt) => {
 let entorno = null, errorEntorno = null;
 async function cargarEntorno() {
   try {
-    loading('Preparando el entorno…');
+    loading('Preparando el entorno…', 0.9);
     await ceder();
     const { crearEntorno } = await import('./entorno.js');
     entorno = crearEntorno({ app, kit, sueloH, roadMask, LAYOUT, SITE, CERCO, distCerco, SENDEROS, estaciones, enVR, rev: PARAMS.get('rev') });
@@ -655,6 +699,7 @@ if (inicial) {
 construirControles(); actualizarHud(); marcarMenu(); sincronizarCapas(); montarLamina();
 for (const e of estaciones) if (e.cartel) e.cartel.visible = !activa;
 loading(null);
+if (!SIN_UI_AO()) prepararAO();
 $('btn-narracion').onclick = () => narrador.setActivo(!narrador.activo());
 $('btn-repetir').onclick = () => narrador.repetir();
 actualizarBotonesNarracion();
@@ -742,4 +787,4 @@ function solapes(id, { vr = false, umbral = 0.04 } = {}) {
   return { vistos: vis.map((i) => `${i.tipo} «${i.nombre}»`), pares };
 }
 
-window.__g4 = { app, kit, estaciones, irA, grupoDe, sueloH, entorno, distCerco, solapes };
+window.__g4 = { app, kit, estaciones, irA, grupoDe, sueloH, entorno, distCerco, solapes, ao };

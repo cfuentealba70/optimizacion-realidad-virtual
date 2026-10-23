@@ -1,11 +1,13 @@
-// Entorno de la obra de la Guía 4: árboles de cuatro especies con copas de racimos de hojas, matorrales y pasto,
-// cerco de paneles de malla sobre bases de hormigón con portón, contenedores de faena con ventanas y escalera,
-// baños químicos, acopios de materiales, letrero de obra, charcos, huellas de neumáticos y personas que caminan
-// por los senderos. Los objetos comparten un material de atlas: cada vértice lleva la región de la textura que se
-// repite, así cada grupo de objetos se dibuja en una sola llamada.
+// Entorno de la obra de la Guía 4: árboles de cuatro especies con copas de racimos de hojas (lejos, impostores pintados
+// desde el mismo modelo), matorrales y pasto, cerco de paneles de malla sobre bases de hormigón con portón, contenedores
+// de faena con ventanas y escalera sobre una carpeta de grava, tablero eléctrico, baños químicos, acopios de materiales
+// sobre tierra compactada, letrero de obra con zona de seguridad, charcos, huellas de neumáticos, bordes de tierra pisada
+// en senderos y plaza, y personas que caminan por los senderos. Los objetos comparten un material de atlas: cada vértice
+// lleva la región de la textura que se repite, así cada grupo de objetos se dibuja en una sola llamada.
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import { makeSurface, mulberry32 } from '../src/common/textures.js';
+import { tr } from '../src/common/i18n.js';
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -147,8 +149,9 @@ function piezas(malla, base = new THREE.Matrix4()) {
 
 // ------------------------------------------------------------------ material de atlas
 // Cada vértice trae su región y la textura se repite dentro de ella con fract; textureGrad mantiene el nivel
-// de detalle en los bordes de cada repetición. viento: mece hojas y pasto; sinVolteo: las dos caras usan la misma normal.
-function parcheAtlas(mat, { viento = false, sinVolteo = false, clave }) {
+// de detalle en los bordes de cada repetición. viento: mece hojas y pasto; sinVolteo: las dos caras usan la misma normal;
+// mate: sin reflejos del cielo.
+function parcheAtlas(mat, { viento = false, sinVolteo = false, mate = false, clave }) {
   const uTiempo = { value: 0 };
   mat.userData.tiempo = uTiempo;
   mat.onBeforeCompile = (sh) => {
@@ -184,6 +187,8 @@ vec4 atlas(sampler2D t) {
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness;\n#ifdef USE_METALNESSMAP\n  metalnessFactor *= atlas(metalnessMap).b;\n#endif')
       .replace('#include <normal_fragment_maps>', THREE.ShaderChunk.normal_fragment_maps.split('texture2D( normalMap, vNormalMapUv )').join('atlas( normalMap )'));
     if (sinVolteo) fs = fs.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', ''));
+    // mate: los calcos del suelo no reflejan el cielo en ángulo rasante (se verían como franjas claras)
+    if (mate) fs = fs.replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\n  reflectedLight.indirectSpecular *= 0.25;');
     sh.fragmentShader = fs;
   };
   mat.customProgramCacheKey = () => 'atlas-' + clave;
@@ -367,8 +372,25 @@ function atlasObjetos() {
     g.fillStyle = '#ffffff'; textoAjustado(g, 'LIBRE', x0 + 64, y0 + 33, 110, 34);
   }
   {
-    const [x0, y0] = placa(r14, 0, 0, 128, 128, '#14874a', 'rotAuxilio');
-    g.fillStyle = '#ffffff'; g.fillRect(x0 + 50, y0 + 22, 28, 84); g.fillRect(x0 + 22, y0 + 50, 84, 28);
+    const [x0, y0] = placa(r14, 0, 0, 64, 64, '#14874a', 'rotAuxilio');
+    g.fillStyle = '#ffffff'; g.fillRect(x0 + 25, y0 + 11, 14, 42); g.fillRect(x0 + 11, y0 + 25, 42, 14);
+  }
+  {
+    // riesgo eléctrico: triángulo amarillo con borde negro y rayo
+    const [x0, y0] = placa(r14, 64, 0, 64, 64, '#ffffff', 'rotRiesgo');
+    g.fillStyle = '#1a1a1a'; g.beginPath(); g.moveTo(x0 + 32, y0 + 4); g.lineTo(x0 + 61, y0 + 58); g.lineTo(x0 + 3, y0 + 58); g.closePath(); g.fill();
+    g.fillStyle = '#f2c21b'; g.beginPath(); g.moveTo(x0 + 32, y0 + 13); g.lineTo(x0 + 54, y0 + 54); g.lineTo(x0 + 10, y0 + 54); g.closePath(); g.fill();
+    g.fillStyle = '#1a1a1a'; g.beginPath(); g.moveTo(x0 + 35, y0 + 22); g.lineTo(x0 + 26, y0 + 39); g.lineTo(x0 + 33, y0 + 39); g.lineTo(x0 + 28, y0 + 52); g.lineTo(x0 + 40, y0 + 34); g.lineTo(x0 + 33, y0 + 34); g.closePath(); g.fill();
+  }
+  {
+    // zona de seguridad (punto de reunión de la obra): verde con texto blanco y flechas hacia el centro
+    const [x0, y0] = placa(r14, 0, 64, 128, 64, '#1b8a3e', 'rotZona');
+    g.strokeStyle = '#ffffff'; g.lineWidth = 2.5; g.strokeRect(x0 + 4, y0 + 4, 120, 56);
+    // las dos líneas se traducen juntas: «SEGURIDAD» sola ya se traduce como el final de «LENTES DE SEGURIDAD»
+    const [l1, l2] = tr('ZONA DE\nSEGURIDAD').split('\n');
+    g.fillStyle = '#ffffff'; textoAjustado(g, l1, x0 + 82, y0 + 22, 72, 17); textoAjustado(g, l2, x0 + 82, y0 + 42, 74, 17);
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, cx = x0 + 25, cy = y0 + 32; g.save(); g.translate(cx + Math.cos(a) * 13, cy + Math.sin(a) * 13); g.rotate(a + Math.PI); g.beginPath(); g.moveTo(6, 0); g.lineTo(-3, -5); g.lineTo(-3, 5); g.closePath(); g.fill(); g.restore(); }
+    g.beginPath(); g.arc(x0 + 25, y0 + 32, 4, 0, TAU); g.fill();
   }
   {
     const [x0, y0] = placa(r14, 128, 0, 128, 128, '#c8261e', 'rotExtintor');
@@ -559,44 +581,11 @@ function atlasVegetacion() {
   }
   // los píxeles transparentes toman el color medio de su región (sin bordes oscuros al filtrar)
   const zonas = [[256, 0, 384, 384], [640, 0, 384, 384], [256, 384, 384, 384], [640, 384, 384, 384], [0, 512, 256, 256], [0, 768, 256, 256], [256, 768, 256, 256], [512, 768, 256, 256], [768, 768, 256, 256]];
-  for (const [x0, y0, w, h] of zonas) {
-    let sr = 0, sg = 0, sb = 0, sn = 0;
-    for (let j = y0; j < y0 + h; j++) for (let i = x0; i < x0 + w; i++) { const k = (j * N + i) * 4; if (d[k + 3] > 200) { sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; sn++; } }
-    sn = Math.max(1, sn);
-    for (let j = y0; j < y0 + h; j++) for (let i = x0; i < x0 + w; i++) { const k = (j * N + i) * 4; if (d[k + 3] < 10) { d[k] = sr / sn; d[k + 1] = sg / sn; d[k + 2] = sb / sn; d[k + 3] = 0; } }
-  }
+  rellenarTransparentes(d, N, zonas);
   // textura con filas invertidas (v crece hacia arriba) y mipmaps propios que conservan la cobertura de las hojas
-  const niveles = [];
-  let ancho = N, datos = new Uint8Array(N * N * 4);
+  const datos = new Uint8Array(N * N * 4);
   for (let j = 0; j < N; j++) datos.set(d.subarray((N - 1 - j) * N * 4, (N - j) * N * 4), j * N * 4);
-  const zonasV = zonas.map(([x, y, w, h]) => [x, N - y - h, w, h]);
-  const cobertura0 = zonasV.map(([x, y, w, h]) => { let c = 0; for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (datos[(j * N + i) * 4 + 3] > 107) c++; return c / (w * h); });
-  niveles.push({ data: datos, width: N, height: N });
-  while (ancho > 1) {
-    const a2 = ancho >> 1, nuevo = new Uint8Array(a2 * a2 * 4), prev = datos;
-    for (let j = 0; j < a2; j++) for (let i = 0; i < a2; i++) {
-      let r = 0, gg = 0, b = 0, al = 0, rs = 0, gs = 0, bs = 0;
-      for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-        const k = ((j * 2 + oy) * ancho + i * 2 + ox) * 4, w = prev[k + 3] + 1;
-        r += prev[k] * w; gg += prev[k + 1] * w; b += prev[k + 2] * w; al += prev[k + 3]; rs += w; gs++; bs++;
-      }
-      const k = (j * a2 + i) * 4;
-      nuevo[k] = r / rs; nuevo[k + 1] = gg / rs; nuevo[k + 2] = b / rs; nuevo[k + 3] = al / 4;
-    }
-    // ajuste de alfa por región para conservar la fracción de píxeles visibles
-    const esc = N / a2;
-    zonasV.forEach(([x, y, w, h], z) => {
-      const x1 = Math.floor(x / esc), y1 = Math.floor(y / esc), w1 = Math.max(1, Math.floor(w / esc)), h1 = Math.max(1, Math.floor(h / esc));
-      const al = [];
-      for (let j = y1; j < y1 + h1; j++) for (let i = x1; i < x1 + w1; i++) al.push(nuevo[(j * a2 + i) * 4 + 3]);
-      al.sort((p, q) => q - p);
-      const objetivo = al[Math.min(al.length - 1, Math.floor(cobertura0[z] * al.length))];
-      const f = objetivo > 0 ? clamp(108 / objetivo, 1, 4) : 1;
-      if (f > 1.01) for (let j = y1; j < y1 + h1; j++) for (let i = x1; i < x1 + w1; i++) { const k = (j * a2 + i) * 4 + 3; nuevo[k] = Math.min(255, nuevo[k] * f); }
-    });
-    niveles.push({ data: nuevo, width: a2, height: a2 });
-    datos = nuevo; ancho = a2;
-  }
+  const niveles = mipmapsCobertura(datos, N, N, zonas.map(([x, y, w, h]) => [x, N - y - h, w, h]));
   const tex = new THREE.DataTexture(niveles[0].data, N, N, THREE.RGBAFormat);
   tex.mipmaps = niveles; tex.generateMipmaps = false; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter;
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.needsUpdate = true;
@@ -611,22 +600,24 @@ function atlasVegetacion() {
   }
   const texN = new THREE.DataTexture(nd, N, N, THREE.RGBAFormat);
   texN.generateMipmaps = true; texN.minFilter = THREE.LinearMipmapLinearFilter; texN.wrapS = texN.wrapT = THREE.RepeatWrapping; texN.needsUpdate = true;
-  return { R, tex, texN };
+  return { R, tex, texN, lienzo: cv };
 }
 
-// ------------------------------------------------------------------ calcos sobre el suelo (huellas, camino, manchas)
+// ------------------------------------------------------------------ calcos sobre el suelo (huellas, camino, manchas, grava y tierra)
 function atlasCalcos() {
-  const N = 512, d = new Uint8Array(N * N * 4);
+  const W = 1024, N = 512, d = new Uint8Array(W * N * 4), alt = new Float32Array(W * N);
   const nh = fbmP(3, 12, 3, 201), nc = fbmP(4, 16, 4, 202), np = fbmP(30, 120, 1, 203), nm = fbmP(6, 6, 4, 204), nm2 = fbmP(9, 9, 3, 205);
-  const pon = (i, j, r, g, b, a) => { const k = (j * N + i) * 4; d[k] = clamp(r, 0, 1) * 255; d[k + 1] = clamp(g, 0, 1) * 255; d[k + 2] = clamp(b, 0, 1) * 255; d[k + 3] = clamp(a, 0, 1) * 255; };
+  const pon = (i, j, r, g, b, a) => { const k = (j * W + i) * 4; d[k] = clamp(r, 0, 1) * 255; d[k + 1] = clamp(g, 0, 1) * 255; d[k + 2] = clamp(b, 0, 1) * 255; d[k + 3] = clamp(a, 0, 1) * 255; };
   for (let j = 0; j < N; j++) for (let i = 0; i < 128; i++) {
     // huella de neumático: tacos en V, bordes suaves (u a lo ancho, v a lo largo, 0,6 m por repetición)
     const u = i / 128, v = j / N, ph = (v * 8 + Math.abs(u - 0.5) * 1.2) % 1, taco = ph < 0.55 && u > 0.1 && u < 0.9 ? 1 : 0;
     const borde = sstep(0, 0.12, u) * sstep(1, 0.88, u), m = nh(u, v);
     pon(i, j, 0.25 - taco * 0.06, 0.205 - taco * 0.05, 0.16 - taco * 0.04, borde * (0.42 + taco * 0.28) * (0.75 + 0.35 * m));
+    alt[j * W + i] = borde * (0.5 - taco * 0.5);
     // camino de tierra
     const m2 = nc(u, v), pe = sstep(0.8, 0.9, np(u, v));
     pon(128 + i, j, lerp(0.44 * (0.8 + 0.4 * m2), 0.66, pe), lerp(0.37 * (0.8 + 0.4 * m2), 0.62, pe), lerp(0.28 * (0.8 + 0.4 * m2), 0.55, pe), sstep(0, 0.2, u) * sstep(1, 0.8, u) * (0.75 + 0.25 * m2));
+    alt[j * W + 128 + i] = m2 * 0.6 + pe * 0.5;
   }
   for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
     const u = i / 256 - 0.5, v = j / 256 - 0.5, r = Math.hypot(u, v) * 2, a = Math.atan2(v, u);
@@ -635,11 +626,52 @@ function atlasCalcos() {
     const m3 = nm2(u + 0.5, v + 0.5), sal = sstep(0.55, 0.7, m3) * clamp(1 - r * r, 0, 1);
     pon(256 + i, 256 + j, 0.95, 0.95, 0.95, sal * 0.9);
   }
-  const tex = new THREE.DataTexture(d, N, N, THREE.RGBAFormat);
+  // carpeta de grava compactada (512..768) y tierra apisonada (768..1024): repetibles, con piedras en relieve
+  const piedras = (x0, celda, prob, rMin, rMax, tono, semilla) => {
+    const rnd = mulberry32(semilla), n = 256 / celda;
+    for (let cj = 0; cj < n; cj++) for (let ci = 0; ci < n; ci++) for (let s = 0; s < 2; s++) {
+      if (rnd() > prob) continue;
+      const cx = (ci + rnd()) * celda, cy = (cj + rnd()) * celda, ra = rMin + rnd() * (rMax - rMin), rb = ra * (0.6 + rnd() * 0.4), an = rnd() * Math.PI;
+      const gris = tono[0] + rnd() * tono[1], ti = (rnd() - 0.5) * 0.1, ca = Math.cos(an), sa = Math.sin(an), R = Math.ceil(ra) + 1;
+      for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
+        const lx = x * ca + y * sa, ly = -x * sa + y * ca, q = (lx * lx) / (ra * ra) + (ly * ly) / (rb * rb);
+        if (q >= 1) continue;
+        const i = (((Math.floor(cx) + x) % 256) + 256) % 256, j = (((Math.floor(cy) + y) % 256) + 256) % 256, k = j * W + x0 + i;
+        const h = 0.55 + Math.sqrt(1 - q) * 0.45 * (ra / rMax);
+        if (h <= alt[k]) continue;
+        alt[k] = h;
+        const luz = 0.86 + 0.24 * (1 - q) - 0.12 * (lx / ra);
+        pon(x0 + i, j, gris * luz * (1 + ti), gris * luz, gris * luz * (1 - ti * 0.8), 1);
+      }
+    }
+  };
+  {
+    const a = fbmP(4, 4, 4, 211), b = fbmP(32, 32, 2, 212), e = fbmP(3, 3, 3, 213);
+    for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
+      const u = i / 256, v = j / 256, m = a(u, v), f = b(u, v), hum = sstep(0.62, 0.8, e(u, v)) * 0.16, k = (0.84 + (m - 0.5) * 0.3 + (f - 0.5) * 0.12) * (1 - hum);
+      pon(512 + i, j, 0.57 * k, 0.54 * k, 0.49 * k, 1); alt[j * W + 512 + i] = 0.25 * f;
+      const m2 = a(v, u), f2 = b(v, u), hum2 = sstep(0.58, 0.78, e(v, u)) * 0.22, k2 = (0.82 + (m2 - 0.5) * 0.34 + (f2 - 0.5) * 0.14) * (1 - hum2);
+      pon(768 + i, j, 0.47 * k2, 0.385 * k2, 0.29 * k2, 1); alt[j * W + 768 + i] = 0.3 * f2 + 0.15 * m2;
+    }
+    piedras(512, 9, 0.95, 1.6, 4.4, [0.38, 0.36], 221);
+    piedras(512, 6, 0.6, 0.9, 2.0, [0.3, 0.4], 222);
+    piedras(768, 22, 0.55, 1.2, 3.2, [0.3, 0.26], 223);
+  }
+  // relieve: normales desde las alturas (cada región se repite sobre sí misma)
+  const nd = new Uint8Array(W * N * 4), regiones = [[0, 128, 0, 512], [128, 128, 0, 512], [512, 256, 0, 256], [768, 256, 0, 256]];
+  for (let k = 0; k < W * N; k++) { nd[k * 4] = 128; nd[k * 4 + 1] = 128; nd[k * 4 + 2] = 255; nd[k * 4 + 3] = 255; }
+  for (const [x0, w, y0, h] of regiones) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const A = (ii, jj) => alt[(y0 + ((jj + h) % h)) * W + x0 + ((ii + w) % w)];
+    const nx = -(A(i + 1, j) - A(i - 1, j)) * 2.2, ny = -(A(i, j + 1) - A(i, j - 1)) * 2.2, l = Math.hypot(nx, ny, 1), k = ((y0 + j) * W + x0 + i) * 4;
+    nd[k] = (nx / l * 0.5 + 0.5) * 255; nd[k + 1] = (ny / l * 0.5 + 0.5) * 255; nd[k + 2] = (1 / l * 0.5 + 0.5) * 255;
+  }
+  const tex = new THREE.DataTexture(d, W, N, THREE.RGBAFormat);
   tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.needsUpdate = true;
-  const reg = (x, y, w, h) => [x / N, y / N, w / N, h / N];
-  return { tex, R: { huella: reg(0, 0, 128, 512), camino: reg(128, 0, 128, 512), mancha: reg(258, 2, 252, 252), salpicado: reg(258, 258, 252, 252) } };
+  const normal = new THREE.DataTexture(nd, W, N, THREE.RGBAFormat);
+  normal.generateMipmaps = true; normal.minFilter = THREE.LinearMipmapLinearFilter; normal.anisotropy = 4; normal.wrapS = normal.wrapT = THREE.RepeatWrapping; normal.needsUpdate = true;
+  const reg = (x, y, w, h) => [x / W, y / N, w / W, h / N];
+  return { tex, normal, R: { huella: reg(0, 0, 128, 512), camino: reg(128, 0, 128, 512), mancha: reg(258, 2, 252, 252), salpicado: reg(258, 258, 252, 252), grava: reg(512, 0, 256, 256), tierra: reg(768, 0, 256, 256) } };
 }
 
 // malla del cerco: alambre electrosoldado (izquierda) y malla raschel (derecha); 0,3 m por repetición
@@ -662,7 +694,7 @@ function texturaCerco() {
   return { tex, R: { alambre: [0, 0, 0.5, 1], raschel: [0.5, 0, 0.5, 1] } };
 }
 
-// ------------------------------------------------------------------ árboles (geometría por especie, cerca y lejos)
+// ------------------------------------------------------------------ árboles (modelo cercano por especie)
 // Tarjeta de hojas: normal mezclada con la dirección desde el centro de la copa (luz volumétrica) y oscurecida
 // hacia adentro (oclusión). Las dos caras usan la misma normal.
 function tarjeta(m, c, tam, reg, rnd, cc, radio, { vertical = 0, flex = 0.6, alto = 1, tinte = [1, 1, 1], giro = true }) {
@@ -682,92 +714,90 @@ function tarjeta(m, c, tam, reg, rnd, cc, radio, { vertical = 0, flex = 0.6, alt
     m.v(p, nn, 0.004 + u * 0.992, 0.004 + v * 0.992, [ao * tinte[0], ao * tinte[1], ao * tinte[2]], reg, flex);
   }
   m.I.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
+  // registro para pintar las vistas lejanas del mismo árbol
+  if (m.racimos) {
+    const prof = clamp(c.distanceTo(cc) / radio, 0, 1.2);
+    m.racimos.push({ c: c.clone(), tam, alto, nrm, reg, rol: giro ? rol : 0, luz: (0.5 + 0.5 * prof) * (0.85 + 0.15 * clamp(out.y + 0.5, 0, 1)) * (tinte[0] + tinte[1] + tinte[2]) / 3 });
+  }
 }
 function tronco(m, a, b, r0, r1, seg, reg, color, tamV = 3.5) {
   m.geo(gTubo(a, b, r0, r1, seg, { tam: 0.8, tamV }), reg, color);
+  if (m.ramas) m.ramas.push({ a: a.clone(), b: b.clone(), r0, r1, reg, color });
 }
 
-function geometriaArbol(especie, R, lejos) {
+function geometriaArbol(especie, R) {
   const m = new Malla(), rnd = mulberry32({ roble: 5, alamo: 7, pino: 11, arbusto: 13 }[especie]);
+  m.racimos = []; m.ramas = [];
   const cort = R.corteza, cortP = R.cortezaPino;
+  const fin = (sombra) => ({ geo: m.geometria(), sombra, racimos: m.racimos, ramas: m.ramas });
   if (especie === 'roble') {
     const H = 15, ht = 4.2, r0 = 0.4, lean = V(0.25, 0, -0.15);
     const mid = V(lean.x * 0.4 + 0.06, ht * 0.5, lean.z * 0.4 - 0.05), top = V(lean.x, ht, lean.z);
-    if (!lejos) {
-      tronco(m, V(0, -0.3, 0), mid, r0, r0 * 0.84, 9, cort, 0x9a8c7c);
-      tronco(m, mid, top, r0 * 0.84, r0 * 0.68, 9, cort, 0x9a8c7c);
-      for (let k = 0; k < 5; k++) { const a = k * 1.3 + 0.4; tronco(m, V(Math.cos(a) * 0.12, 0.7, Math.sin(a) * 0.12), V(Math.cos(a) * 0.85, -0.12, Math.sin(a) * 0.85), 0.2, 0.05, 5, cort, 0x8a7c6c, 1.5); }
-    } else tronco(m, V(0, -0.3, 0), top, r0, r0 * 0.68, 5, cort, 0x9a8c7c);
+    tronco(m, V(0, -0.3, 0), mid, r0, r0 * 0.84, 9, cort, 0x9a8c7c);
+    tronco(m, mid, top, r0 * 0.84, r0 * 0.68, 9, cort, 0x9a8c7c);
+    for (let k = 0; k < 5; k++) { const a = k * 1.3 + 0.4; tronco(m, V(Math.cos(a) * 0.12, 0.7, Math.sin(a) * 0.12), V(Math.cos(a) * 0.85, -0.12, Math.sin(a) * 0.85), 0.2, 0.05, 5, cort, 0x8a7c6c, 1.5); }
     const copas = [];
     const nr = 5;
     for (let i = 0; i < nr; i++) {
       const az = (i / nr) * TAU + rnd() * 0.7, el = 0.62 + rnd() * 0.4, len = 3.8 + rnd() * 1.8;
       const base = top.clone().add(V(0, -rnd() * 0.7, 0));
       const dir = V(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
-      const fin = base.clone().addScaledVector(dir, len);
-      if (!lejos) tronco(m, base, fin, r0 * 0.48, 0.07, 7, cort, 0x9a8c7c);
-      copas.push({ c: fin.clone().add(V(0, 0.7, 0)), r: 2.5 + rnd() * 0.8, sub: false });
-      const p = base.clone().lerp(fin, 0.5 + rnd() * 0.15);
+      const f1 = base.clone().addScaledVector(dir, len);
+      tronco(m, base, f1, r0 * 0.48, 0.07, 7, cort, 0x9a8c7c);
+      copas.push({ c: f1.clone().add(V(0, 0.7, 0)), r: 2.5 + rnd() * 0.8 });
+      const p = base.clone().lerp(f1, 0.5 + rnd() * 0.15);
       const d2 = dir.clone().applyAxisAngle(EJE_Y, (rnd() < 0.5 ? -1 : 1) * (0.7 + rnd() * 0.4)); d2.y += 0.45; d2.normalize();
       const f2 = p.clone().addScaledVector(d2, 2 + rnd() * 1.2);
-      if (!lejos) tronco(m, p, f2, 0.09, 0.03, 5, cort, 0x9a8c7c);
-      copas.push({ c: f2.clone().add(V(0, 0.5, 0)), r: 1.8 + rnd() * 0.6, sub: true });
+      tronco(m, p, f2, 0.09, 0.03, 5, cort, 0x9a8c7c);
+      copas.push({ c: f2.clone().add(V(0, 0.5, 0)), r: 1.8 + rnd() * 0.6 });
     }
-    copas.push({ c: V(lean.x, H - 2.7, lean.z), r: 3.0 + rnd() * 0.5, sub: false });
+    copas.push({ c: V(lean.x, H - 2.7, lean.z), r: 3.0 + rnd() * 0.5 });
     const cc = copas.reduce((s, k) => s.add(k.c), V()).multiplyScalar(1 / copas.length), radio = 5.5;
+    // racimos repartidos en cada masa de la copa, más densos hacia afuera, donde llega la luz
     for (const k of copas) {
-      if (!lejos) { const nh = Math.round(k.r * 7.5); for (let j = 0; j < nh; j++) { const dir = V(rnd() - 0.5, rnd() - 0.35, rnd() - 0.5).normalize(); tarjeta(m, k.c.clone().addScaledVector(dir, k.r * (0.35 + 0.65 * Math.sqrt(rnd()))), 1.9 + rnd() * 0.8, R.roble, rnd, cc, radio, { flex: 0.5 + 0.5 * k.c.y / H }); } }
-      else if (!k.sub) for (let j = 0; j < 2; j++) tarjeta(m, k.c.clone().add(V(0, 0.2, 0)), k.r * 2.5, R.roble, rnd, cc, radio, { vertical: 0.85, flex: 0.6, giro: j === 1 });
-      else rnd();
+      const nh = Math.round(k.r * 8.5);
+      for (let j = 0; j < nh; j++) { const dir = V(rnd() - 0.5, rnd() - 0.35, rnd() - 0.5).normalize(); tarjeta(m, k.c.clone().addScaledVector(dir, k.r * (0.35 + 0.65 * Math.sqrt(rnd()))), 1.9 + rnd() * 0.8, R.roble, rnd, cc, radio, { flex: 0.5 + 0.5 * k.c.y / H }); }
     }
-    return { geo: m.geometria(), sombra: 7.5 };
+    return fin(7.5);
   }
   if (especie === 'alamo') {
-    const H = 21, y0 = 2.4, Rmax = 2.1;
-    const rc = (t) => Rmax * Math.pow(Math.sin(Math.PI * (0.1 + 0.9 * t)), 0.75) * (1 - 0.3 * t) + 0.25;
-    tronco(m, V(0, -0.3, 0), V(0.1, H * 0.86, -0.05), 0.34, 0.06, lejos ? 5 : 8, cort, 0xc4bcb0, 4);
-    if (!lejos) for (let k = 0; k < 14; k++) {
-      const t = 0.05 + (k / 14) * 0.8, y = y0 + t * (H - y0) * 0.9, az = rnd() * TAU, l = rc(t) * 1.05;
-      const a = V(0.1 * y / H, y, 0), b = a.clone().add(V(Math.cos(az) * l * 0.55, l * 0.9, Math.sin(az) * l * 0.55));
-      tronco(m, a, b, 0.06, 0.015, 4, cort, 0xc4bcb0, 2);
+    // álamo de Lombardía: copa columnar y densa desde los 2 m, con ramas que suben pegadas al tronco
+    const H = 21, y0 = 1.8, Rmax = 2.0;
+    const rc = (t) => Rmax * Math.pow(Math.sin(Math.PI * (0.08 + 0.92 * t)), 0.7) * (1 - 0.35 * t) + 0.3;
+    const eje = (y) => V(0.1 * y / H, y, -0.05 * y / H);
+    tronco(m, V(0, -0.3, 0), eje(H * 0.9), 0.36, 0.05, 8, cort, 0xc4bcb0, 4);
+    for (let k = 0; k < 22; k++) {
+      const t = 0.03 + (k / 22) * 0.85, y = y0 + t * (H - y0) * 0.92, az = k * 2.4 + rnd() * 0.8, l = rc(t) * (0.9 + rnd() * 0.3);
+      const a = eje(y), b = a.clone().add(V(Math.cos(az) * l * 0.5, l * 1.25, Math.sin(az) * l * 0.5));
+      tronco(m, a, b, 0.07 * (1 - t) + 0.025, 0.012, 4, cort, 0xc4bcb0, 2);
     }
-    if (!lejos) {
-      for (let k = 0; k < 96; k++) {
-        const t = Math.pow(rnd(), 0.9), y = y0 + 0.6 + t * (H - y0 - 0.8), az = rnd() * TAU, rr = rc(t) * (0.35 + 0.65 * Math.sqrt(rnd()));
-        tarjeta(m, V(Math.cos(az) * rr + 0.1 * y / H, y, Math.sin(az) * rr), 1.35 + rnd() * 0.5, R.alamo, rnd, V(0.1 * y / H, y, 0), Rmax, { vertical: 0.5, flex: 0.3 + 0.9 * y / H, alto: 1.2 });
-      }
-    } else {
-      for (let k = 0; k < 5; k++) {
-        const t = (k + 0.5) / 5, y = y0 + 0.6 + t * (H - y0 - 0.8), w = rc(t) * 2.5;
-        for (let j = 0; j < 2; j++) tarjeta(m, V(0.1 * y / H, y, 0), w, R.alamo, rnd, V(0, y - 3, 0), Rmax, { vertical: 1, flex: 0.5, alto: ((H - y0) / 5) * 1.6 / w, giro: false });
-      }
+    for (let k = 0; k < 170; k++) {
+      const t = Math.pow(rnd(), 0.85), y = y0 + 0.5 + t * (H - y0 - 0.4), az = rnd() * TAU, rr = rc(t) * (0.3 + 0.7 * Math.sqrt(rnd())), e = eje(y);
+      tarjeta(m, V(e.x + Math.cos(az) * rr, y, e.z + Math.sin(az) * rr), 1.45 + rnd() * 0.6, R.alamo, rnd, e, Rmax, { vertical: 0.45, flex: 0.3 + 0.9 * y / H, alto: 1.25 });
     }
-    return { geo: m.geometria(), sombra: 3.6 };
+    return fin(3.6);
   }
   if (especie === 'pino') {
-    const H = 25, yc = H * 0.46;
-    tronco(m, V(0, -0.3, 0), V(-0.15, H, 0.1), 0.38, 0.05, lejos ? 5 : 8, cortP, 0xffffff, 3);
+    // pino radiata de plantación: fuste limpio con muñones de poda y copa densa de verticilos
+    const H = 25, yc = H * 0.44;
+    const eje = (y) => V(-0.15 * y / H, y, 0.1 * y / H);
+    tronco(m, V(0, -0.3, 0), V(-0.15, H, 0.1), 0.38, 0.05, 8, cortP, 0x8f9a9c, 3);
     const cc = V(-0.08, (yc + H) / 2, 0.05), radio = 3.5;
-    const Lr = (t) => (0.7 + 3.0 * Math.pow(1 - t, 0.85));
-    if (!lejos) {
-      for (let k = 0; k < 5; k++) { const y = 2.5 + k * 1.8, az = rnd() * TAU; tronco(m, V(0, y, 0), V(Math.cos(az) * 0.4, y - 0.1, Math.sin(az) * 0.4), 0.035, 0.01, 3, cortP, 0x9a8a80, 1); }
-      for (let y = yc; y < H - 0.8; y += 1.7) {
-        const t = (y - yc) / (H - yc), nb = 3 + (rnd() < 0.5 ? 1 : 0), fase = rnd() * TAU;
-        for (let b = 0; b < nb; b++) {
-          const az = fase + (b / nb) * TAU + (rnd() - 0.5) * 0.6, L = Lr(t) * (0.8 + 0.4 * rnd()), el = -0.12 + 0.4 * t + rnd() * 0.12;
-          const a = V(-0.15 * y / H, y, 0.1 * y / H), dir = V(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)), e = a.clone().addScaledVector(dir, L);
-          tronco(m, a, e, 0.07 * (1 - t) + 0.025, 0.012, 4, cortP, 0xa09088, 1.5);
-          for (const fr of [0.5, 0.8, 1.02]) tarjeta(m, a.clone().addScaledVector(dir, L * fr).add(V(0, 0.18, 0)), 1.1 + 0.7 * (1 - t) + rnd() * 0.3, R.pino, rnd, cc, radio, { flex: 0.25 + 0.6 * y / H, vertical: 0.2 });
-        }
-      }
-      for (let k = 0; k < 4; k++) tarjeta(m, V(-0.15 + (rnd() - 0.5) * 0.6, H - 0.6 + rnd() * 0.6, 0.1 + (rnd() - 0.5) * 0.6), 1.3, R.pino, rnd, cc, radio, { flex: 0.9 });
-    } else {
-      for (let k = 0; k < 5; k++) {
-        const t = (k + 0.3) / 5, y = yc + t * (H - yc), w = Lr(t) * 2.2;
-        for (let j = 0; j < 2; j++) tarjeta(m, V(-0.15 * y / H, y, 0.1 * y / H), w, R.pino, rnd, V(0, y - 2, 0), radio, { vertical: 0.9, flex: 0.5, alto: 2.6 / w, giro: false });
+    const Lr = (t) => 0.6 + 3.1 * Math.pow(1 - t, 0.8);
+    for (let k = 0; k < 6; k++) { const y = 2.2 + k * 1.5, az = rnd() * TAU; tronco(m, eje(y), eje(y).add(V(Math.cos(az) * 0.35, -0.08, Math.sin(az) * 0.35)), 0.035, 0.012, 3, cortP, 0x6f6a66, 1); }
+    for (let y = yc; y < H - 0.6; y += 1.4) {
+      const t = (y - yc) / (H - yc), nb = 4 + (rnd() < 0.4 ? 1 : 0), fase = rnd() * TAU;
+      for (let b = 0; b < nb; b++) {
+        const az = fase + (b / nb) * TAU + (rnd() - 0.5) * 0.5, L = Lr(t) * (0.8 + 0.4 * rnd()), el = -0.15 + 0.45 * t + rnd() * 0.12;
+        const a = eje(y), dir = V(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)), e = a.clone().addScaledVector(dir, L);
+        tronco(m, a, e, 0.07 * (1 - t) + 0.025, 0.012, 4, cortP, 0x7a7470, 1.5);
+        for (const fr of [0.45, 0.75, 1.02]) tarjeta(m, a.clone().addScaledVector(dir, L * fr).add(V(0, 0.15, 0)), 1.3 + 0.8 * (1 - t) + rnd() * 0.3, R.pino, rnd, cc, radio, { flex: 0.25 + 0.6 * y / H, vertical: 0.25 });
       }
     }
-    return { geo: m.geometria(), sombra: 4.2 };
+    // núcleo de la copa y guía terminal
+    for (let y = yc + 0.7; y < H; y += 1.1) tarjeta(m, eje(y).add(V((rnd() - 0.5) * 0.5, 0, (rnd() - 0.5) * 0.5)), 1.3 + 0.6 * (1 - (y - yc) / (H - yc)), R.pino, rnd, cc, radio, { flex: 0.5, vertical: 0.6 });
+    for (let k = 0; k < 4; k++) tarjeta(m, V(-0.15 + (rnd() - 0.5) * 0.6, H - 0.6 + rnd() * 0.6, 0.1 + (rnd() - 0.5) * 0.6), 1.3, R.pino, rnd, cc, radio, { flex: 0.9 });
+    return fin(4.2);
   }
   // arbusto (zarzamora y matorral): montículo de tarjetas
   const w = 1.6, h = 1.3, cc = V(0, h * 0.25, 0);
@@ -775,7 +805,210 @@ function geometriaArbol(especie, R, lejos) {
     const a = rnd() * TAU, rr = Math.sqrt(rnd());
     tarjeta(m, V(Math.cos(a) * rr * w, h * (0.2 + 0.65 * rnd()) * (1 - rr * 0.4), Math.sin(a) * rr * w), 1.0 + rnd() * 0.5, R.arbusto, rnd, cc, w, { flex: 0.25 });
   }
-  return { geo: m.geometria(), sombra: 1.9 };
+  return fin(1.9);
+}
+
+// ------------------------------------------------------------------ mipmaps que conservan la cobertura de las hojas
+// Promedia el color ponderado por la opacidad y, en cada zona, sube el alfa para que la fracción de píxeles visibles
+// sea la del nivel base: así el follaje no se ralea con la distancia. datos: filas de abajo hacia arriba.
+function mipmapsCobertura(datos, W, H, zonas) {
+  const niveles = [{ data: datos, width: W, height: H }];
+  const cobertura0 = zonas.map(([x, y, w, h]) => { let c = 0; for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (datos[(j * W + i) * 4 + 3] > 107) c++; return c / (w * h); });
+  let w0 = W, h0 = H, prev = datos;
+  while (w0 > 1 || h0 > 1) {
+    const w1 = Math.max(1, w0 >> 1), h1 = Math.max(1, h0 >> 1), nuevo = new Uint8Array(w1 * h1 * 4);
+    for (let j = 0; j < h1; j++) for (let i = 0; i < w1; i++) {
+      let r = 0, g = 0, b = 0, al = 0, ws = 0;
+      for (let oy = 0; oy < 2; oy++) for (let ox = 0; ox < 2; ox++) {
+        const k = (Math.min(h0 - 1, j * 2 + oy) * w0 + Math.min(w0 - 1, i * 2 + ox)) * 4, w = prev[k + 3] + 1;
+        r += prev[k] * w; g += prev[k + 1] * w; b += prev[k + 2] * w; al += prev[k + 3]; ws += w;
+      }
+      const k = (j * w1 + i) * 4;
+      nuevo[k] = r / ws; nuevo[k + 1] = g / ws; nuevo[k + 2] = b / ws; nuevo[k + 3] = al / 4;
+    }
+    const ex = W / w1, ey = H / h1;
+    zonas.forEach(([x, y, w, h], z) => {
+      const x1 = Math.floor(x / ex), y1 = Math.floor(y / ey), wz = Math.max(1, Math.floor(w / ex)), hz = Math.max(1, Math.floor(h / ey));
+      const al = [];
+      for (let j = y1; j < y1 + hz; j++) for (let i = x1; i < x1 + wz; i++) al.push(nuevo[(j * w1 + i) * 4 + 3]);
+      al.sort((p, q) => q - p);
+      const objetivo = al[Math.min(al.length - 1, Math.floor(cobertura0[z] * al.length))];
+      const f = objetivo > 0 ? clamp(108 / objetivo, 1, 4) : 1;
+      if (f > 1.01) for (let j = y1; j < y1 + hz; j++) for (let i = x1; i < x1 + wz; i++) { const k = (j * w1 + i) * 4 + 3; nuevo[k] = Math.min(255, nuevo[k] * f); }
+    });
+    niveles.push({ data: nuevo, width: w1, height: h1 });
+    prev = nuevo; w0 = w1; h0 = h1;
+  }
+  return niveles;
+}
+// los píxeles transparentes toman el color medio de su zona (sin bordes oscuros al filtrar); d: datos RGBA de un lienzo
+function rellenarTransparentes(d, W, zonas) {
+  for (const [x0, y0, w, h] of zonas) {
+    let sr = 0, sg = 0, sb = 0, sn = 0;
+    for (let j = y0; j < y0 + h; j++) for (let i = x0; i < x0 + w; i++) { const k = (j * W + i) * 4; if (d[k + 3] > 200) { sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; sn++; } }
+    sn = Math.max(1, sn);
+    for (let j = y0; j < y0 + h; j++) for (let i = x0; i < x0 + w; i++) { const k = (j * W + i) * 4; if (d[k + 3] < 10) { d[k] = sr / sn; d[k + 1] = sg / sn; d[k + 2] = sb / sn; d[k + 3] = 0; } }
+  }
+}
+
+// ------------------------------------------------------------------ árboles lejanos (impostores de cuatro vistas)
+// Cada especie se pinta desde cuatro direcciones a partir de su propio modelo cercano: ramas y tronco como trazos y cada
+// racimo de hojas como un sprite del atlas, de atrás hacia adelante y con la oclusión del modelo. Lejos, cada árbol es un
+// solo cuadrilátero que gira hacia la cámara y muestra la vista pintada más cercana a la dirección desde la que se mira.
+const VISTAS = 4;
+const CELDAS_LEJOS = { pino: [0, 0, 192, 512], alamo: [768, 0, 160, 512], roble: [0, 512, 384, 384] };   // x, y (desde arriba), ancho y alto de una vista
+function atlasLejanos(VEG, modelos) {
+  const W = 2048, H = 1024, cv = lienzo(W, H), g = cv.getContext('2d');
+  g.clearRect(0, 0, W, H); g.imageSmoothingQuality = 'high';
+  const fuentes = { roble: [256, 0], alamo: [640, 0], pino: [256, 384], arbusto: [640, 384] };
+  // sprites de racimos en varios niveles de luz (el factor se aplica en lineal, como el color de vértice del modelo cercano)
+  const NIV = 9, sprites = {};
+  for (const [k, [sx, sy]] of Object.entries(fuentes)) {
+    sprites[k] = [];
+    for (let l = 0; l < NIV; l++) {
+      const c = lienzo(128, 128), gc = c.getContext('2d'), f = Math.pow(0.42 + (l / (NIV - 1)) * 0.78, 1 / 2.2);
+      gc.imageSmoothingQuality = 'high';
+      gc.drawImage(VEG.lienzo, sx, sy, 384, 384, 0, 0, 128, 128);
+      gc.globalCompositeOperation = 'source-atop';
+      gc.fillStyle = f < 1 ? `rgba(0,0,0,${1 - f})` : `rgba(255,255,255,${(f - 1) * 0.45})`;
+      gc.fillRect(0, 0, 128, 128);
+      sprites[k].push(c);
+    }
+  }
+  const especieDe = (reg) => Object.keys(fuentes).find((k) => VEG.R[k] === reg) || 'roble';
+  // color medio de la corteza (textura por tinte, en lineal) para los trazos de ramas
+  const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const colorRama = (r, sombra) => {
+    const base = r.reg === VEG.R.cortezaPino ? [0.5, 0.31, 0.22] : [0.33, 0.29, 0.25], t = new THREE.Color(r.color);
+    return new THREE.Color(lin(base[0]) * t.r * sombra, lin(base[1]) * t.g * sombra, lin(base[2]) * t.b * sombra).getStyle();
+  };
+  const datosEsp = {}, zonas = [];
+  for (const [esp, [x0, y0, cw, ch]] of Object.entries(CELDAS_LEJOS)) {
+    const mod = modelos[esp];
+    let rMax = 0, yMax = 0;
+    for (const s of mod.racimos) { rMax = Math.max(rMax, Math.hypot(s.c.x, s.c.z) + s.tam * 0.45); yMax = Math.max(yMax, s.c.y + s.tam * s.alto * 0.45); }
+    for (const r of mod.ramas) for (const p of [r.a, r.b]) { rMax = Math.max(rMax, Math.hypot(p.x, p.z) + r.r0); yMax = Math.max(yMax, p.y); }
+    const yMin = -0.3, pad = 6, esc = Math.min((cw - 2 * pad) / (2 * rMax), (ch - 2 * pad) / (yMax - yMin));
+    for (let k = 0; k < VISTAS; k++) {
+      const a = (k / VISTAS) * TAU, cx = Math.sin(a), cz = Math.cos(a), rx = Math.cos(a), rz = -Math.sin(a);
+      const ox = x0 + k * cw + cw / 2, oy = y0 + ch - pad;
+      const P = (p) => [ox + (p.x * rx + p.z * rz) * esc, oy - (p.y - yMin) * esc];
+      const prof = (p) => p.x * cx + p.z * cz;
+      const items = [];
+      for (const r of mod.ramas) items.push({ d: (prof(r.a) + prof(r.b)) / 2 - 0.05, r });
+      for (const s of mod.racimos) items.push({ d: prof(s.c), s });
+      items.sort((p, q) => p.d - q.d);
+      g.save(); g.beginPath(); g.rect(x0 + k * cw, y0, cw, ch); g.clip();
+      for (const it of items) {
+        if (it.r) {
+          const [ax, ay] = P(it.r.a), [bx, by] = P(it.r.b), L = Math.hypot(bx - ax, by - ay);
+          if (L < 0.3) continue;
+          const nx = -(by - ay) / L, ny = (bx - ax) / L, w0 = Math.max(0.55, it.r.r0 * esc), w1 = Math.max(0.4, it.r.r1 * esc);
+          const gr = g.createLinearGradient(ax - nx * w0, ay - ny * w0, ax + nx * w0, ay + ny * w0);
+          gr.addColorStop(0, colorRama(it.r, 0.7)); gr.addColorStop(0.45, colorRama(it.r, 1.05)); gr.addColorStop(1, colorRama(it.r, 0.6));
+          g.fillStyle = gr;
+          g.beginPath(); g.moveTo(ax + nx * w0, ay + ny * w0); g.lineTo(bx + nx * w1, by + ny * w1); g.lineTo(bx - nx * w1, by - ny * w1); g.lineTo(ax - nx * w0, ay - ny * w0); g.closePath(); g.fill();
+        } else {
+          const s = it.s, [px, py] = P(s.c), f = 0.58 + 0.42 * Math.abs(s.nrm.x * cx + s.nrm.z * cz);
+          const w = s.tam * esc * f, h = s.tam * s.alto * esc * (0.7 + 0.3 * f);
+          const luz = s.luz * (0.92 + 0.12 * clamp(prof(s.c) / Math.max(1, rMax) + 0.5, 0, 1));
+          const sp = sprites[especieDe(s.reg)][clamp(Math.round(((luz - 0.42) / 0.78) * (NIV - 1)), 0, NIV - 1)];
+          g.save(); g.translate(px, py); g.rotate(s.rol); g.drawImage(sp, -w / 2, -h / 2, w, h); g.restore();
+        }
+      }
+      g.restore();
+      zonas.push([x0 + k * cw, y0, cw, ch]);
+    }
+    // cuadrilátero del impostor en metros (árbol a escala 1), con la base bajo el suelo como el modelo cercano
+    const anchoM = cw / esc, altoM = ch / esc;
+    datosEsp[esp] = { region: [x0 / W, 1 - (y0 + ch) / H, cw / W, ch / H], cuadro: [anchoM, altoM, yMin - pad / esc, esp === 'roble' ? 0 : 1] };
+  }
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  cv.width = cv.height = 1;
+  rellenarTransparentes(d, W, zonas);
+  const datos = new Uint8Array(W * H * 4);
+  for (let j = 0; j < H; j++) datos.set(d.subarray((H - 1 - j) * W * 4, (H - j) * W * 4), j * W * 4);
+  const niveles = mipmapsCobertura(datos, W, H, zonas.map(([x, y, w, h]) => [x, H - y - h, w, h]));
+  const tex = new THREE.DataTexture(datos, W, H, THREE.RGBAFormat);
+  tex.mipmaps = niveles; tex.generateMipmaps = false; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter;
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; tex.needsUpdate = true;
+  return { tex, especies: datosEsp };
+}
+
+// Material de los impostores: el cuadrilátero se arma en el sombreador, de frente a la cámara y vertical, y su normal
+// se curva hacia los bordes y hacia arriba para que el sol ilumine la copa como un volumen.
+function materialLejos(tex) {
+  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.86, metalness: 0, side: THREE.DoubleSide, alphaTest: 0.42, alphaToCoverage: true });
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 region;\nattribute vec4 cuadro;')
+      .replace('#include <uv_vertex>', `
+#ifdef USE_INSTANCING
+  mat4 mI = modelMatrix * instanceMatrix;
+#else
+  mat4 mI = modelMatrix;
+#endif
+  vec3 centroB = mI[3].xyz;
+  float sxB = 0.5 * (length(mI[0].xyz) + length(mI[2].xyz)), syB = length(mI[1].xyz);
+  vec2 dcB = cameraPosition.xz - centroB.xz;
+  vec2 tcB = dcB / max(1e-4, length(dcB));
+  vec3 haciaB = vec3(tcB.x, 0.0, tcB.y), derB = vec3(tcB.y, 0.0, -tcB.x);
+  float angB = atan(dot(haciaB, normalize(mI[0].xyz)), dot(haciaB, normalize(mI[2].xyz)));
+  float kB = mod(floor(angB * ${VISTAS}.0 / 6.2831853 + 0.5), ${VISTAS}.0);
+  float azarB = fract(sin(dot(centroB.xz, vec2(12.9898, 78.233))) * 43758.5453);
+  float uxB = (cuadro.w > 0.5 && azarB > 0.5) ? 1.0 - uv.x : uv.x;
+  vec2 uvB = vec2(region.x + (kB + uxB) * region.z, region.y + uv.y * region.w);
+  vec3 mundoB = centroB + derB * position.x * cuadro.x * sxB + vec3(0.0, (cuadro.z + position.y * cuadro.y) * syB, 0.0);
+  vec3 normalB = normalize(haciaB * 0.8 + derB * (uv.x - 0.5) * 1.4 + vec3(0.0, uv.y * 0.9 - 0.25, 0.0));
+#include <uv_vertex>
+#ifdef USE_MAP
+  vMapUv = uvB;
+#endif`)
+      .replace('#include <normal_vertex>', '#include <normal_vertex>\n  vNormal = normalize((viewMatrix * vec4(normalB, 0.0)).xyz);')
+      .replace('#include <project_vertex>', 'vec4 mvPosition = viewMatrix * vec4(mundoB, 1.0);\n  gl_Position = projectionMatrix * mvPosition;')
+      .replace('#include <worldpos_vertex>', 'vec4 worldPosition = vec4(mundoB, 1.0);');
+  };
+  mat.customProgramCacheKey = () => 'arbol-lejano';
+  return mat;
+}
+
+// Todos los árboles lejanos en una sola malla instanciada: cada instancia lleva la región de su especie en el atlas y
+// el tamaño de su cuadrilátero (ancho, alto, base y si admite espejo), así el bosque lejano completo es una llamada.
+function mallaLejana(capacidad, mat) {
+  capacidad = Math.max(1, capacidad);
+  const L = arbolesCompartidos().lejos, geo = new THREE.PlaneGeometry(1, 1);
+  geo.translate(0, 0.5, 0);
+  const region = new THREE.InstancedBufferAttribute(new Float32Array(capacidad * 4), 4), cuadro = new THREE.InstancedBufferAttribute(new Float32Array(capacidad * 4), 4);
+  region.setUsage(THREE.DynamicDrawUsage); cuadro.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('region', region); geo.setAttribute('cuadro', cuadro);
+  const malla = new THREE.InstancedMesh(geo, mat, capacidad);
+  malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  malla.frustumCulled = false; malla.castShadow = false; malla.receiveShadow = false; malla.name = 'arboles lejanos';
+  return {
+    malla,
+    poner(i, esp, m4, color) {
+      const d = L.especies[esp];
+      malla.setMatrixAt(i, m4); malla.setColorAt(i, color);
+      region.setXYZW(i, d.region[0], d.region[1], d.region[2], d.region[3]); cuadro.setXYZW(i, d.cuadro[0], d.cuadro[1], d.cuadro[2], d.cuadro[3]);
+    },
+    cerrar(n) {
+      malla.count = n; malla.visible = n > 0; malla.instanceMatrix.needsUpdate = true; region.needsUpdate = true; cuadro.needsUpdate = true;
+      if (malla.instanceColor) malla.instanceColor.needsUpdate = true;
+    },
+  };
+}
+
+// Atlas de vegetación, modelos cercanos y vistas lejanas: se preparan una sola vez y los comparten la obra y las
+// estaciones que plantan sus propios árboles.
+let arbolesListos = null;
+function arbolesCompartidos() {
+  if (arbolesListos) return arbolesListos;
+  const VEG = atlasVegetacionCompartido(), modelos = {};
+  for (const esp of ['roble', 'alamo', 'pino', 'arbusto']) modelos[esp] = geometriaArbol(esp, VEG.R);
+  arbolesListos = { VEG, modelos, lejos: atlasLejanos(VEG, modelos) };
+  // el lienzo de los racimos ya no se necesita: se libera su memoria
+  VEG.lienzo.width = VEG.lienzo.height = 1; VEG.lienzo = null;
+  return arbolesListos;
 }
 
 // ------------------------------------------------------------------ módulo principal
@@ -795,9 +1028,11 @@ export function crearEntorno(ctx) {
   const matVeg = parcheAtlas(new THREE.MeshStandardMaterial({
     map: VEG.tex, normalMap: VEG.texN, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.84, metalness: 0, vertexColors: true, side: THREE.DoubleSide, alphaTest: 0.42, alphaToCoverage: true,
   }), { viento: true, sinVolteo: true, clave: 'veg' });
+  const matLejos = materialLejos(arbolesCompartidos().lejos.tex);
   const matCalco = parcheAtlas(new THREE.MeshStandardMaterial({
-    map: CAL.tex, transparent: true, depthWrite: false, vertexColors: true, roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
-  }), { clave: 'calco' });
+    map: CAL.tex, normalMap: CAL.normal, normalScale: new THREE.Vector2(1, 1), transparent: true, depthWrite: false, vertexColors: true, roughness: 0.95, metalness: 0,
+    polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
+  }), { mate: true, clave: 'calco' });
   const ondas = makeSurface('noiseNormal', { size: 256, seed: 33, repeat: [1, 1], roughness: false }).normalMap;
   const matAgua = new THREE.MeshStandardMaterial({ color: 0x2b2722, roughness: 0.04, metalness: 0, envMapIntensity: 3.2, normalMap: ondas, normalScale: new THREE.Vector2(0.08, 0.08), polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
 
@@ -849,15 +1084,26 @@ export function crearEntorno(ctx) {
     mallaG.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(mallaG.attributes.position.count * 3).fill(1), 3));
     mallaG.setAttribute('flex', new THREE.Float32BufferAttribute(new Float32Array(mallaG.attributes.position.count), 1));
     const P = [], puerta = { x: (CERCO[8][0] + CERCO[9][0]) / 2, z: (CERCO[8][1] + CERCO[9][1]) / 2 };
-    const rnd = mulberry32(77);
+    const rnd = mulberry32(77), lt = new Malla(), kl = piezas(lt);
+    // puntal de estabilización por el lado de adentro: diagonal y tirante desde el poste a un bloque de hormigón
+    const puntal = (px, pz, inx, inz) => {
+      const y0 = sueloH(px, pz), bx = px + inx * 1.35, bz = pz + inz * 1.35, yb = sueloH(bx, bz);
+      kl.tubo(V(px + inx * 0.04, y0 + 1.68, pz + inz * 0.04), V(bx, yb + 0.15, bz), 0.019, 0.019, 6, RO.acero, 0xc9cdd1);
+      kl.tubo(V(px + inx * 0.06, y0 + 0.2, pz + inz * 0.06), V(bx - inx * 0.12, yb + 0.12, bz - inz * 0.12), 0.016, 0.016, 5, RO.acero, 0xc0c4c8);
+      kl.caja(0.42, 0.13, 0.26, RO.hormigon, 0xaaa59b, bx + inx * 0.05, yb + 0.05, bz + inz * 0.05, { ry: -Math.atan2(inz, inx), sucio: [-0.065, 0.04, 0.35] });
+      kl.caja(0.08, 0.07, 0.08, RO.acero, 0xb0b4b8, px + inx * 0.035, y0 + 1.68, pz + inz * 0.035);
+    };
     for (let i = 0; i < CERCO.length; i++) {
       const [x0, z0] = CERCO[i], [x1, z1] = CERCO[(i + 1) % CERCO.length];
       const largo = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(largo / L)), ang = Math.atan2(z1 - z0, x1 - x0);
+      let inx = -(z1 - z0) / largo, inz = (x1 - x0) / largo;
+      if (distCerco((x0 + x1) / 2 + inx * 2, (z0 + z1) / 2 + inz * 2) > 0) { inx = -inx; inz = -inz; }
       for (let j = 0; j < n; j++) {
         const xa = lerp(x0, x1, j / n), za = lerp(z0, z1, j / n), xm = lerp(x0, x1, (j + 0.5) / n), zm = lerp(z0, z1, (j + 0.5) / n);
         if (Math.hypot(xm - puerta.x, zm - puerta.z) < 5) continue;
         const raschel = Math.hypot(xm - 70, zm - 62) < 42 || hash(i * 31 + j, 3) < 0.08;
         P.push({ x: xa, z: za, y: sueloH(xm, zm), ry: -ang + (rnd() - 0.5) * 0.02, sx: largo / n / L, raschel, inclina: (rnd() - 0.5) * 0.03 });
+        if (j % 4 === 2 && !enZona(xa + inx * 1.4, za + inz * 1.4, 0)) puntal(xa + Math.cos(ang) * 0.045, za + Math.sin(ang) * 0.045, inx, inz);
       }
     }
     // portón: dos paneles corridos hacia adentro
@@ -879,8 +1125,7 @@ export function crearEntorno(ctx) {
     mallas.renderOrder = -1;
     solidos.receiveShadow = true;
     for (const o of [solidos, mallas]) { o.computeBoundingSphere(); raiz.add(o); }
-    // letreros del portón
-    const lt = new Malla(), kl = piezas(lt);
+    // letreros del portón (van en la misma malla que los puntales)
     const pc = bordeA, ry = -ang;
     kl.hijo(pc.x + nx * -adentro * 0.03, 0, pc.z + nz * -adentro * 0.03, ry).plano(1.2, 0.3, RO.rotProhibido, 0xffffff, -1.2, 1.35, adentro > 0 ? -0.02 : 0.02, { ry: adentro > 0 ? Math.PI : 0 });
     kl.hijo(bordeB.x, 0, bordeB.z, ry).plano(1.1, 0.28, RO.rotPrecaucion, 0xffffff, 1.6, 1.4, adentro > 0 ? -0.02 : 0.02, { ry: adentro > 0 ? Math.PI : 0 });
@@ -942,14 +1187,17 @@ export function crearEntorno(ctx) {
     // robles que quedaron dentro de la obra
     for (const [x, z, s] of [[60, 74, 1.12], [-78, -46, 1.05], [-72, 62, 1.0], [84, -52, 0.9]]) if (!enZona(x, z, 8)) poner('roble', x, z, s);
   }
+  // los árboles lejanos de todas las especies van en una sola malla (el arbusto siempre usa su modelo)
+  const lejanos = mallaLejana(listas.roble.length + listas.alamo.length + listas.pino.length, matLejos);
+  raiz.add(lejanos.malla);
   {
     const crear = (esp) => {
-      const cerca = geometriaArbol(esp, RV, false), lejos = esp === 'arbusto' ? null : geometriaArbol(esp, RV, true), n = listas[esp].length;
-      const mi = new THREE.InstancedMesh(cerca.geo, matVeg, n), ml = lejos ? new THREE.InstancedMesh(lejos.geo, matVeg, n) : null;
+      const cerca = arbolesCompartidos().modelos[esp], n = listas[esp].length;
+      const mi = new THREE.InstancedMesh(cerca.geo, matVeg, n);
       const mats = listas[esp].map((p) => new THREE.Matrix4().compose(V(p.x, sueloH(p.x, p.z) - 0.12, p.z), new THREE.Quaternion().setFromEuler(new THREE.Euler((p.h - 0.5) * 0.04, p.ry, (p.t - 1) * 0.1)), V(p.s * p.sx, p.s * p.sy, p.s * p.sz)));
       const cols = listas[esp].map((p) => new THREE.Color(p.t * (0.96 + p.h * 0.08), p.t, p.t * (0.94 + (1 - p.h) * 0.1)));
-      for (const m of [mi, ml]) if (m) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; raiz.add(m); }
-      especies[esp] = { cerca: mi, lejos: ml, mats, cols, sombra: cerca.sombra, pos: listas[esp].map((p) => [p.x, p.z]) };
+      mi.frustumCulled = false; mi.castShadow = false; mi.receiveShadow = false; raiz.add(mi);
+      especies[esp] = { cerca: mi, lejos: esp === 'arbusto' ? null : lejanos.malla, mats, cols, sombra: cerca.sombra, pos: listas[esp].map((p) => [p.x, p.z]) };
     };
     for (const e of ['roble', 'alamo', 'pino', 'arbusto']) crear(e);
     // sombra suave bajo cada copa, apoyada en la pendiente
@@ -972,16 +1220,16 @@ export function crearEntorno(ctx) {
   let lodPos = V(1e9, 0, 0), lodVR = null;
   function actualizarLOD(cam, vr) {
     const radio = vr ? 75 : 140;
-    for (const e of Object.values(especies)) {
-      let a = 0, b = 0;
+    let b = 0;
+    for (const [esp, e] of Object.entries(especies)) {
+      let a = 0;
       for (let i = 0; i < e.mats.length; i++) {
-        const lejos = e.lejos && Math.hypot(e.pos[i][0] - cam.x, e.pos[i][1] - cam.z) > radio;
-        if (lejos) { e.lejos.setMatrixAt(b, e.mats[i]); e.lejos.setColorAt(b++, e.cols[i]); }
+        if (e.lejos && Math.hypot(e.pos[i][0] - cam.x, e.pos[i][1] - cam.z) > radio) lejanos.poner(b++, esp, e.mats[i], e.cols[i]);
         else { e.cerca.setMatrixAt(a, e.mats[i]); e.cerca.setColorAt(a++, e.cols[i]); }
       }
-      e.cerca.count = a; e.cerca.instanceMatrix.needsUpdate = true; if (e.cerca.instanceColor) e.cerca.instanceColor.needsUpdate = true;
-      if (e.lejos) { e.lejos.count = b; e.lejos.instanceMatrix.needsUpdate = true; if (e.lejos.instanceColor) e.lejos.instanceColor.needsUpdate = true; }
+      e.cerca.count = a; e.cerca.visible = a > 0; e.cerca.instanceMatrix.needsUpdate = true; if (e.cerca.instanceColor) e.cerca.instanceColor.needsUpdate = true;
     }
+    lejanos.cerrar(b);
     lodPos = cam.clone(); lodVR = vr;
   }
 
@@ -1135,6 +1383,24 @@ export function crearEntorno(ctx) {
       }
       // basureros de reciclaje
       [[0x2c6fb0, -10.6], [0x3f8a45, -10.0], [0xe0b21a, -9.4]].forEach(([c, x]) => { k.cil(0.27, 0.3, 0.9, 14, RO.plastico, c, x, 0.45, 2.2, { sucio: [-0.45, -0.2, 0.25] }); k.cil(0.31, 0.31, 0.06, 14, RO.plastico, new THREE.Color(c).multiplyScalar(0.8), x, 0.93, 2.2); });
+      // tablero eléctrico de faena en un poste de madera, con tierra de protección y cable aéreo a la oficina
+      const Te = k.hijo(-3.8, 0, 2.5, 0);
+      Te.cil(0.085, 0.1, 4.8, 10, RO.madera, 0x7a6248, 0, 2.3, 0, { giro: true, sucio: [-2.4, -1.8, 0.35] });
+      Te.caja(0.5, 0.65, 0.2, RO.metal, 0xb9bcbd, 0, 1.45, 0.2, { sucio: [-0.33, 0, 0.2] });
+      Te.caja(0.56, 0.035, 0.26, RO.metal, 0x8f9293, 0, 1.8, 0.21, { rx: 0.12 });
+      Te.plano(0.17, 0.17, RO.rotRiesgo, 0xffffff, 0, 1.55, 0.302);
+      Te.caja(0.03, 0.1, 0.04, RO.metal, 0x303030, 0.2, 1.4, 0.31);
+      for (const y of [1.0, 1.8]) Te.caja(0.06, 0.05, 0.2, RO.acero, 0xa8acb0, 0, y, 0.1);
+      Te.tubo(V(0.14, 1.12, 0.2), V(0.14, 0.02, 0.12), 0.012, 0.012, 5, RO.goma, 0x1d1d1d);
+      Te.tubo(V(0.14, 0.02, 0.12), V(0.35, 0.02, 0.3), 0.012, 0.012, 5, RO.goma, 0x1d1d1d);
+      Te.cil(0.01, 0.01, 0.25, 5, RO.acero, 0xb07a40, 0.35, 0.1, 0.3);
+      {
+        const a = V(0.05, 4.4, 0.08), b = V(0.77, 4.55, -1.5);
+        let p0 = a;
+        for (let i = 1; i <= 6; i++) { const t = i / 6, p1 = a.clone().lerp(b, t); p1.y -= 0.22 * 4 * t * (1 - t); Te.tubo(p0, p1, 0.009, 0.009, 4, RO.goma, 0x1a1a1a); p0 = p1; }
+        Te.tubo(V(0.05, 4.4, 0.08), V(0.06, 1.8, 0.2), 0.012, 0.012, 4, RO.goma, 0x1a1a1a);
+        Te.caja(0.22, 0.04, 0.06, RO.acero, 0xb0b4b8, 0, 4.42, 0.1);
+      }
       // baños químicos
       for (let i = 0; i < 3; i++) {
         const b = k.hijo(9.4 + i * 1.32, 0, -0.2), azul = i === 2 ? 0x2b6bb3 : 0x2a5ea3;
@@ -1208,11 +1474,30 @@ export function crearEntorno(ctx) {
     T.caja(4.5, 0.08, 0.1, RO.oxido, 0x6d5a40, 0, 1.6, 0.92); T.caja(4.5, 0.08, 0.1, RO.oxido, 0x6d5a40, 0, 1.6, -0.92);
     for (let i = 0; i < 14; i++) T.caja(0.3 + hash(i, 1) * 0.5, 0.18 + hash(i, 2) * 0.3, 0.25 + hash(i, 3) * 0.4, i % 3 === 0 ? RO.madera : RO.hormigon, i % 3 === 0 ? 0x9a8060 : 0x9c978e, (hash(i, 4) - 0.5) * 3, 1.0 + hash(i, 5) * 0.35, (hash(i, 6) - 0.5) * 1.2, { ry: hash(i, 7) * 3, rz: (hash(i, 8) - 0.5) * 0.6 });
     T.geo(new THREE.SphereGeometry(1, 12, 6, 0, TAU, 0, Math.PI / 2).scale(1.7, 0.55, 0.78), RO.tierra, 0xffffff, 0, 0.85, 0);
-    // acopio tapado con lona azul y neumáticos
-    const lona = new THREE.SphereGeometry(1, 16, 8, 0, TAU, 0, Math.PI / 2);
-    { const p = lona.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setXYZ(i, x * 1.6, p.getY(i) * 0.75 + Math.sin(x * 4 + z * 3) * 0.03, z * 1.1); } lona.computeVertexNormals(); }
-    k.geo(lona, RO.lona, 0x2f62b8, -1.2, 0, 4.7, { ry: 0.2 });
-    for (const [x, z, a] of [[-1.8, 4.5, 0.5], [-0.4, 4.9, -0.3], [-1.2, 4.0, 1.1]]) k.geo(new THREE.TorusGeometry(0.28, 0.1, 6, 12), RO.goma, 0x1d1d1d, x, 0.62 + (x === -1.2 ? 0.1 : 0) - Math.abs(x + 1.2) * 0.12, z, { rx: Math.PI / 2 - 0.25, ry: a });
+    // ruma tapada con lona azul: la lona cae sobre la carga con pliegues en los costados y queda tendida en el suelo,
+    // amarrada con cuerdas a estacas y con neumáticos encima para que no la levante el viento
+    {
+      const Lo = k.hijo(-1.3, 0, 5.1, 0.2), Lx = 1.6, Lz = 0.85, Hh = 0.9, caida = 0.75, ext = caida + 0.3;
+      const altura = (x, z) => {
+        const dx = Math.max(0, Math.abs(x) - Lx), dz = Math.max(0, Math.abs(z) - Lz), d = Math.hypot(dx, dz);
+        if (d === 0) return Hh - 0.05 * (1 - Math.cos(x * 3.1)) * (1 - Math.cos(z * 2.4)) * 0.5 + ruido.noise(x * 1.7, 2.2, z * 1.7) * 0.025;
+        const t = clamp(d / caida, 0, 1);
+        return Hh * Math.pow(1 - t, 0.55) + Math.sin(Math.atan2(z, x) * 13 + x * 2) * 0.035 * sstep(0.05, 0.4, t) * (1 - sstep(0.75, 1, t));
+      };
+      const geo = new THREE.PlaneGeometry(2 * (Lx + ext), 2 * (Lz + ext), 40, 26); geo.rotateX(-Math.PI / 2);
+      const p = geo.attributes.position, uv = geo.attributes.uv;
+      for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, Math.max(0.03, altura(x, z))); uv.setXY(i, x, z); }
+      geo.computeVertexNormals();
+      Lo.geo(geo, RO.lona, 0x2f62b8, 0, 0, 0);
+      for (const [x, z, a] of [[-0.85, -0.2, 0.5], [0.75, 0.25, -0.3], [-0.05, 0.05, 1.1]]) Lo.geo(new THREE.TorusGeometry(0.28, 0.1, 6, 14), RO.goma, 0x1d1d1d, x, altura(x, z) + 0.08, z, { rx: Math.PI / 2, ry: a });
+      for (const x of [-1.05, 1.05]) for (const s of [-1, 1]) {
+        const pts = [V(x, Hh + 0.02, 0)];
+        for (const t of [0, 0.3, 0.6, 0.85, 1]) { const zz = s * (Lz + t * caida); pts.push(V(x, altura(x, zz) + 0.045, zz)); }
+        pts.push(V(x * 1.05, 0.06, s * (Lz + caida + 0.32)));
+        for (let i = 1; i < pts.length; i++) Lo.tubo(pts[i - 1], pts[i], 0.008, 0.008, 4, RO.plastico, 0xd8b020);
+        Lo.caja(0.035, 0.3, 0.035, RO.madera, 0x8a7050, x * 1.05, 0.1, s * (Lz + caida + 0.36), { rx: s * 0.35 });
+      }
+    }
     carretilla(k, -7.4, 1.6, 0.6);
     for (const [x, z] of [[-11.5, 3.2], [-5.0, 4.4], [1.5, 4.6], [9.0, 3.6]]) cono(k, x, z);
   });
@@ -1323,6 +1608,13 @@ export function crearEntorno(ctx) {
         k.caja(0.34, 0.06, 0.34, RO.hormigon, 0x9e998f, x, 0.03, -0.09);
       }
       k.caja(3.4, 0.05, 0.25, RO.metal, 0x163d6b, 0, 3.22, 0.05);
+      // poste con la señal de zona de seguridad, sobre un dado de hormigón
+      k.cil(0.03, 0.03, 2.5, 8, RO.acero, 0xc9cdd1, 2.35, 1.25, -0.05, { sucio: [-1.25, -0.9, 0.3] });
+      k.caja(0.3, 0.12, 0.3, RO.hormigon, 0xa39e95, 2.35, 0.04, -0.05, { sucio: [-0.06, 0.04, 0.3] });
+      k.caja(0.62, 0.32, 0.015, RO.metal, 0xdedede, 2.35, 2.25, -0.015);
+      k.plano(0.6, 0.3, RO.rotZona, 0xffffff, 2.35, 2.25, -0.006);
+      k.plano(0.6, 0.3, RO.rotZona, 0xffffff, 2.35, 2.25, -0.024, { ry: Math.PI });
+      for (const y of [2.15, 2.35]) k.caja(0.09, 0.025, 0.07, RO.acero, 0xb0b4b8, 2.35, y, -0.05);
     });
   }
 
@@ -1330,15 +1622,17 @@ export function crearEntorno(ctx) {
   {
     const c = new Malla(true), agua = new Malla();
     const rnd = mulberry32(91);
-    const franja = (pts, ancho, reg, color, { tam = 0.6, y = 0.016, sigue = false } = {}) => {
-      const curva = new THREE.CatmullRomCurve3(pts.map(([x, z]) => V(x, 0, z)), false, 'centripetal');
-      const n = Math.max(4, Math.ceil(curva.getLength() / 0.5)), q = curva.getSpacedPoints(n);
+    const franja = (pts, ancho, reg, color, { tam = 0.6, y = 0.016, sigue = false, cerrada = false, paso = 0.5 } = {}) => {
+      const curva = new THREE.CatmullRomCurve3(pts.map(([x, z]) => V(x, 0, z)), cerrada, 'centripetal');
+      const n = Math.max(4, Math.ceil(curva.getLength() / paso)), q = curva.getSpacedPoints(n);
+      // en una franja cerrada la textura da un número entero de vueltas para que no quede costura
+      if (cerrada) tam = curva.getLength() / Math.max(1, Math.round(curva.getLength() / tam));
       let s = 0;
       const base = c.n;
       for (let i = 0; i <= n; i++) {
         const p = q[i], t = q[Math.min(n, i + 1)].clone().sub(q[Math.max(0, i - 1)]).normalize(), nn = V(-t.z, 0, t.x);
         if (i) s += q[i].distanceTo(q[i - 1]);
-        const fade = Math.min(1, s / 4, (curva.getLength() - s) / 4);
+        const fade = cerrada ? 1 : Math.min(1, s / 4, (curva.getLength() - s) / 4);
         for (const lado of [-0.5, 0.5]) {
           const x = p.x + nn.x * ancho * lado, z = p.z + nn.z * ancho * lado, yy = (sigue ? sueloH(x, z) : 0) + y;
           c.v(V(x, yy, z), EJE_Y, lado + 0.5, s / tam, [color[0], color[1], color[2], color[3] * clamp(fade, 0, 1)], reg);
@@ -1366,14 +1660,45 @@ export function crearEntorno(ctx) {
     const charco = (x, z, r, ang = 0, alarg = 1) => {
       mancha(x, z, r * 1.55, [0.32, 0.25, 0.18, 0.85], RC.mancha, ang, alarg);
       const base = agua.n, n = 22, fase = rnd() * TAU, ca = Math.cos(ang), sa = Math.sin(ang);
-      agua.v(V(x, 0.011, z), EJE_Y, x / 2, z / 2, [1, 1, 1], [0, 0, 1, 1]);
+      agua.v(V(x, 0.026, z), EJE_Y, x / 2, z / 2, [1, 1, 1], [0, 0, 1, 1]);
       for (let i = 0; i < n; i++) {
         const a = (i / n) * TAU, rr = r * (0.78 + 0.16 * Math.sin(3 * a + fase) + 0.08 * Math.sin(7 * a + fase * 2));
         const lx = Math.cos(a) * rr * alarg, lz = Math.sin(a) * rr, px = x + lx * ca - lz * sa, pz = z + lx * sa + lz * ca;
-        agua.v(V(px, 0.011, pz), EJE_Y, px / 2, pz / 2, [1, 1, 1], [0, 0, 1, 1]);
+        agua.v(V(px, 0.026, pz), EJE_Y, px / 2, pz / 2, [1, 1, 1], [0, 0, 1, 1]);
         agua.I.push(base, base + 1 + ((i + 1) % n), base + 1 + i);
       }
     };
+    // carpeta de grava o tierra compactada bajo una instalación (marco local del grupo: x, z, giro), con un borde
+    // irregular que se mezcla con el pasto; se dibuja antes que las huellas y manchas, que quedan encima
+    const plataforma = (gx, gz, giro, ox, oz, hx, hz, reg, color, { tam = 2.5, borde = 1.4, paso = 0.7 } = {}) => {
+      const base = c.n, nx = Math.ceil((2 * (hx + borde)) / paso), nz = Math.ceil((2 * (hz + borde)) / paso);
+      const ca = Math.cos(giro), sa = Math.sin(giro), sem = rnd() * 50;
+      for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+        const lx = -hx - borde + (i / nx) * 2 * (hx + borde), lz = -hz - borde + (j / nz) * 2 * (hz + borde);
+        const dentro = Math.min(hx - Math.abs(lx), hz - Math.abs(lz));
+        const ns = ruido.noise(lx * 0.32 + sem, 1.7, lz * 0.32) * 1.2 + ruido.noise(lx * 1.1, 4.2 + sem, lz * 1.1) * 0.4;
+        const a = color[3] * sstep(-borde * 0.8, borde * 0.5, dentro + ns * borde * 0.8);
+        const px = ox + lx, pz = oz + lz, x = gx + px * ca + pz * sa, z = gz - px * sa + pz * ca;
+        c.v(V(x, sueloH(x, z) + 0.022, z), EJE_Y, px / tam, pz / tam, [color[0], color[1], color[2], a], reg);
+      }
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = base + j * (nx + 1) + i; c.I.push(a, a + nx + 1, a + 1, a + 1, a + nx + 1, a + nx + 2); }
+    };
+    plataforma(64, 56, Math.atan2(-0.5, -0.866), 2.0, 1.3, 13.6, 3.9, RC.grava, [0.95, 0.93, 0.9, 0.97], { tam: 2.2 });   // faena
+    plataforma(-12, -68, 0, 2.5, 2.3, 14.5, 4.6, RC.tierra, [0.97, 0.94, 0.9, 0.93], { tam: 2.6 });                      // acopio sur
+    plataforma(-17.4, -2.2, Math.atan2(0.991, 0.13), 0.1, 0.35, 3.4, 2.4, RC.tierra, [0.97, 0.94, 0.9, 0.9], { tam: 2.6, borde: 1.0, paso: 0.5 });
+    plataforma(20.4, 0.9, 0.35, 0.3, 0.2, 1.3, 1.1, RC.tierra, [0.97, 0.94, 0.9, 0.85], { tam: 2.6, borde: 0.8, paso: 0.4 });
+    plataforma(-9.6, -1.4, Math.atan2(9.6, 5.4), 0, -0.1, 1.8, 0.6, RC.tierra, [0.97, 0.94, 0.9, 0.75], { tam: 2.6, borde: 0.7, paso: 0.35 });
+    // bordes de los senderos y de la plaza: tierra pisada que funde la grava y el hormigón con el pasto
+    for (const s of SENDEROS) for (const lado of [-1, 1]) {
+      const pts = [];
+      for (let dd = 6.4; dd <= s.s1 - 0.4; dd += 1.6) { const off = 1.22 + ruido.noise(dd * 0.3, lado * 2.3, s.L * 0.1) * 0.2; pts.push([s.ux * dd - s.uz * off * lado, s.uz * dd + s.ux * off * lado]); }
+      if (pts.length > 3) franja(pts, 0.95, RC.camino, [0.82, 0.77, 0.7, 0.6], { tam: 3, y: 0.034, paso: 1.1 });
+    }
+    {
+      const pts = [];
+      for (let i = 0; i < 40; i++) { const a = (i / 40) * TAU, r = 7.3 + ruido.noise(Math.cos(a) * 1.5, 0.5, Math.sin(a) * 1.5) * 0.25; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+      franja(pts, 1.2, RC.camino, [0.8, 0.75, 0.68, 0.55], { tam: 3, y: 0.036, cerrada: true });
+    }
     // camino de tierra desde el portón a la carretera, con huellas
     const pA = [(CERCO[8][0] + CERCO[9][0]) / 2, (CERCO[8][1] + CERCO[9][1]) / 2];
     const acceso = [[pA[0] - 3, pA[1] - 4], pA, [pA[0] + 10, pA[1] + 13], [pA[0] + 21, pA[1] + 24], [116, 103]];
@@ -1648,39 +1973,40 @@ let vegCompartida = null;
 function atlasVegetacionCompartido() { vegCompartida ||= atlasVegetacion(); return vegCompartida; }
 
 // Árboles de la obra (roble, álamo, pino, arbusto) en puntos dados, en coordenadas del padre: [{ x, y, z, esp, s }].
-// Cerca de la cámara se usa la versión con ramas y racimos de hojas y lejos la versión simple. Llamar actualizar(dt, cámara, vr).
+// Cerca de la cámara se usa el modelo con ramas y racimos de hojas y lejos su impostor pintado. Llamar actualizar(dt, cámara, vr).
 export function crearBosque(padre, puntos, { radio = 140, radioVR = 75, semilla = 5 } = {}) {
-  const VEG = atlasVegetacionCompartido(), RV = VEG.R;
+  const A = arbolesCompartidos(), VEG = A.VEG, matLejos = materialLejos(A.lejos.tex);
   const mat = parcheAtlas(new THREE.MeshStandardMaterial({
     map: VEG.tex, normalMap: VEG.texN, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.84, metalness: 0, vertexColors: true, side: THREE.DoubleSide, alphaTest: 0.42, alphaToCoverage: true,
   }), { viento: true, sinVolteo: true, clave: 'veg' });
   const rnd = mulberry32(semilla), grupo = new THREE.Group(), especies = [];
   grupo.name = 'bosque'; padre.add(grupo);
+  const lejanos = mallaLejana(puntos.filter((p) => p.esp !== 'arbusto').length, matLejos);
+  grupo.add(lejanos.malla);
   for (const esp of ['roble', 'alamo', 'pino', 'arbusto']) {
     const lista = puntos.filter((p) => p.esp === esp);
     if (!lista.length) continue;
-    const cerca = geometriaArbol(esp, RV, false), lejos = esp === 'arbusto' ? null : geometriaArbol(esp, RV, true);
-    const mi = new THREE.InstancedMesh(cerca.geo, mat, lista.length), ml = lejos ? new THREE.InstancedMesh(lejos.geo, mat, lista.length) : null;
+    const mi = new THREE.InstancedMesh(A.modelos[esp].geo, mat, lista.length);
     const mats = lista.map((p) => new THREE.Matrix4().compose(V(p.x, p.y - 0.12, p.z), new THREE.Quaternion().setFromEuler(new THREE.Euler((rnd() - 0.5) * 0.04, rnd() * TAU, (rnd() - 0.5) * 0.04)), V(p.s, p.s * (0.88 + rnd() * 0.24), p.s)));
     const cols = lista.map(() => { const t = 0.86 + rnd() * 0.22; return new THREE.Color(t * (0.96 + rnd() * 0.08), t, t * (0.94 + rnd() * 0.1)); });
-    for (const m of [mi, ml]) if (m) { m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; grupo.add(m); }
-    especies.push({ cerca: mi, lejos: ml, mats, cols, pos: lista.map((p) => [p.x, p.z]) });
+    mi.frustumCulled = false; mi.castShadow = false; mi.receiveShadow = false; grupo.add(mi);
+    especies.push({ esp, cerca: mi, lejos: esp !== 'arbusto', mats, cols, pos: lista.map((p) => [p.x, p.z]) });
   }
   let tiempo = 0, ultima = null, ultimaVR = null;
   const local = V();
   // la distancia se mide en unidades del bosque: en una maqueta a escala los árboles se ven como árboles lejanos
   function lod(c, vr) {
     const r = vr ? radioVR : radio;
+    let b = 0;
     for (const e of especies) {
-      let a = 0, b = 0;
+      let a = 0;
       for (let i = 0; i < e.mats.length; i++) {
-        const lejos = e.lejos && Math.hypot(e.pos[i][0] - c.x, e.pos[i][1] - c.z) > r;
-        if (lejos) { e.lejos.setMatrixAt(b, e.mats[i]); e.lejos.setColorAt(b++, e.cols[i]); }
+        if (e.lejos && Math.hypot(e.pos[i][0] - c.x, e.pos[i][1] - c.z) > r) lejanos.poner(b++, e.esp, e.mats[i], e.cols[i]);
         else { e.cerca.setMatrixAt(a, e.mats[i]); e.cerca.setColorAt(a++, e.cols[i]); }
       }
-      e.cerca.count = a; e.cerca.instanceMatrix.needsUpdate = true; if (e.cerca.instanceColor) e.cerca.instanceColor.needsUpdate = true;
-      if (e.lejos) { e.lejos.count = b; e.lejos.instanceMatrix.needsUpdate = true; if (e.lejos.instanceColor) e.lejos.instanceColor.needsUpdate = true; }
+      e.cerca.count = a; e.cerca.visible = a > 0; e.cerca.instanceMatrix.needsUpdate = true; if (e.cerca.instanceColor) e.cerca.instanceColor.needsUpdate = true;
     }
+    lejanos.cerrar(b);
   }
   return {
     grupo,

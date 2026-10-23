@@ -17,9 +17,9 @@ const PISO = 0.012; // altura del piso del taller
 const XT = 2.45, ZB = -2.15, ZF = 2.05, YB = 2.6, YF = 2.82; // planta del taller y altura del techo atrás y adelante
 const techoY = (z) => YB + ((YF - YB) * (z - ZB)) / (ZF - ZB);
 const RL = 0.66, RA = 0.032, R0 = 0.014; // reglas de 24 pulgadas: largo, ancho y margen antes del cero
-const OBRERO = [0.28, -0.68]; // donde trabaja el cortador, detrás del mesón
-const AYUDA = [1.0, -1.78]; // donde trabaja la compañera, detrás de la mesa de embalaje
-const CAJITA = { x: 0.96, z: -1.27, b: 0.32, h: 0.15, y: 0.8255 }; // caja que encinta la compañera
+const OBRERO = [0.53, -0.66], RYO = -0.56; // donde trabaja el cortador, detrás del mesón y girado hacia la esquina (su rostro queda libre de la regla vista desde VR)
+const AYUDA = [1.2, -1.78]; // donde trabaja la compañera, detrás de la mesa de embalaje (a la derecha del cortador, visible desde VR)
+const CAJITA = { x: 1.16, z: -1.27, b: 0.32, h: 0.15, y: 0.8255 }; // caja que encinta la compañera
 const T_CORTE = 2.4, T_CINTA = 4.4; // duración del gesto de corte y del ciclo de encintado
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -49,6 +49,33 @@ function cajaUV(THREE, w, h, d, { s = 0.25, su = s, sv = s, girar = false } = {}
     else uv.setXY(i, x / su, y / sv);
   }
   uv.needsUpdate = true;
+  return geo;
+}
+
+// Caja con cantos redondeados de radio r (seg divisiones por cada mitad del canto) y UV a escala real.
+// En cada cara la veta (u) sigue el lado más largo, como en una tabla aserrada; ou y ov desplazan la textura
+// para que dos piezas vecinas no muestren el mismo trozo de madera.
+function cajaR(THREE, w, h, d, { r = 0.004, seg = 1, s = 0.9, ou = 0, ov = 0 } = {}) {
+  r = Math.max(1e-4, Math.min(r, w * 0.45, h * 0.45, d * 0.45));
+  const n = 2 * seg + 1, H = [w / 2, h / 2, d / 2], E = [w, h, d];
+  const geo = new THREE.BoxGeometry(1, 1, 1, n, n, n);
+  const p = geo.attributes.position, nr = geo.attributes.normal, uv = geo.attributes.uv;
+  const dir = [0, 0, 0], c = [0, 0, 0], q = [0, 0, 0];
+  for (let i = 0; i < p.count; i++) {
+    const eje = Math.abs(nr.getX(i)) > 0.5 ? 0 : Math.abs(nr.getY(i)) > 0.5 ? 1 : 2;
+    const v0 = [p.getX(i), p.getY(i), p.getZ(i)];
+    for (let a = 0; a < 3; a++) {
+      const k = Math.round((v0[a] + 0.5) * n), sg = 2 * k < n ? -1 : 1;
+      const t = k <= seg ? (seg - k) / seg : (k - (n - seg)) / seg;
+      c[a] = sg * (H[a] - r); dir[a] = sg * Math.tan((Math.PI / 4) * t);
+    }
+    const L = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+    for (let a = 0; a < 3; a++) { dir[a] /= L; q[a] = c[a] + dir[a] * r; }
+    p.setXYZ(i, q[0], q[1], q[2]); nr.setXYZ(i, dir[0], dir[1], dir[2]);
+    const [a1, a2] = eje === 0 ? [2, 1] : eje === 1 ? [0, 2] : [0, 1];
+    const [ua, va] = E[a1] >= E[a2] ? [a1, a2] : [a2, a1];
+    uv.setXY(i, (q[ua] + H[ua]) / s + ou, (q[va] + H[va]) / s + ov);
+  }
   return geo;
 }
 
@@ -287,28 +314,128 @@ function texturaPino(kit, seed) {
   return texturaDe(THREE, c);
 }
 
-// Tablero OSB: astillas orientadas, juntas entre planchas y clavos sobre los pies derechos (tesela de 1,22 m)
+// Tablero OSB de 1,22 × 2,44 m puesto de pie: hebras finas orientadas y de poco contraste, junta vertical entre planchas,
+// clavos sobre los pies derechos cada 0,4 m y el timbre impreso de fábrica (tesela de 1,22 m, 420 px por metro)
 function texturaOSB(kit) {
-  const { THREE } = kit, S = 256, [c, g] = lienzo(S, S), r = kit.mulberry32(51);
-  g.fillStyle = '#ad8c5c'; g.fillRect(0, 0, S, S);
-  const tonos = ['#c9a66d', '#a8844f', '#d6b47a', '#8f6c3d', '#bf9a60', '#b48e57', '#9c7846'];
-  for (let i = 0; i < 1300; i++) {
-    const x = r() * S, y = r() * S, l = 6 + r() * 20, an = (r() - 0.5) * 1.3 + (r() < 0.3 ? Math.PI / 2 : 0), w = 2.5 + r() * 5;
-    g.fillStyle = tonos[Math.floor(r() * tonos.length)]; g.globalAlpha = 0.65 + r() * 0.3;
+  const { THREE } = kit, S = 512, [c, g] = lienzo(S, S), r = kit.mulberry32(51), a = kit.fbm(S, 4, 3, 52);
+  const img = g.createImageData(S, S);
+  for (let i = 0; i < S * S; i++) { const v = 0.93 + (a[i] - 0.5) * 0.1; img.data[i * 4] = 190 * v; img.data[i * 4 + 1] = 160 * v; img.data[i * 4 + 2] = 116 * v; img.data[i * 4 + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  const tonos = ['206,176,128', '186,152,104', '198,167,119', '172,138,92', '214,188,142', '162,128,84', '192,160,112', '180,150,108'];
+  for (let i = 0; i < 5600; i++) {
+    const x = r() * S, y = r() * S, l = 16 + r() * 42, w = 4 + r() * 8, an = (r() - 0.5) * 0.9 + (r() < 0.3 ? Math.PI / 2 : 0);
+    const col = tonos[Math.floor(r() * tonos.length)], al = 0.45 + r() * 0.4;
     for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {
-      if (x + ox < -30 || x + ox > S + 30 || y + oy < -30 || y + oy > S + 30) continue;
-      g.save(); g.translate(x + ox, y + oy); g.rotate(an); g.fillRect(-l / 2, -w / 2, l, w); g.restore();
+      if (x + ox < -40 || x + ox > S + 40 || y + oy < -40 || y + oy > S + 40) continue;
+      g.save(); g.translate(x + ox, y + oy); g.rotate(an);
+      g.fillStyle = `rgba(${col},${al})`;
+      g.beginPath(); g.moveTo(-l / 2, -w * 0.4); g.lineTo(l / 2, -w / 2); g.lineTo(l * 0.47, w / 2); g.lineTo(-l / 2, w * 0.45); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(96,70,40,0.22)'; g.lineWidth = 0.8;
+      g.beginPath(); g.moveTo(-l / 2, w * 0.45); g.lineTo(l * 0.47, w / 2); g.stroke();
+      g.restore();
     }
   }
-  g.globalAlpha = 1;
-  // juntas de las planchas y oscurecimiento de los bordes
-  g.fillStyle = 'rgba(38,26,14,0.85)'; g.fillRect(0, 0, 2, S); g.fillRect(0, 0, S, 2);
-  for (const [x, y, w, h] of [[2, 0, 6, S], [0, 2, S, 6], [S - 6, 0, 6, S], [0, S - 6, S, 6]]) { g.fillStyle = 'rgba(60,40,20,0.12)'; g.fillRect(x, y, w, h); }
-  // clavos sobre los pies derechos cada 0,4 m
-  g.fillStyle = 'rgba(55,50,45,0.9)';
-  for (const x of [5, 89, 173, 251]) for (let y = 8; y < S; y += 22) { g.beginPath(); g.arc(x, y, 1.1, 0, Math.PI * 2); g.fill(); }
-  for (let i = 0; i < 10; i++) mancha(g, r() * S, r() * S, 10 + r() * 30, 8 + r() * 20, `rgba(70,50,30,${0.05 + r() * 0.07})`);
+  // puntos de resina y astillas oscuras
+  for (let i = 0; i < 70; i++) mancha(g, r() * S, r() * S, 2 + r() * 4, 1 + r() * 2, `rgba(92,60,28,${0.35 + r() * 0.3})`);
+  // timbre de fábrica en tinta azul, en fila como sale de la prensa
+  g.save(); g.translate(S * 0.5, S * 0.42); g.rotate(-0.01);
+  g.fillStyle = 'rgba(40,62,120,0.42)'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '700 9px system-ui, sans-serif'; g.fillText('OSB  11,1 mm  ·  USO ESTRUCTURAL', 0, 0);
+  g.font = '600 7px system-ui, sans-serif'; g.fillText('1220 × 2440  ·  ESTE LADO HACIA AFUERA  ·  LOTE 2614', 0, 10);
+  g.restore();
+  // junta vertical entre planchas (borde de la tesela) y bordes algo más oscuros por la manipulación
+  g.fillStyle = 'rgba(44,30,16,0.8)'; g.fillRect(0, 0, 2.2, S);
+  let gr = g.createLinearGradient(0, 0, 14, 0); gr.addColorStop(0, 'rgba(70,48,24,0.2)'); gr.addColorStop(1, 'rgba(70,48,24,0)'); g.fillStyle = gr; g.fillRect(2, 0, 14, S);
+  gr = g.createLinearGradient(S, 0, S - 14, 0); gr.addColorStop(0, 'rgba(70,48,24,0.2)'); gr.addColorStop(1, 'rgba(70,48,24,0)'); g.fillStyle = gr; g.fillRect(S - 14, 0, 14, S);
+  // clavos: cada 15 cm en los bordes de la plancha y cada 30 cm en los pies derechos intermedios
+  for (const [x, paso] of [[7, 63], [S - 7, 63], [S / 3, 126], [(2 * S) / 3, 126]]) for (let y = 10 + r() * 8; y < S; y += paso) {
+    g.fillStyle = 'rgba(70,60,50,0.55)'; g.beginPath(); g.arc(x + (r() - 0.5) * 2, y, 2.2, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(150,150,145,0.9)'; g.beginPath(); g.arc(x + (r() - 0.5) * 2, y, 1.3, 0, Math.PI * 2); g.fill();
+  }
+  // trazos de lápiz del carpintero y polvo suave
+  g.strokeStyle = 'rgba(60,60,70,0.35)'; g.lineWidth = 1;
+  for (let i = 0; i < 4; i++) { const x = r() * S, y = r() * S; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 30 + r() * 40, y + (r() - 0.5) * 4); g.stroke(); }
+  for (let i = 0; i < 8; i++) mancha(g, r() * S, r() * S, 20 + r() * 50, 14 + r() * 30, `rgba(90,70,45,${0.04 + r() * 0.05})`);
   return texturaDe(THREE, c);
+}
+
+// Policarbonato ondulado: brillo de cada onda (se repite a lo ancho, una onda cada 76 mm)
+function texturaOnda(THREE) {
+  const [c, g] = lienzo(64, 4);
+  for (let x = 0; x < 64; x++) { const v = Math.round(214 + 41 * Math.cos((x / 64) * Math.PI * 2)); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x, 0, 1, 4); }
+  return texturaDe(THREE, c);
+}
+// Polvo y hojas sobre el policarbonato (canal verde = opacidad): más sucio hacia el borde bajo, al fondo (arriba del lienzo, v = 1)
+function texturaPolvoTecho(kit) {
+  const { THREE } = kit, S = 256, [c, g] = lienzo(S, S), a = kit.fbm(S, 6, 4, 97), r = kit.mulberry32(98);
+  const img = g.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x, t = 1 - y / S, v = 0.5 + 0.22 * Math.pow(t, 3) + (a[i] - 0.5) * 0.16 * (0.4 + t);
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = Math.min(255, v * 255); img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  for (let i = 0; i < 12; i++) { const y = S * r() * 0.3; mancha(g, r() * S, y, 2 + r() * 3, 1.5 + r() * 2, `rgba(255,255,255,${0.35 + r() * 0.3})`); }
+  const t = texturaDe(THREE, c, false);
+  t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
+
+// Señalética de seguridad (atlas 512 × 512): uso obligatorio de lentes, extintor, precaución y orden y aseo
+const SEN = { lentes: [0, 0, 256, 360], extintor: [256, 0, 512, 360], corte: [0, 360, 256, 512], aseo: [256, 360, 512, 512] };
+function texturaSenales(kit) {
+  const { THREE } = kit, [c, g] = lienzo(512, 512);
+  g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, 512, 512);
+  const texto = (t, x, y, px, col = '#111', peso = 800) => { g.fillStyle = col; g.font = `${peso} ${px}px system-ui, Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, x, y); };
+  const marco = ([x0, y0, x1, y1], col) => { g.strokeStyle = col; g.lineWidth = 6; g.strokeRect(x0 + 7, y0 + 7, x1 - x0 - 14, y1 - y0 - 14); };
+  // uso obligatorio de lentes de seguridad: círculo azul con lentes blancos
+  {
+    const [x0, , x1] = SEN.lentes, cx = (x0 + x1) / 2, cy = 125;
+    g.fillStyle = '#1f5fae'; g.beginPath(); g.arc(cx, cy, 92, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 9; g.fillStyle = '#ffffff';
+    for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 34, cy + 4, 27, 21, 0, 0, Math.PI * 2); g.stroke(); }
+    g.beginPath(); g.moveTo(cx - 9, cy - 2); g.quadraticCurveTo(cx, cy - 12, cx + 9, cy - 2); g.stroke();
+    g.fillRect(cx - 82, cy - 6, 22, 7); g.fillRect(cx + 60, cy - 6, 22, 7);
+    g.fillStyle = '#1f5fae'; g.fillRect(x0 + 14, 236, 228, 110);
+    texto('USO OBLIGATORIO', cx, 266, 24, '#ffffff'); texto('LENTES DE', cx, 298, 26, '#ffffff'); texto('SEGURIDAD', cx, 328, 26, '#ffffff');
+  }
+  // extintor: fondo rojo con el extintor y la palabra en blanco
+  {
+    const [x0, y0, x1, y1] = SEN.extintor, cx = (x0 + x1) / 2;
+    g.fillStyle = '#c8211b'; g.fillRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12);
+    g.fillStyle = '#ffffff';
+    roundRectPath(g, cx - 34, 92, 68, 170, 26); g.fill();
+    g.fillRect(cx - 12, 64, 24, 30); g.fillRect(cx - 30, 58, 64, 12);
+    g.strokeStyle = '#ffffff'; g.lineWidth = 9; g.beginPath(); g.moveTo(cx + 30, 64); g.quadraticCurveTo(cx + 74, 80, cx + 66, 190); g.stroke();
+    g.fillStyle = '#c8211b'; g.fillRect(cx - 34, 150, 68, 14);
+    texto('EXTINTOR', cx, 310, 40, '#ffffff');
+  }
+  // precaución: triángulo amarillo con la hoja del cuchillo cartonero
+  {
+    const [x0, y0, x1, y1] = SEN.corte, cy = (y0 + y1) / 2;
+    g.fillStyle = '#f2c318'; g.fillRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12);
+    g.fillStyle = '#111'; g.beginPath(); g.moveTo(x0 + 66, y0 + 24); g.lineTo(x0 + 120, y1 - 26); g.lineTo(x0 + 12, y1 - 26); g.closePath(); g.fill();
+    g.fillStyle = '#f2c318'; g.beginPath(); g.moveTo(x0 + 66, y0 + 44); g.lineTo(x0 + 104, y1 - 36); g.lineTo(x0 + 28, y1 - 36); g.closePath(); g.fill();
+    g.fillStyle = '#111'; g.beginPath(); g.moveTo(x0 + 50, y1 - 52); g.lineTo(x0 + 84, y1 - 76); g.lineTo(x0 + 88, y1 - 66); g.lineTo(x0 + 58, y1 - 46); g.closePath(); g.fill();
+    texto('PRECAUCIÓN', x0 + 186, cy - 34, 18);
+    texto('HOJAS', x0 + 186, cy - 4, 23); texto('CORTANTES', x0 + 186, cy + 24, 21);
+    texto('use guantes', x0 + 186, cy + 50, 15, '#111', 600);
+  }
+  // orden y aseo: franja verde
+  {
+    const [x0, y0, x1, y1] = SEN.aseo, cx = (x0 + x1) / 2;
+    g.fillStyle = '#ffffff'; g.fillRect(x0 + 6, y0 + 6, x1 - x0 - 12, y1 - y0 - 12);
+    g.fillStyle = '#1d8a4a'; g.fillRect(x0 + 6, y0 + 6, x1 - x0 - 12, 50);
+    texto('ORDEN Y ASEO', cx, y0 + 32, 26, '#ffffff');
+    texto('Mantenga su puesto', cx, y0 + 80, 19, '#163', 700); texto('limpio y despejado', cx, y0 + 104, 19, '#163', 700);
+    marco(SEN.aseo, '#1d8a4a');
+  }
+  // desgaste: polvo y algún rayón
+  const r = kit.mulberry32(99);
+  for (let i = 0; i < 18; i++) mancha(g, r() * 512, r() * 512, 10 + r() * 30, 8 + r() * 20, `rgba(120,100,70,${0.04 + r() * 0.06})`);
+  return texturaDe(THREE, c, false);
+}
+function roundRectPath(g, x, y, w, h, rr) {
+  g.beginPath(); g.moveTo(x + rr, y); g.arcTo(x + w, y, x + w, y + h, rr); g.arcTo(x + w, y + h, x, y + h, rr); g.arcTo(x, y + h, x, y, rr); g.arcTo(x, y, x + w, y, rr); g.closePath();
 }
 
 // Panel perforado de herramientas: agujeros de 6 mm cada 25 mm (tesela de 0,2 m)
@@ -407,10 +534,11 @@ function texturaPiso(kit) {
   }
   // aro de agua bajo el balde y salpicaduras de pintura
   { const [px, py] = P(1.32, 0.15); g.strokeStyle = 'rgba(80,72,60,0.35)'; g.lineWidth = 3; g.beginPath(); g.arc(px + 3, py + 2, 0.15 * sx, 0, Math.PI * 2); g.stroke(); }
-  for (let i = 0; i < 26; i++) {
-    const col = ['rgba(240,150,40,0.8)', 'rgba(60,110,190,0.75)', 'rgba(240,240,232,0.8)', 'rgba(200,60,40,0.7)'][Math.floor(r() * 4)];
+  // gotas de pintura viejas, pisadas y apagadas por el polvo (no confeti)
+  for (let i = 0; i < 14; i++) {
+    const col = ['196,140,70', '92,112,140', '226,224,214', '150,84,66'][Math.floor(r() * 4)];
     const [px, py] = P(-2.2 + r() * 4.4, -1.9 + r() * 3.8);
-    g.fillStyle = col; for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(px + (r() - 0.5) * 8, py + (r() - 0.5) * 8, 0.6 + r() * 2.2, 0, Math.PI * 2); g.fill(); }
+    for (let k = 0; k < 3; k++) { g.fillStyle = `rgba(${col},${0.25 + r() * 0.25})`; g.beginPath(); g.arc(px + (r() - 0.5) * 8, py + (r() - 0.5) * 8, 0.5 + r() * 1.6, 0, Math.PI * 2); g.fill(); }
   }
   // huellas de botas y marcas negras de goma
   for (let i = 0; i < 40; i++) {
@@ -419,7 +547,7 @@ function texturaPiso(kit) {
   }
   for (let i = 0; i < 9; i++) {
     const [px, py] = P(-1.8 + r() * 3.6, -1.6 + r() * 3.4);
-    g.strokeStyle = 'rgba(25,22,20,0.3)'; g.lineWidth = 1.2; g.beginPath(); g.arc(px, py, 6 + r() * 14, r() * 6, r() * 6 + 0.8 + r()); g.stroke();
+    g.strokeStyle = 'rgba(25,22,20,0.12)'; g.lineWidth = 1; g.beginPath(); g.arc(px, py, 5 + r() * 8, r() * 6, r() * 6 + 0.5 + r() * 0.5); g.stroke();
   }
   // polvo y astillas de cartón alrededor del mesón
   for (let i = 0; i < 520; i++) {
@@ -458,11 +586,19 @@ export default {
     const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
     // ---------------------------------------------------------------- materiales
-    const madera = kit.mat('wood', { repeat: [1, 1], color: 0xffffff, normalScale: 0.3, seed: 12 });
-    madera.map.dispose(); madera.map = texturaPino(kit, 12);
-    madera.roughnessMap = null; madera.roughness = 0.86; madera.vertexColors = true;
-    const metal = kit.mat('metal', { repeat: [2, 2], color: 0xffffff, metalness: 0.72, roughness: 0.48, normalScale: 0.4 });
+    // Con las texturas fotográficas la madera es una veta gris de pino aserrado: se tiñe de pino radiata en bruto
+    // (el color del material multiplica la foto, cuyo tono medio es 0,292). Sin fotos se usa el pino procedural.
+    const FOTOS = !/[?&]foto=0\b/.test(location.search);
+    const madera = kit.mat('wood', { repeat: [1, 1], color: 0xffffff, normalScale: 0.55, seed: 12 });
+    if (FOTOS) madera.color.setRGB(1.92, 1.36, 0.74);
+    else { madera.map.dispose(); madera.map = texturaPino(kit, 12); madera.roughnessMap = null; madera.roughness = 0.86; }
+    madera.vertexColors = true;
+    // acero galvanizado gris neutro (el tinte calibrado de la foto lo dejaba azul marino)
+    const metal = kit.mat('metal', { repeat: [2, 2], color: 0xffffff, metalness: 0.62, roughness: 0.5, normalScale: 0.4 });
+    if (FOTOS) metal.color.setRGB(1.3, 1.31, 1.34);
     metal.vertexColors = true;
+    // tono de cada tabla de pino: casi blanco (la foto ya trae el color) con variación de una a otra
+    const pino = (v = 0.06, base = 0xf6f1ea) => tinte(base, v);
     const mugre = texturaMugre(kit);
     const pintado = new THREE.MeshStandardMaterial({ vertexColors: true, map: mugre, roughness: 0.58, metalness: 0.08 });
     const osb = kit.mat('concrete', { repeat: [4, 4], color: 0xffffff, normalScale: 0.35, seed: 19 });
@@ -470,15 +606,16 @@ export default {
     const perforado = new THREE.MeshStandardMaterial({ map: texturaPerforado(kit), roughness: 0.82 });
     const lamina = new THREE.MeshStandardMaterial({ map: texturaLamina(kit), roughness: 0.93 });
     const reglaMat = new THREE.MeshStandardMaterial({ map: texturaRegla(THREE), metalness: 0.45, roughness: 0.36 });
-    const techo = new THREE.MeshStandardMaterial({ color: 0xdfe9ee, transparent: true, opacity: 0.32, roughness: 0.22, metalness: 0, side: THREE.DoubleSide, depthWrite: false });
+    const techo = new THREE.MeshStandardMaterial({ color: 0xe6edef, map: texturaOnda(THREE), alphaMap: texturaPolvoTecho(kit), vertexColors: true, transparent: true, opacity: 0.62, roughness: 0.3, metalness: 0, side: THREE.DoubleSide, depthWrite: false });
+    const senalMat = new THREE.MeshStandardMaterial({ map: texturaSenales(kit), roughness: 0.5 });
     const goma = new THREE.MeshStandardMaterial({ map: texturaGoma(kit), roughness: 0.92 });
     const tapeteMat = new THREE.MeshStandardMaterial({ map: texturaTapete(kit), roughness: 0.78, polygonOffset: true, polygonOffsetFactor: -1 });
     const cintaMat = new THREE.MeshStandardMaterial({ color: 0xc58f3e, roughness: 0.28, metalness: 0, transparent: true, opacity: 0.86, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
     const arenaMat = kit.mat('sand', { repeat: [1, 1], color: 0xffd9a2, normalScale: 0.9 });
 
     // lotes de geometría estática que comparten material (una llamada de dibujo por lote)
-    const L = { madera: [], metal: [], pintado: [], osb: [], perforado: [], techo: [], carton: [], regla: [] };
-    const add = (lote, geo, o = {}, color = 0xffffff) => { ubicar(THREE, geo, o); if (lote !== 'carton' && lote !== 'regla' && lote !== 'perforado' && lote !== 'osb' && lote !== 'techo') pintar(THREE, geo, color); L[lote].push(geo); return geo; };
+    const L = { madera: [], metal: [], pintado: [], osb: [], perforado: [], techo: [], carton: [], regla: [], senal: [] };
+    const add = (lote, geo, o = {}, color = 0xffffff) => { ubicar(THREE, geo, o); if (!['carton', 'regla', 'perforado', 'osb', 'techo', 'senal'].includes(lote)) pintar(THREE, geo, color); L[lote].push(geo); return geo; };
     const tinte = (hex, v = 0.08) => new THREE.Color(hex).multiplyScalar(1 + (rnd() - 0.5) * v * 2);
     const BOX = (w, h, d) => new THREE.BoxGeometry(w, h, d);
     const CIL = (r0, r1, h, seg = 12, abierto = false) => new THREE.CylinderGeometry(r1, r0, h, seg, 1, abierto);
@@ -505,8 +642,8 @@ export default {
     piso.map.dispose(); piso.map = texturaPiso(kit); piso.polygonOffset = true; piso.polygonOffsetFactor = -3;
     kit.malla(new THREE.PlaneGeometry(2 * XT, ZF - ZB), piso, { rx: -Math.PI / 2, y: PISO, z: (ZB + ZF) / 2, sombra: false, padre: g });
     {
-      const geo = cajaUV(THREE, 1.32, 0.013, 0.46, { s: 0.2 });
-      kit.malla(geo, goma, { x: OBRERO[0] - 0.02, y: 0.0065, z: OBRERO[1] - 0.06, sombra: false, padre: g });
+      const geo = cajaR(THREE, 1.32, 0.013, 0.46, { r: 0.005, s: 0.2 });
+      kit.malla(geo, goma, { x: OBRERO[0] - 0.14, y: 0.0065, z: OBRERO[1] - 0.04, ry: 0.06, sombra: false, padre: g });
     }
 
     // ---------------------------------------------------------------- estructura: pilares, vigas, costaneras y techo traslúcido
@@ -536,12 +673,17 @@ export default {
     // planchas de policarbonato ondulado
     {
       const ancho = 2 * XT + 0.24, largo = largoL + 0.22;
-      const geo = new THREE.PlaneGeometry(ancho, largo, 160, 1);
+      const geo = new THREE.PlaneGeometry(ancho, largo, 160, 4);
       geo.rotateX(-Math.PI / 2);
       const p = geo.attributes.position;
       for (let i = 0; i < p.count; i++) p.setY(i, 0.009 * Math.sin((p.getX(i) / 0.076) * Math.PI * 2));
       geo.computeVertexNormals();
+      // el polvo se junta en el borde bajo (al fondo): el color se apaga hacia ese lado
+      const col = new Float32Array(p.count * 3);
+      for (let i = 0; i < p.count; i++) { const t = (p.getZ(i) + largo / 2) / largo, v = 0.7 + 0.3 * Math.min(1, t * 1.4); col[i * 3] = v; col[i * 3 + 1] = v * 0.98; col[i * 3 + 2] = v * 0.94; }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       add('techo', geo, { y: (YB + YF) / 2 + 0.012, z: (ZB + ZF) / 2, rx: -pend });
+      techo.map.repeat.set(ancho / 0.076, 1);
       // franjas traslúcidas sobre los muros
       const banda = new THREE.PlaneGeometry(2 * XT, YB - 2.0);
       add('techo', banda, { y: (YB + 2.0) / 2 - 0.02, z: ZB + 0.012 });
@@ -554,16 +696,30 @@ export default {
 
     // ---------------------------------------------------------------- muros de OSB con zócalo
     add('osb', cajaUV(THREE, 2 * XT, 2.0, 0.018, { s: 1.22 }), { y: 1.0, z: ZB + 0.009 });
-    add('osb', cajaUV(THREE, 0.018, 2.0, -0.2 - ZB, { s: 1.22 }), { x: -XT + 0.009, y: 1.0, z: (ZB - 0.2) / 2 });
-    add('madera', cajaUV(THREE, 2 * XT - 0.04, 0.09, 0.016, { s: 0.9 }), { y: 0.045 + PISO, z: ZB + 0.026 }, 0x8f7558);
-    add('madera', cajaUV(THREE, 0.016, 0.09, -0.2 - ZB - 0.04, { s: 0.9 }), { x: -XT + 0.026, y: 0.045 + PISO, z: (ZB - 0.2) / 2 + 0.02 }, 0x8f7558);
+    add('osb', cajaUV(THREE, 0.018, 2.0, -0.2 - ZB, { s: 1.22, su: -1.22 }), { x: -XT + 0.009, y: 1.0, z: (ZB - 0.2) / 2 }); // su < 0: el timbre se lee al derecho desde adentro
+    add('madera', cajaR(THREE, 2 * XT - 0.04, 0.09, 0.016, { r: 0.003 }), { y: 0.045 + PISO, z: ZB + 0.026 }, 0xa8957c);
+    add('madera', cajaR(THREE, 0.016, 0.09, -0.2 - ZB - 0.04, { r: 0.003 }), { x: -XT + 0.026, y: 0.045 + PISO, z: (ZB - 0.2) / 2 + 0.02 }, 0xa8957c);
+
+    // ---------------------------------------------------------------- señalética de seguridad sobre placas de PVC
+    const senal = (cual, ancho, [x, y, z], ry = 0) => {
+      const [x0, y0, x1, y1] = SEN[cual], alto = (ancho * (y1 - y0)) / (x1 - x0), nx = Math.sin(ry), nz = Math.cos(ry);
+      const geo = new THREE.PlaneGeometry(ancho, alto), uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, lerp(x0, x1, uv.getX(i)) / 512, 1 - lerp(y1, y0, uv.getY(i)) / 512);
+      add('senal', geo, { x: x + nx * 0.0036, y, z: z + nz * 0.0036, ry });
+      add('pintado', cajaR(THREE, ancho + 0.006, alto + 0.006, 0.003, { r: 0.0012, s: 0.5 }), { x: x + nx * 0.0015, y, z: z + nz * 0.0015, ry }, 0xf0efe8);
+    };
+    const muro = ZB + 0.018;
+    senal('lentes', 0.2, [0.8, 1.48, muro]);
+    senal('corte', 0.17, [0.48, 1.6, muro]);
+    senal('aseo', 0.3, [1.78, 1.52, muro]);
+    senal('extintor', 0.15, [-XT + 0.018, 1.2, -0.42], Math.PI / 2);
 
     // ---------------------------------------------------------------- panel perforado con herramientas
     const ZP = ZB + 0.018 + 0.031; // cara del panel perforado
     const PX0 = -1.55, PX1 = 0.35, PY0 = 0.97, PY1 = 1.97;
     add('perforado', cajaUV(THREE, PX1 - PX0, PY1 - PY0, 0.006, { s: 0.2 }), { x: (PX0 + PX1) / 2, y: (PY0 + PY1) / 2, z: ZP - 0.003 });
     for (const [w, h, x, y] of [[PX1 - PX0 + 0.06, 0.03, (PX0 + PX1) / 2, PY0 - 0.015], [PX1 - PX0 + 0.06, 0.03, (PX0 + PX1) / 2, PY1 + 0.015], [0.03, PY1 - PY0, PX0 - 0.015, (PY0 + PY1) / 2], [0.03, PY1 - PY0, PX1 + 0.015, (PY0 + PY1) / 2]]) {
-      add('madera', cajaUV(THREE, w, h, 0.035, { s: 0.9 }), { x, y, z: ZB + 0.018 + 0.0175 }, 0xd8c09a);
+      add('madera', cajaR(THREE, w, h, 0.035, { r: 0.005, ou: rnd() }), { x, y, z: ZB + 0.018 + 0.0175 }, pino(0.05));
     }
     const gancho = (x, y, largo = 0.05) => {
       tubo('metal', [x, y, ZP - 0.004], [x, y + 0.004, ZP + largo], 0.0022, 0x9aa0a6, 5);
@@ -589,7 +745,7 @@ export default {
       add('metal', BOX(0.002, 0.46, 0.0016), { x: x + 0.047 - 0.02, y: y - 0.33, z: z + 0.0006, rz: -0.087 }, 0x3b3e42);
       const mango = new THREE.Shape([[-0.075, 0], [0.075, 0], [0.07, 0.11], [-0.03, 0.12], [-0.075, 0.06]].map(([a, b]) => new THREE.Vector2(a, b)));
       mango.holes.push(new THREE.Path([[-0.035, 0.03], [0.04, 0.03], [0.04, 0.08], [-0.02, 0.085]].map(([a, b]) => new THREE.Vector2(a, b))));
-      add('madera', new THREE.ExtrudeGeometry(mango, { depth: 0.024, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 1 }), { x, y: y - 0.115, z: z - 0.012 }, 0xa0582e);
+      add('madera', new THREE.ExtrudeGeometry(mango, { depth: 0.024, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004, bevelSegments: 1 }), { x, y: y - 0.115, z: z - 0.012 }, 0xc08a62);
       for (const dx of [-0.04, 0.0, 0.04]) add('metal', CIL(0.0045, 0.0045, 0.03, 8), { x: x + dx, y: y - 0.1 + 0.008, z: z + 0.001, rx: Math.PI / 2 }, 0xc9a54a);
     }
     // nivel de aluminio arriba
@@ -603,7 +759,7 @@ export default {
     // destornilladores en su soporte
     {
       const y = 1.78, z = ZP + 0.04;
-      add('madera', cajaUV(THREE, 0.27, 0.025, 0.07, { s: 0.9 }), { x: -0.58, y, z }, 0xd2b48c);
+      add('madera', cajaR(THREE, 0.27, 0.025, 0.07, { r: 0.004 }), { x: -0.58, y, z }, pino(0.05));
       [[0xd7322a, 0.13], [0xe2b02a, 0.16], [0x2b62c4, 0.12], [0x1f1f22, 0.1]].forEach(([col, lv], i) => {
         const x = -0.68 + i * 0.065;
         add('pintado', CIL(0.012, 0.014, 0.085, 10), { x, y: y + 0.055, z: z + 0.012 }, col);
@@ -640,7 +796,7 @@ export default {
     // rollos de cinta en un tarugo, cuchillo de repuesto y repisa con frascos
     {
       const x = -1.35, y = 1.15;
-      tubo('madera', [x, y + 0.04, ZP - 0.004], [x, y + 0.045, ZP + 0.2], 0.012, 0xc8a97e, 10);
+      tubo('madera', [x, y + 0.04, ZP - 0.004], [x, y + 0.045, ZP + 0.2], 0.012, 0xeadfcc, 10);
       [[0xb8823a, 0.05], [0x9a9da0, 0.048], [0x3d6fbf, 0.024]].reduce((zz, [col, w]) => {
         add('pintado', anillo(THREE, 0.037, rnd() * 0.012 + 0.052, w), { x, y: y + 0.045 - 0.037 + 0.002, z: zz + w / 2, rx: Math.PI / 2 }, col);
         add('pintado', anillo(THREE, 0.034, 0.0372, w + 0.001), { x, y: y + 0.045 - 0.037 + 0.002, z: zz + w / 2, rx: Math.PI / 2 }, 0xb79a6c);
@@ -650,7 +806,7 @@ export default {
       gancho(xc, 1.2);
       add('pintado', BOX(0.018, 0.13, 0.011), { x: xc, y: 1.12, z: ZP + 0.02 }, 0xe9b81e);
       add('pintado', BOX(0.019, 0.07, 0.012), { x: xc, y: 1.14, z: ZP + 0.0201 }, 0x1d1f22);
-      add('madera', cajaUV(THREE, 0.42, 0.016, 0.12, { s: 0.9 }), { x: -0.36, y: 1.05, z: ZP + 0.06 }, 0xd8c09a);
+      add('madera', cajaR(THREE, 0.42, 0.016, 0.12, { r: 0.003, ou: rnd() }), { x: -0.36, y: 1.05, z: ZP + 0.06 }, pino(0.05));
       for (const sx of [-1, 1]) add('metal', BOX(0.01, 0.06, 0.1), { x: -0.36 + sx * 0.18, y: 1.02, z: ZP + 0.05 }, 0x8d9297);
       add('pintado', CIL(0.028, 0.028, 0.12, 12), { x: -0.5, y: 1.118, z: ZP + 0.06 }, 0xf1efe6);
       add('pintado', CIL(0.008, 0.014, 0.03, 10), { x: -0.5, y: 1.193, z: ZP + 0.06 }, 0xd94a2b);
@@ -664,24 +820,33 @@ export default {
     // ---------------------------------------------------------------- mesón de trabajo
     {
       const PXM = 1.0, PZ = 0.39;
-      add('madera', cajaUV(THREE, 2.2, 0.05, 0.95, { s: 0.9, girar: true }), { y: MESA - 0.025, z: MZ }, 0xf2ece4);
-      for (const sx of [-1, 1]) for (const sz of [-1, 1]) add('madera', cajaUV(THREE, 0.085, MESA - 0.05 - PISO, 0.085, { s: 0.9 }), { x: sx * PXM, y: (MESA - 0.05 + PISO) / 2, z: MZ + sz * PZ }, tinte(0xd9c4a2));
+      // cubierta de seis tablas de pino de 2 × 6 pulgadas, con junta de 4 mm, cantos redondeados y tono propio
+      const nT = 6, junta = 0.004, aT = (0.95 - (nT - 1) * junta) / nT;
+      for (let i = 0; i < nT; i++) {
+        add('madera', cajaR(THREE, 2.2, 0.05, aT, { r: 0.006, seg: 2, ou: rnd(), ov: rnd() }), { y: MESA - 0.025, z: MZ - 0.475 + aT / 2 + i * (aT + junta) }, pino(0.07));
+      }
+      // patas de 3 × 3 pulgadas, faldones y travesaños bajos
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) add('madera', cajaR(THREE, 0.085, MESA - 0.05 - PISO, 0.085, { r: 0.006, ou: rnd(), ov: rnd() }), { x: sx * PXM, y: (MESA - 0.05 + PISO) / 2, z: MZ + sz * PZ }, pino(0.08, 0xeae2d6));
       for (const sz of [-1, 1]) {
-        add('madera', cajaUV(THREE, 2.09, 0.11, 0.025, { s: 0.9 }), { y: MESA - 0.105, z: MZ + sz * (PZ + 0.03) }, tinte(0xd9c4a2));
-        add('madera', cajaUV(THREE, 2.0, 0.06, 0.04, { s: 0.9 }), { y: 0.11, z: MZ + sz * (PZ - 0.06) }, tinte(0xd9c4a2));
+        add('madera', cajaR(THREE, 2.09, 0.11, 0.025, { r: 0.004, ov: rnd() }), { y: MESA - 0.105, z: MZ + sz * (PZ + 0.03) }, pino(0.06, 0xeee7dc));
+        add('madera', cajaR(THREE, 2.0, 0.06, 0.04, { r: 0.005, ov: rnd() }), { y: 0.11, z: MZ + sz * (PZ - 0.06) }, pino(0.06, 0xe4dccf));
       }
       for (const sx of [-1, 1]) {
-        add('madera', cajaUV(THREE, 0.025, 0.11, 0.87, { s: 0.9 }), { x: sx * (PXM + 0.03), y: MESA - 0.105, z: MZ }, tinte(0xd9c4a2));
-        add('madera', cajaUV(THREE, 0.04, 0.06, 0.7, { s: 0.9 }), { x: sx * (PXM - 0.06), y: 0.11, z: MZ }, tinte(0xd9c4a2));
+        add('madera', cajaR(THREE, 0.025, 0.11, 0.87, { r: 0.004, ov: rnd() }), { x: sx * (PXM + 0.03), y: MESA - 0.105, z: MZ }, pino(0.06, 0xeee7dc));
+        add('madera', cajaR(THREE, 0.04, 0.06, 0.7, { r: 0.005, ov: rnd() }), { x: sx * (PXM - 0.06), y: 0.11, z: MZ }, pino(0.06, 0xe4dccf));
       }
-      add('madera', cajaUV(THREE, 1.9, 0.022, 0.72, { s: 0.9, girar: true }), { y: 0.151, z: MZ }, 0xe6dccd);
+      // repisa inferior de cinco tablas (cara superior en y = 0,162)
+      for (let i = 0; i < 5; i++) {
+        const a = (0.72 - 4 * 0.006) / 5;
+        add('madera', cajaR(THREE, 1.9, 0.022, a, { r: 0.004, ou: rnd(), ov: rnd() }), { y: 0.151, z: MZ - 0.36 + a / 2 + i * (a + 0.006) }, pino(0.08, 0xe2d9cb));
+      }
       // pernos de las uniones
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const yy of [MESA - 0.08, MESA - 0.13]) {
         add('metal', CIL(0.009, 0.009, 0.006, 10), { x: sx * PXM, y: yy, z: MZ + sz * (PZ + 0.043), rx: Math.PI / 2 }, 0x5a5e62);
         add('metal', CIL(0.009, 0.009, 0.006, 10), { x: sx * (PXM + 0.043), y: yy, z: MZ + sz * PZ, rz: Math.PI / 2 }, 0x5a5e62);
       }
       // prensa de banco en el extremo izquierdo
-      add('madera', cajaUV(THREE, 0.2, 0.11, 0.03, { s: 0.9 }), { x: -0.72, y: MESA - 0.07, z: 0.5 }, 0xd9c4a2);
+      add('madera', cajaR(THREE, 0.2, 0.11, 0.03, { r: 0.006 }), { x: -0.72, y: MESA - 0.07, z: 0.5 }, pino(0.04, 0xd8ccb8));
       tubo('metal', [-0.77, MESA - 0.075, 0.45], [-0.77, MESA - 0.075, 0.58], 0.008, 0x8d949b);
       tubo('metal', [-0.67, MESA - 0.075, 0.45], [-0.67, MESA - 0.075, 0.58], 0.008, 0x8d949b);
       tubo('metal', [-0.72, MESA - 0.07, 0.45], [-0.72, MESA - 0.07, 0.6], 0.011, 0x8d949b);
@@ -733,10 +898,18 @@ export default {
     add('carton', geoCarton(THREE, LADO, ESP, LADO), { x: 0.36, y: 0.162 + 0.11 + ESP / 2, z: MZ - 0.01, ry: 0.07 });
     {
       const x = -0.56, y = 0.162, z = -0.08;
-      add('pintado', cajaUV(THREE, 0.46, 0.17, 0.22, { s: 0.5 }), { x, y: y + 0.085, z }, 0xb8261f);
-      add('pintado', cajaUV(THREE, 0.47, 0.045, 0.23, { s: 0.5 }), { x, y: y + 0.19, z }, 0xa8221c);
-      add('pintado', BOX(0.2, 0.018, 0.03), { x, y: y + 0.222, z }, 0x1d1e20);
-      for (const dx of [-0.17, 0.17]) add('metal', BOX(0.03, 0.04, 0.008), { x: x + dx, y: y + 0.17, z: z + 0.113 }, 0xb0b5ba);
+      // caja de herramientas de plancha pintada: cuerpo y tapa con cantos redondeados, junta, asa y cierres
+      add('pintado', cajaR(THREE, 0.46, 0.165, 0.22, { r: 0.012, seg: 2, s: 0.5 }), { x, y: y + 0.0825, z }, 0xb8261f);
+      add('pintado', cajaR(THREE, 0.468, 0.048, 0.228, { r: 0.016, seg: 2, s: 0.5 }), { x, y: y + 0.19, z }, 0xa6221c);
+      add('pintado', cajaR(THREE, 0.452, 0.01, 0.212, { r: 0.002, s: 0.5 }), { x, y: y + 0.166, z }, 0x3a0d0a);
+      add('pintado', cajaR(THREE, 0.15, 0.016, 0.026, { r: 0.007, seg: 2, s: 0.5 }), { x, y: y + 0.232, z }, 0x1d1e20);
+      for (const dx of [-0.085, 0.085]) add('pintado', cajaR(THREE, 0.016, 0.022, 0.02, { r: 0.004, s: 0.5 }), { x: x + dx, y: y + 0.222, z }, 0x1d1e20);
+      for (const dx of [-0.17, 0.17]) {
+        add('metal', cajaR(THREE, 0.034, 0.042, 0.008, { r: 0.003 }), { x: x + dx, y: y + 0.168, z: z + 0.113 }, 0xb8bcc0);
+        add('metal', cajaR(THREE, 0.02, 0.012, 0.012, { r: 0.003 }), { x: x + dx, y: y + 0.152, z: z + 0.119 }, 0x8c9196);
+      }
+      // rayones y una abolladura donde la pintura saltó
+      for (const [dx, dy] of [[-0.12, 0.05], [0.06, 0.1], [0.15, 0.03]]) add('pintado', cajaR(THREE, 0.03 + rnd() * 0.04, 0.003, 0.001, { r: 0.0004, s: 0.5 }), { x: x + dx, y: y + dy, z: z + 0.1106, rz: (rnd() - 0.5) * 0.6 }, 0x9a9590);
       for (const p of cajaAbierta(THREE, 0.24, 0.16, rnd)) add('carton', p, { x: -0.13, y: 0.162, z: 0.02, ry: 0.15 });
       for (let i = 0; i < 4; i++) add('carton', geoCarton(THREE, 0.05 + rnd() * 0.08, 0.2, ESP), { x: -0.13 + (rnd() - 0.5) * 0.12, y: 0.162 + 0.13, z: 0.02 + (rnd() - 0.5) * 0.12, ry: rnd() * 3, rz: (rnd() - 0.5) * 0.5 });
     }
@@ -792,17 +965,24 @@ export default {
     }
     // escoba apoyada en el muro del fondo
     {
-      tubo('madera', [-2.22, 0.1, ZB + 0.16], [-2.12, 1.38, ZB + 0.04], 0.012, 0xc89b62, 8);
+      tubo('madera', [-2.22, 0.1, ZB + 0.16], [-2.12, 1.38, ZB + 0.04], 0.012, 0xe6d6ba, 8);
       add('pintado', BOX(0.3, 0.035, 0.05), { x: -2.22, y: 0.09, z: ZB + 0.17, rx: 0.1 }, 0x2a5c9a);
       add('pintado', BOX(0.29, 0.07, 0.04), { x: -2.22, y: 0.045, z: ZB + 0.175, rx: 0.1 }, 0x2b2622);
     }
     // basurero con recortes a la izquierda del mesón
     {
       const x = -1.38, z = 0.18;
-      add('pintado', CIL(0.17, 0.2, 0.56, 22, true), { x, y: 0.28 + PISO, z }, 0x2f6fa8);
-      add('pintado', invertir(CIL(0.165, 0.195, 0.55, 22, true)), { x, y: 0.285 + PISO, z }, 0x245a8a);
-      add('pintado', new THREE.TorusGeometry(0.2, 0.01, 6, 26), { x, y: 0.56 + PISO, z, rx: Math.PI / 2 }, 0x2a66a0);
-      add('pintado', new THREE.CircleGeometry(0.17, 20), { x, y: 0.02, z, rx: -Math.PI / 2 }, 0x1f4b74);
+      // tarro de polietileno torneado: base, dos nervios de refuerzo, labio enrollado y pared interior
+      const perfil = [[0.0, 0.0], [0.158, 0.0], [0.168, 0.008], [0.172, 0.03], [0.178, 0.1], [0.184, 0.104], [0.184, 0.114], [0.181, 0.118], [0.19, 0.33],
+        [0.196, 0.334], [0.196, 0.346], [0.193, 0.35], [0.2, 0.53], [0.212, 0.538], [0.214, 0.552], [0.206, 0.562], [0.196, 0.56], [0.188, 0.552],
+        [0.162, 0.03], [0.15, 0.022], [0.0, 0.022]].map(([rr, yy]) => new THREE.Vector2(rr, yy));
+      add('pintado', new THREE.LatheGeometry(perfil, 30), { x, y: PISO, z }, 0x2f6fa8);
+      // bolsa negra doblada sobre el borde, con arrugas
+      const bolsa = new THREE.CylinderGeometry(0.217, 0.208, 0.075, 30, 2, true);
+      const pb = bolsa.attributes.position;
+      for (let i = 0; i < pb.count; i++) { const an = Math.atan2(pb.getZ(i), pb.getX(i)), k = 1 + 0.035 * Math.sin(an * 9 + pb.getY(i) * 40) * (0.5 - pb.getY(i) / 0.075); pb.setX(i, pb.getX(i) * k); pb.setZ(i, pb.getZ(i) * k); }
+      bolsa.computeVertexNormals();
+      add('pintado', bolsa, { x, y: PISO + 0.522, z }, 0x1b1c1e);
       for (let i = 0; i < 7; i++) {
         const w = 0.05 + rnd() * 0.15, h = 0.12 + rnd() * 0.2;
         add('carton', geoCarton(THREE, w, h, ESP, { ou: w / 2 + rnd() * 0.4 }), { x: x + (rnd() - 0.5) * 0.18, y: 0.5 + h * 0.2, z: z + (rnd() - 0.5) * 0.18, ry: rnd() * 3, rx: (rnd() - 0.5) * 0.6, rz: (rnd() - 0.5) * 0.6 });
@@ -825,21 +1005,22 @@ export default {
       add('metal', palaDentro, { x: x + 0.02, y: 0.29 + PISO, z: z + 0.03, rx: 0.5, ry: 0.4 }, 0x9aa1a7);
       const mango = CIL(0.014, 0.014, 0.12, 10);
       ubicar(THREE, mango, { y: 0.03, z: -0.12, rx: Math.PI / 2 });
-      add('madera', mango, { x: x + 0.02, y: 0.29 + PISO, z: z + 0.03, rx: 0.5, ry: 0.4 }, 0x9a6a3e);
+      add('madera', mango, { x: x + 0.02, y: 0.29 + PISO, z: z + 0.03, rx: 0.5, ry: 0.4 }, 0xc4a07a);
     }
     const colmo = kit.malla(new THREE.SphereGeometry(0.145, 20, 6, 0, Math.PI * 2, 0, Math.PI / 2), kit.mat('sand', { repeat: [0.6, 0.6], color: 0xffd9a2 }), { x: 1.32, y: 0.25 + PISO, z: 0.15, padre: g });
     colmo.scale.y = 0.3;
 
     // ---------------------------------------------------------------- pallet con cartones nuevos y sector de acopio
     {
-      const x = 1.93, z = 0.06, ry = 0.04, gris = 0xb5a993;
+      const x = 1.93, z = 0.06, ry = 0.04, gris = 0xc6b9a2;
       const pal = [];
-      for (let i = 0; i < 5; i++) pal.push([cajaUV(THREE, 0.8, 0.022, 0.1, { s: 0.9 }), { x: 0, y: 0.133, z: -0.45 + i * 0.225 }]);
+      const tablaP = (w, h, d) => cajaR(THREE, w, h, d, { r: 0.003, ou: rnd(), ov: rnd() });
+      for (let i = 0; i < 5; i++) pal.push([tablaP(0.8, 0.022, 0.1), { x: 0, y: 0.133, z: -0.45 + i * 0.225 }]);
       for (const zz of [-0.45, 0, 0.45]) {
-        pal.push([cajaUV(THREE, 0.8, 0.022, 0.1, { s: 0.9 }), { x: 0, y: 0.011, z: zz }]);
-        for (const xx of [-0.35, 0, 0.35]) pal.push([cajaUV(THREE, 0.1, 0.078, 0.1, { s: 0.9 }), { x: xx, y: 0.061, z: zz }]);
+        pal.push([tablaP(0.8, 0.022, 0.1), { x: 0, y: 0.011, z: zz }]);
+        for (const xx of [-0.35, 0, 0.35]) pal.push([tablaP(0.1, 0.078, 0.1), { x: xx, y: 0.061, z: zz }]);
       }
-      for (const xx of [-0.35, 0, 0.35]) pal.push([cajaUV(THREE, 0.1, 0.022, 1.0, { s: 0.9 }), { x: xx, y: 0.111, z: 0 }]);
+      for (const xx of [-0.35, 0, 0.35]) pal.push([tablaP(0.1, 0.022, 1.0), { x: xx, y: 0.111, z: 0 }]);
       for (const [geo, o] of pal) { ubicar(THREE, geo, o); add('madera', geo, { x, y: PISO, z, ry }, tinte(gris, 0.1)); }
       const yP = PISO + 0.144;
       add('carton', geoCarton(THREE, LADO, 0.3, LADO, { pila: true }), { x, y: yP + 0.15, z, ry: ry + 0.01 });
@@ -872,8 +1053,8 @@ export default {
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) add('metal', cajaUV(THREE, 0.035, h - PISO, 0.035, { s: 0.6 }), { x: x + sx * (w / 2 - 0.03), y: (h + PISO) / 2, z: z + sz * (d / 2 - 0.03) }, 0x3f4a55);
       for (const sz of [-1, 1]) add('metal', BOX(w - 0.04, 0.04, 0.02), { x, y: h - 0.04, z: z + sz * (d / 2 - 0.03) }, 0x3f4a55);
       for (const sx of [-1, 1]) add('metal', BOX(0.02, 0.04, d - 0.04), { x: x + sx * (w / 2 - 0.03), y: h - 0.04, z }, 0x3f4a55);
-      add('madera', cajaUV(THREE, w, 0.025, d, { s: 0.9, girar: true }), { x, y: h + 0.0125, z }, 0xe8dccb);
-      add('madera', cajaUV(THREE, w - 0.06, 0.018, d - 0.06, { s: 0.9 }), { x, y: 0.16, z }, 0xd6c4a6);
+      add('madera', cajaR(THREE, w, 0.025, d, { r: 0.005, seg: 2, ou: rnd() }), { x, y: h + 0.0125, z }, pino(0.04, 0xf2ece2));
+      add('madera', cajaR(THREE, w - 0.06, 0.018, d - 0.06, { r: 0.004, ou: rnd() }), { x, y: 0.16, z }, pino(0.05, 0xe2d9cb));
       for (const p of cajaAbierta(THREE, CAJITA.b, CAJITA.h, rnd)) add('carton', p, { x: CAJITA.x, y: CAJITA.y, z: CAJITA.z });
       // cinta ya puesta en las esquinas de la caja
       for (const geo of cintaCaja(CAJITA.b, CAJITA.h)) add('pintado', geo, { x: CAJITA.x, y: CAJITA.y, z: CAJITA.z }, 0xc58f3e);
@@ -882,7 +1063,7 @@ export default {
       add('carton', geoCarton(THREE, 0.42, 0.03, 0.34, { pila: true }), { x: x + 0.05, y: 0.169 + 0.015, z, ry: 0.05 });
       add('pintado', CIL(0.008, 0.008, 0.13, 10), { x: x + 0.3, y: h + 0.033, z: z + 0.15, rx: Math.PI / 2, ry: -0.5, orden: 'YXZ' }, 0x1b1c1e);
       // repisa con cinta de repuesto sobre la cabeza de la compañera
-      add('madera', cajaUV(THREE, 0.62, 0.02, 0.2, { s: 0.9 }), { x: AYUDA[0], y: 1.86, z: ZB + 0.12 }, 0xd8c09a);
+      add('madera', cajaR(THREE, 0.62, 0.02, 0.2, { r: 0.004, ou: rnd() }), { x: AYUDA[0], y: 1.86, z: ZB + 0.12 }, pino(0.05));
       for (const dx of [-0.25, 0.25]) add('metal', BOX(0.012, 0.12, 0.16), { x: AYUDA[0] + dx, y: 1.8, z: ZB + 0.1 }, 0x8d9297);
       for (let i = 0; i < 4; i++) add('pintado', anillo(THREE, 0.038, 0.06, 0.048), { x: AYUDA[0] - 0.2 + i * 0.13, y: 1.87 + 0.024, z: ZB + 0.12 }, i === 2 ? 0x9a9da0 : 0xb8823a);
     }
@@ -910,6 +1091,7 @@ export default {
     lote('techo', techo, { sombra: false, recibe: false });
     lote('carton', lamina);
     lote('regla', reglaMat, { sombra: false });
+    lote('senal', senalMat, { sombra: false });
 
     // maleza en los bordes exteriores de la losa: matas de hojas delgadas
     {
@@ -1097,7 +1279,7 @@ export default {
 
     // ---------------------------------------------------------------- personas
     const obrero = kit.persona({
-      preset: 'obrero', semilla: 11, padre: g, x: OBRERO[0], y: 0.013, z: OBRERO[1], ry: 0, altura: 1.76,
+      preset: 'obrero', semilla: 11, padre: g, x: OBRERO[0], y: 0.013, z: OBRERO[1], ry: RYO, altura: 1.76,
       casco: null, chaleco: null, superior: 'polera', manga: 'corta', colorSuperior: '#4a6250', inferior: 'trabajo', colorInferior: '#5d5646',
       calzado: 'botas', cinturon: true, lentes: true, barba: 'bigote', pelo: 'corto', colorPelo: kit.PELOS.castanoOscuro, piel: kit.PIELES[3],
     });
@@ -1160,7 +1342,8 @@ export default {
       const A = mezcla([MITAD + 0.004, TOPE + ESP + 0.0006, CZ - b / 2 - 0.0015], [b / 2 + ESP + 0.0015, TOPE + ESP + xm + 0.004, CZ - b / 2 - ESP - 0.0015], k);
       const B = mezcla([b / 2 - 0.006, TOPE + ESP + 0.0006, CZ - b / 2 - 0.0015], [b / 2 + ESP + 0.0015, TOPE + 0.006, CZ - b / 2 - ESP - 0.0015], k);
       const alza = mezcla([0, 1, 0], [0.45, 0.35, -0.82], k);
-      const reposo = A.map((v, i) => v + alza[i] * 0.045);
+      // en reposo: sobre la esquina con la caja plana; con la caja plegada la mano descansa detrás de la caja, a su derecha
+      const reposo = mezcla(A.map((v, i) => v + alza[i] * 0.045), [Math.max(0.06, b / 2 - 0.11), TOPE + 0.045, Math.min(-0.33, CZ - b / 2 - 0.085)], k);
       const t = s.corte;
       let p;
       if (t < 0) p = reposo;
@@ -1178,8 +1361,9 @@ export default {
       const pI = mezcla([MITAD + 0.2, TOPE + ESP + 0.0015 + 0.022, rc[2]], [rc[0], TOPE + Math.min(xm + 0.16, RL - 0.12), rc[2] - 0.024], k);
       pI[1] += 0.14 * arco * (1 - k);
       // inclinación del tronco según cuánto debe alcanzar
-      const hombro = V3(OBRERO[0] - 0.17, 1.45, OBRERO[1]);
-      const lejos = Math.max(hombro.distanceTo(V3(...p)), V3(OBRERO[0] + 0.17, 1.45, OBRERO[1]).distanceTo(V3(...pI)));
+      const cx = Math.cos(RYO) * 0.17, cz = -Math.sin(RYO) * 0.17;
+      const hombro = V3(OBRERO[0] - cx, 1.45, OBRERO[1] - cz);
+      const lejos = Math.max(hombro.distanceTo(V3(...p)), V3(OBRERO[0] + cx, 1.45, OBRERO[1] + cz).distanceTo(V3(...pI)));
       const objetivo = Math.min(0.62, Math.max(0.12, (lejos - 0.42) * 1.6));
       s.lean += (objetivo - s.lean) * (dt > 0 ? 1 - Math.exp(-dt * 4) : 1);
       const l = s.lean;

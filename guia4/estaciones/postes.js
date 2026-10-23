@@ -206,17 +206,26 @@ export default {
     function texturasMadera() {
       const N = 512, ruido = kit.fbm(S, 6, 4, 77), fino = kit.fbm(S, 40, 2, 79), manchas = kit.fbm(S, 3, 3, 83);
       const alt = new Float32Array(N * N), col = new Float32Array(N * N * 3);
+      // muestreo bilineal y periódico en v: la fila y recorre un círculo del ruido, así la textura repite sin costura
+      // a lo largo del poste y de la cruceta (k fija cuánto se estira la veta)
+      const bil = (a, x, y) => {
+        const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+        return (muestra(a, x0, y0) * (1 - fx) + muestra(a, x0 + 1, y0) * fx) * (1 - fy) + (muestra(a, x0, y0 + 1) * (1 - fx) + muestra(a, x0 + 1, y0 + 1) * fx) * fy;
+      };
+      const circ = (a, x, y, k) => { const th = (2 * Math.PI * y) / N, R = (k * N) / (2 * Math.PI); return bil(a, x + R * Math.cos(th), 128 + R * Math.sin(th)); };
+      const FIB = (2 * Math.PI * 15) / 256; // 15 vetas por vuelta: la fibra cierra sin costura alrededor del poste
       for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
         const i = y * N + x;
         let r, gg, b, h;
         if (x < 256) {
-          const fib = 0.5 + 0.5 * Math.sin(x * 0.37 + muestra(ruido, x, y * 0.08) * 9);
-          const v = 0.74 + 0.16 * fib + 0.2 * (muestra(fino, x, y * 0.12) - 0.5) + 0.3 * (muestra(manchas, x, y * 0.5) - 0.5);
-          r = 124 * v; gg = 104 * v; b = 84 * v; h = 0.5 + 0.22 * fib + 0.18 * muestra(fino, x, y * 0.12);
+          const fn = circ(fino, x, y, 0.12);
+          const fib = 0.5 + 0.5 * Math.sin(x * FIB + circ(ruido, x, y, 0.08) * 9);
+          const v = 0.74 + 0.16 * fib + 0.2 * (fn - 0.5) + 0.3 * (muestra(manchas, x, y * 0.5) - 0.5);
+          r = 124 * v; gg = 104 * v; b = 84 * v; h = 0.5 + 0.22 * fib + 0.18 * fn;
         } else {
           const xx = x - 256, t = Math.floor(xx / 64), junta = xx % 64 < 2 || xx % 64 > 61;
-          const fib = 0.5 + 0.5 * Math.sin(xx * 0.28 + muestra(ruido, xx + t * 50, y * 0.1) * 12);
-          const v = (0.8 + 0.15 * fib + 0.14 * (muestra(fino, xx, y * 0.2) - 0.5) + 0.12 * (muestra(manchas, xx, y) - 0.5)) * [1, 0.9, 1.07, 0.95][t];
+          const fib = 0.5 + 0.5 * Math.sin(xx * 0.28 + circ(ruido, xx + t * 50, y, 0.1) * 12);
+          const v = (0.8 + 0.15 * fib + 0.14 * (circ(fino, xx, y, 0.2) - 0.5) + 0.12 * (muestra(manchas, xx, y) - 0.5)) * [1, 0.9, 1.07, 0.95][t];
           r = 176 * v; gg = 134 * v; b = 88 * v; h = junta ? 0 : 0.55 + 0.2 * fib;
           if (junta) { r *= 0.35; gg *= 0.32; b *= 0.3; }
         }
@@ -368,7 +377,7 @@ export default {
     const mixto = new THREE.MeshStandardMaterial({ vertexColors: true, map: texturaMugre(), metalnessMap: claseTex, roughnessMap: claseTex, metalness: 1, roughness: 1 });
     const atlasTex = texturaAtlas();
     const atlas = new THREE.MeshStandardMaterial({ map: atlasTex, roughness: 0.5, metalness: 0.1 });
-    const tierraMat = kit.mat('soil', { repeat: [1, 1], color: 0xd8c3a8, normalScale: 0.9 });
+    const tierraMat = kit.mat('soil', { repeat: [1, 1], color: 0xf4e4cc, normalScale: 0.9 });
     tierraMat.vertexColors = true;
 
     // ------------------------------------------------------------ pasto con borde irregular
@@ -394,23 +403,28 @@ export default {
     // ------------------------------------------------------------ tierra: bases de los postes, huella de trabajo, trípode y carrete
     const T = { x: 0.55, z: -2.75 }; // trípode de la estación total
     const RC = { x: X2 + 2.15, z: -2.05, ry: 0.35 }; // carrete
+    // a: opacidad en el centro (la huella del obrero es pasto pisado, no barro); k: tono del centro
     const manchas = [
-      { x: X1, z: 0, rx: 1.0, rz: 0.9, k: 1 }, { x: X2, z: 0, rx: 1.25, rz: 1.1, k: 1 },
-      { x: 0, z: Z_OBRERO, rx: 5.7, rz: 0.42, k: 0.82 }, { x: T.x + 0.15, z: T.z - 0.2, rx: 0.95, rz: 0.8, k: 0.9 },
-      { x: RC.x, z: RC.z, rx: 1.15, rz: 0.95, k: 0.95 },
+      { x: X1, z: 0, rx: 1.0, rz: 0.9, k: 0.9, a: 1 }, { x: X2, z: 0, rx: 1.25, rz: 1.1, k: 0.9, a: 1 },
+      { x: 0, z: Z_OBRERO, rx: 5.7, rz: 0.46, k: 1.04, a: 0.62 }, { x: T.x + 0.15, z: T.z - 0.2, rx: 0.95, rz: 0.8, k: 1, a: 0.85 },
+      { x: RC.x, z: RC.z, rx: 1.15, rz: 0.95, k: 1, a: 0.8 },
     ];
     const enTierra = (x, z) => { let m = 9; for (const t of manchas) m = Math.min(m, Math.hypot((x - t.x) / t.rx, (z - t.z) / t.rz)); return m; };
     {
-      const L = lote();
+      // parches de tierra seca: el borde se funde con el pasto por la opacidad de los vértices (color de cuatro canales)
+      const parches = [], rp = kit.mulberry32(611);
       manchas.forEach((t, n) => {
-        const seg = 44, anillos = [0, 0.45, 0.78, 1], pos = [], col = [], idx = [];
+        const seg = 52, anillos = [0, 0.4, 0.66, 0.86, 1], alfa = [1, 1, 0.92, 0.55, 0], pos = [], col = [], idx = [];
         const borde = (a) => 1 + 0.12 * Math.sin(3 * a + n * 1.7) + 0.07 * Math.sin(7 * a + n) + 0.04 * Math.sin(13 * a + 2 * n);
-        const tono = [new THREE.Color(1, 1, 1), new THREE.Color(1, 0.98, 0.95), new THREE.Color(0.86, 0.84, 0.74), new THREE.Color(0.5, 0.58, 0.36)];
-        pos.push(t.x, 0, t.z); col.push(t.k, t.k * 0.98, t.k * 0.95);
+        // del centro húmedo y removido al borde polvoriento
+        const tono = [[0.9, 0.86, 0.8], [0.96, 0.93, 0.88], [1.04, 1.0, 0.92], [1.08, 1.04, 0.92], [1.08, 1.04, 0.92]];
+        const color = (r, ex = 1) => { const c = tono[r], k = r < 2 ? t.k : 1; col.push(c[0] * k * ex, c[1] * k * ex, c[2] * k * ex, Math.min(1, alfa[r] * t.a)); };
+        pos.push(t.x, 0, t.z); color(0);
         for (let r = 1; r < anillos.length; r++) for (let i = 0; i < seg; i++) {
-          const a = (i / seg) * Math.PI * 2, f = anillos[r] * (r === 3 ? borde(a) : 1 + 0.4 * (borde(a) - 1));
+          const a = (i / seg) * Math.PI * 2, f = anillos[r] * (r >= 3 ? borde(a) * (1 + 0.05 * (rp() - 0.5)) : 1 + 0.4 * (borde(a) - 1));
           pos.push(t.x + Math.cos(a) * t.rx * f, 0, t.z + Math.sin(a) * t.rz * f);
-          const c = tono[r]; col.push(c.r * (r < 3 ? t.k : 1), c.g * (r < 3 ? t.k : 1), c.b * (r < 3 ? t.k : 1));
+          color(r, 0.94 + 0.12 * rp());
+          if (r === 3) col[col.length - 1] *= 0.6 + 0.8 * rp(); // borde roto: matas de pasto que entran en la tierra
         }
         for (let i = 0; i < seg; i++) idx.push(0, 1 + ((i + 1) % seg), 1 + i);
         for (let r = 1; r < anillos.length - 1; r++) for (let i = 0; i < seg; i++) {
@@ -418,48 +432,77 @@ export default {
           idx.push(a, b, c, b, d, c);
         }
         const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos.map((v, i) => (i % 3 === 1 ? 0.016 + n * 0.001 : v)), 3));
         geo.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
         geo.setAttribute('uv', new THREE.Float32BufferAttribute(pos.flatMap((v, i) => (i % 3 === 0 ? [v / 1.6, -pos[i + 2] / 1.6] : [])), 2));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
         geo.setIndex(idx);
-        L.add(geo, { y: 0.016 + n * 0.001 });
-        geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        parches.push(geo);
       });
+      const tierraSuelta = kit.mat('soil', { repeat: [1, 1], color: 0xf4e4cc, normalScale: 0.8 });
+      Object.assign(tierraSuelta, { vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      kit.malla(kit.mergeGeometries(parches, false), tierraSuelta, { padre: g, sombra: false });
+      for (const p of parches) p.dispose();
       // montículos apisonados al pie de cada poste
+      const L = lote();
       for (const [xp, rb] of [[X1, 0.125], [X2, 0.16]]) {
         const geo = new THREE.CylinderGeometry(rb + 0.04, rb + 0.55, 0.08, 28, 2, true);
         const p = geo.attributes.position, uv = geo.attributes.uv;
         for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)); p.setY(i, p.getY(i) + (p.getY(i) < 0 ? 0 : 0.012 * Math.sin(5 * a))); uv.setXY(i, p.getX(i) / 1.6, p.getZ(i) / 1.6); }
-        L.add(geo, { x: xp, y: 0.04, color: 0xb9a68e });
+        L.add(geo, { x: xp, y: 0.04, color: 0xe2d4c0 });
       }
-      const suelo = L.unir(tierraMat, { sombra: false });
-      suelo.material.polygonOffset = true; suelo.material.polygonOffsetFactor = -2; suelo.material.polygonOffsetUnits = -2;
+      L.unir(tierraMat, { sombra: false });
     }
 
     // ------------------------------------------------------------ pasto en matas y espigas secas (instanciados)
-    function mataGeo(hojas, r, conEspiga = false) {
-      const pos = [], idx = [];
+    // Mata de pasto: hojas de dos tramos que nacen juntas y se arquean hacia afuera. El color de vértice oscurece la base
+    // (sombra dentro de la mata) y aclara la punta, que en las hojas secas amarillea. Con espigas, varas finas con su
+    // panoja de semillas. La normal apunta casi hacia arriba para que la mata se ilumine como el suelo que la rodea.
+    function mataGeo(hojas, r, { espigas = 0, alto = [0.07, 0.11], seca = 0.25 } = {}) {
+      const pos = [], nor = [], col = [], idx = [];
+      const vert = (x, y, z, nx, nz, c) => { pos.push(x, y, z); const l = Math.hypot(nx, 1, nz); nor.push(nx / l, 1 / l, nz / l); col.push(...c); return pos.length / 3 - 1; };
       for (let i = 0; i < hojas; i++) {
-        const a = r() * Math.PI * 2, h = 0.07 + r() * 0.12, w = 0.006 + r() * 0.005, lean = 0.03 + r() * 0.07;
-        const ox = (r() - 0.5) * 0.08, oz = (r() - 0.5) * 0.08, c = Math.cos(a), sn = Math.sin(a), b = pos.length / 3;
-        const tx = ox + c * lean * 1.3, tz = oz + sn * lean * 1.3;
-        pos.push(ox - sn * w, 0, oz + c * w, ox + sn * w, 0, oz - c * w);
-        pos.push(tx - sn * w * 0.2, h, tz + c * w * 0.2, tx + sn * w * 0.2, h, tz - c * w * 0.2);
-        idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
-        if (conEspiga) {
-          const e = pos.length / 3, hx = tx, hz = tz;
-          pos.push(hx - sn * 0.008, h, hz + c * 0.008, hx + sn * 0.008, h, hz - c * 0.008, hx + c * 0.01, h + 0.05, hz + sn * 0.01);
-          idx.push(e, e + 1, e + 2);
-        }
+        const a = r() * Math.PI * 2, h = alto[0] + r() * alto[1], w = 0.0045 + r() * 0.004, lean = 0.025 + r() * 0.075;
+        const ox = (r() - 0.5) * 0.05, oz = (r() - 0.5) * 0.05, c = Math.cos(a), sn = Math.sin(a);
+        const t0 = 0.8 + r() * 0.35, punta = r() < seca ? [1.55 * t0, 1.32 * t0, 0.62 * t0] : [1.12 * t0, 1.2 * t0, 0.9 * t0];
+        const tonos = [[0.42, 0.45, 0.4], [0.86 * t0, 0.92 * t0, 0.8 * t0], punta];
+        const ids = [0, 0.55, 1].map((t, k) => {
+          const d = lean * (0.2 * t + 0.8 * t * t), y = h * t * (1 - 0.18 * t * (lean / 0.1)), ww = k === 2 ? 0 : w * (1 - 0.4 * t);
+          const x = ox + c * d, z = oz + sn * d, n = [c * 0.3 * t, sn * 0.3 * t];
+          return k === 2 ? [vert(x, y, z, ...n, tonos[k])] : [vert(x - sn * ww, y, z + c * ww, ...n, tonos[k]), vert(x + sn * ww, y, z - c * ww, ...n, tonos[k])];
+        });
+        idx.push(ids[0][0], ids[0][1], ids[1][0], ids[0][1], ids[1][1], ids[1][0], ids[1][0], ids[1][1], ids[2][0]);
+      }
+      for (let i = 0; i < espigas; i++) {
+        const a = r() * Math.PI * 2, h = 0.2 + r() * 0.14, lean = 0.02 + r() * 0.05, c = Math.cos(a), sn = Math.sin(a);
+        const ox = (r() - 0.5) * 0.03, oz = (r() - 0.5) * 0.03, paja = [1.3, 1.15, 0.72], semilla = [1.45, 1.22, 0.7];
+        const en = (t) => [ox + c * lean * t * t, h * t, oz + sn * lean * t * t];
+        const [x0, y0, z0] = en(0), [x1, y1, z1] = en(0.72), [x2, y2, z2] = en(1);
+        const w = 0.0016, wp = 0.0055;
+        // vara
+        const b = [vert(x0 - sn * w, y0, z0 + c * w, 0, 0, [0.55, 0.52, 0.4]), vert(x0 + sn * w, y0, z0 - c * w, 0, 0, [0.55, 0.52, 0.4]),
+          vert(x1 - sn * w, y1, z1 + c * w, 0, 0, paja), vert(x1 + sn * w, y1, z1 - c * w, 0, 0, paja)];
+        idx.push(b[0], b[1], b[2], b[1], b[3], b[2]);
+        // panoja: rombo alargado
+        const xm = (x1 + x2) / 2, ym = (y1 + y2) / 2, zm = (z1 + z2) / 2;
+        const e = [vert(x1, y1, z1, 0, 0, semilla), vert(xm - sn * wp, ym, zm + c * wp, 0, 0, semilla), vert(xm + sn * wp, ym, zm - c * wp, 0, 0, semilla), vert(x2, y2 + 0.012, z2, 0, 0, semilla)];
+        idx.push(e[0], e[1], e[2], e[1], e[3], e[2]);
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
       geo.setIndex(idx);
       return geo;
     }
+    // material del pasto: las dos caras usan la misma normal (sin esto la cara trasera de cada hoja queda negra)
+    const pastoMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.92, side: THREE.DoubleSide });
+    pastoMat.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', ''));
+    };
+    pastoMat.customProgramCacheKey = () => 'postes-pasto';
     function sembrar(geo, N, color, elegir, escala) {
-      const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, side: THREE.DoubleSide }), N);
+      const inst = new THREE.InstancedMesh(geo, pastoMat, N);
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = V(), sc = V(), c = new THREE.Color();
       let k = 0, intentos = 0;
       while (k < N && intentos < N * 40) {
@@ -478,9 +521,12 @@ export default {
       return inst;
     }
     const cercaPoste = (x, z) => Math.min(Math.hypot(x - X1, z), Math.hypot(x - X2, z));
-    sembrar(mataGeo(8, kit.mulberry32(11)), 1300, (c, x, z) => {
-      const seco = rnd() < 0.18 ? 1 : 0;
-      c.setRGB(0.05 + rnd() * 0.05 + seco * 0.12, 0.1 + rnd() * 0.07 + seco * 0.05, 0.015 + rnd() * 0.02);
+    // matas verdes (alguna pasada a amarillo) y matas altas con espigas secas al pie de los postes y en los bordes
+    sembrar(mataGeo(9, kit.mulberry32(11)), 1300, (c) => {
+      const u = rnd();
+      if (u < 0.1) c.setRGB(0.15 + rnd() * 0.03, 0.13 + rnd() * 0.02, 0.05);
+      else if (u < 0.34) c.setRGB(0.085 + rnd() * 0.025, 0.11 + rnd() * 0.02, 0.022 + rnd() * 0.01);
+      else c.setRGB(0.052 + rnd() * 0.022, 0.1 + rnd() * 0.03, 0.014 + rnd() * 0.008);
     }, (x, z) => {
       if (!dentroPasto(x, z, 0.98)) return 0;
       const t = enTierra(x, z);
@@ -488,17 +534,46 @@ export default {
       const d = cercaPoste(x, z), borde = (x / RX) ** 2 + ((z - CZ) / RZ) ** 2;
       return 0.35 + (d < 1.8 ? 0.65 : 0) + (borde > 0.7 ? 0.4 : 0) + (t < 1.25 ? 0.5 : 0);
     }, (x, z) => (cercaPoste(x, z) < 1.8 ? 1.5 : 1) * ((x / RX) ** 2 + ((z - CZ) / RZ) ** 2 > 0.75 ? 1.3 : 1));
-    sembrar(mataGeo(4, kit.mulberry32(12), true), 260, (c) => { const v = 0.75 + rnd() * 0.3; c.setRGB(0.36 * v, 0.3 * v, 0.14 * v); }, (x, z) => {
+    sembrar(mataGeo(5, kit.mulberry32(12), { espigas: 3, alto: [0.1, 0.12], seca: 0.7 }), 260, (c) => { const v = 0.8 + rnd() * 0.35; c.setRGB(0.115 * v, 0.105 * v, 0.045 * v); }, (x, z) => {
       if (!dentroPasto(x, z, 0.98) || enTierra(x, z) < 0.95) return 0;
       const d = cercaPoste(x, z), borde = (x / RX) ** 2 + ((z - CZ) / RZ) ** 2;
       return (d < 1.6 ? 0.9 : 0) + (borde > 0.72 ? 0.7 : 0) + (Math.hypot(x - RC.x, z - RC.z) < 1.8 ? 0.6 : 0);
-    }, () => 2.1);
+    }, () => 1.15);
+    // flores de potrero (dientes de león y manzanillas): el color de la instancia tiñe la corola; el tallo y las
+    // hojas llevan un color de vértice compensado para quedar verdes con cualquiera de los dos tintes
+    {
+      const r = kit.mulberry32(13), pos = [], nor = [], col = [], idx = [];
+      const vert = (x, y, z, c, ny = 1) => { pos.push(x, y, z); nor.push(0, ny, 0); col.push(...c); return pos.length / 3 - 1; };
+      const verde = [0.07, 0.15, 0.06], centro = [0.75, 0.62, 0.05], petalo = [1, 0.97, 0.92];
+      const h = 0.085, inc = 0.012, hx = inc, w = 0.0015;
+      const t = [vert(-w, 0, 0, verde), vert(w, 0, 0, verde), vert(hx - w, h, 0, verde), vert(hx + w, h, 0, verde)];
+      idx.push(t[0], t[1], t[2], t[1], t[3], t[2]);
+      const nP = 10, R = 0.016, c0 = vert(hx, h + 0.004, 0, centro);
+      const borde = [];
+      for (let i = 0; i < nP; i++) { const a = (i / nP) * Math.PI * 2, rr = R * (i % 2 ? 0.72 : 1); borde.push(vert(hx + Math.cos(a) * rr, h + 0.002 - (i % 2 ? 0 : 0.003), Math.sin(a) * rr, petalo)); }
+      for (let i = 0; i < nP; i++) idx.push(c0, borde[(i + 1) % nP], borde[i]);
+      // roseta de hojas a ras de suelo
+      for (let k = 0; k < 3; k++) {
+        const a = (k / 3) * Math.PI * 2 + 0.4, c = Math.cos(a), sn = Math.sin(a), L = 0.045 + r() * 0.02, ww = 0.009;
+        const b = [vert(0, 0.004, 0, verde), vert(c * L * 0.5 - sn * ww, 0.012, sn * L * 0.5 + c * ww, verde), vert(c * L * 0.5 + sn * ww, 0.012, sn * L * 0.5 - c * ww, verde), vert(c * L, 0.006, sn * L, verde)];
+        idx.push(b[0], b[1], b[2], b[1], b[3], b[2]);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setIndex(idx);
+      sembrar(geo, 320, (c) => (rnd() < 0.62 ? c.setRGB(0.85, 0.56, 0.03) : c.setRGB(0.76, 0.76, 0.72)), (x, z) => {
+        if (!dentroPasto(x, z, 0.97) || enTierra(x, z) < 1.1) return 0;
+        return 0.25 + (z > 3.5 ? 0.6 : 0) + (cercaPoste(x, z) < 2.2 ? 0.3 : 0);
+      }, () => 1);
+    }
 
     // ------------------------------------------------------------ piezas estáticas: madera y material mixto
     const MAD = lote(), MIX = lote(), ATL = lote();
-    // piedras redondeadas, con más grava al pie de los postes
+    // piedras de río (bolones grises y pardos) medio enterradas, con más grava al pie de los postes
     {
-      const base = new THREE.SphereGeometry(1, 7, 5), r2 = kit.mulberry32(51);
+      const base = new THREE.SphereGeometry(1, 9, 6), r2 = kit.mulberry32(51);
       let k = 0;
       while (k < 64) {
         let px, pz;
@@ -507,11 +582,17 @@ export default {
         const t = (k < 20 ? 0.025 : 0.03) + rnd() ** 2 * (k < 20 ? 0.05 : 0.1);
         const geo = base.clone(), p = geo.attributes.position, n = geo.attributes.normal, f = [r2() * 6, r2() * 6, r2() * 6];
         for (let i = 0; i < p.count; i++) {
-          const x = p.getX(i), y = p.getY(i), z = p.getZ(i), d = 1 + 0.16 * Math.sin(x * 3 + f[0]) * Math.sin(y * 2.6 + f[1]) + 0.1 * Math.sin(z * 4.1 + f[2]);
-          p.setXYZ(i, x * d, y * d, z * d); n.setXYZ(i, x, y, z);
+          const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+          const d = 1 + 0.16 * Math.sin(x * 3 + f[0]) * Math.sin(y * 2.6 + f[1]) + 0.1 * Math.sin(z * 4.1 + f[2]) + 0.05 * Math.sin(x * 7 + z * 5 + f[1]);
+          p.setXYZ(i, x * d, Math.max(-0.35, y * d), z * d); n.setXYZ(i, x, y, z);
         }
-        const gr = 0.36 + rnd() * 0.22, tinte = rnd();
-        MIX.add(geo, { x: px, y: t * 0.18, z: pz, rx: rnd() * 0.5, ry: rnd() * 6.28, sx: t * (1 + rnd() * 0.5), sy: t * (0.45 + rnd() * 0.25), sz: t * (1 + rnd() * 0.4), color: new THREE.Color().setRGB(gr * (1.04 + tinte * 0.06), gr, gr * (0.9 - tinte * 0.05)), clase: 'piedra' });
+        // tono de cada piedra: la parte enterrada queda más oscura (tierra pegada)
+        const gr = 0.15 + rnd() * 0.13, tinte = rnd(), pardo = rnd() < 0.35;
+        const tono = new THREE.Color().setRGB(gr * (pardo ? 1.18 : 0.96 + tinte * 0.06), gr * (pardo ? 1.02 : 1), gr * (pardo ? 0.8 : 1.02 - tinte * 0.08));
+        MIX.add(geo, {
+          x: px, y: t * 0.05, z: pz, rx: rnd() * 0.4, ry: rnd() * 6.28, sx: t * (1 + rnd() * 0.5), sy: t * (0.45 + rnd() * 0.25), sz: t * (1 + rnd() * 0.4),
+          color: (x, y, z, c) => c.copy(tono).multiplyScalar(y < -0.1 ? 0.72 : 1), clase: 'piedra',
+        });
         k++;
       }
     }
@@ -532,7 +613,7 @@ export default {
           const x = p.getX(i), z = p.getZ(i), y = p.getY(i) + H / 2, a = Math.atan2(z, x);
           const d = 1 + 0.025 * Math.sin(3 * a + xp) + 0.012 * Math.sin(7 * a + y * 1.3);
           p.setXYZ(i, x * d + curva(y), p.getY(i), z * d);
-          uv.setXY(i, uv.getX(i) * 0.5, y / 1.7 + (xp > 0 ? 0.37 : 0));
+          uv.setXY(i, 0.003 + uv.getX(i) * 0.494, y / 1.7 + (xp > 0 ? 0.37 : 0)); // margen: el filtro no toma las tablas vecinas
         }
         MAD.add(geo, {
           x: xp, y: H / 2,
@@ -656,7 +737,8 @@ export default {
     const conos = [[X1 - 1.35, 2.25], [X2 + 1.5, 1.35], [X2 + 4.0, 0.75], [X2 + 4.25, -3.4]];
     for (const [cx, cz] of conos) {
       const ry = rnd() * 6.28;
-      MIX.add(cajaRedondeada(0.38, 0.38, 0.035, 0.03), { x: cx, y: 0.0175, z: cz, rx: Math.PI / 2, ry, color: 0x1d1d1d, clase: 'goma' });
+      // base de goma tendida en el suelo (primero se acuesta y luego gira con el cono)
+      MIX.add(cajaRedondeada(0.38, 0.38, 0.035, 0.03), { x: cx, y: 0.0175, z: cz, rx: Math.PI / 2, ry, orden: 'YXZ', color: 0x1d1d1d, clase: 'goma' });
       const banda = (y) => (y > 0.35 && y < 0.45) || (y > 0.55 && y < 0.64);
       MIX.add(new THREE.LatheGeometry(conoPerfil, 22), {
         x: cx, y: 0.034, z: cz, ry,
@@ -687,7 +769,8 @@ export default {
       o(cajaRedondeada(0.62, 0.62, 0.018, 0.012), { y: 0.88, color: 0xa5abb0, clase: 'galv' });
       for (const l of [-1, 1]) {
         o(new THREE.BoxGeometry(0.035, 1.22, 0.035), { x: l * 0.2, y: 0.6, z: -0.03, color: 0x8d9398, clase: 'galv' });
-        for (const yy of [0.68, 1.08]) o(new THREE.CylinderGeometry(0.01, 0.01, 0.012, 8), { x: l * 0.2, y: yy, z: 0.016, rx: Math.PI / 2, color: 0x7a7f83, clase: 'galv' });
+        // pernos de coche junto a los bordes, fuera del texto del letrero
+        for (const yy of [0.88 - 0.272, 0.88 + 0.272]) o(new THREE.CylinderGeometry(0.0095, 0.0095, 0.008, 10), { x: l * 0.2, y: yy, z: 0.015, rx: Math.PI / 2, sy: 0.6, color: 0x8a8f93, clase: 'galv' });
       }
       o(new THREE.CylinderGeometry(0.16, 0.2, 0.05, 20), { y: 0.03, z: -0.03, color: 0x6c6258, clase: 'piedra' });
     }
@@ -713,6 +796,52 @@ export default {
       oe(new THREE.BoxGeometry(0.425, 0.008, 0.305), { y: 0.17, color: 0x3a3320, clase: 'plastico' });
       for (const l of [-1, 1]) oe(new THREE.BoxGeometry(0.04, 0.05, 0.012), { x: l * 0.13, y: 0.17, z: 0.155, color: 0x2a2a2a, clase: 'goma' });
       oe(new THREE.TorusGeometry(0.055, 0.01, 6, 14, Math.PI), { y: 0.245, color: 0x2a2a2a, clase: 'goma' });
+    }
+
+    // ------------------------------------------------------------ carretilla con la tierra sobrante del hoyo del poste alto
+    {
+      const m = new THREE.Matrix4().compose(V(3.3, 0, -2.4), new THREE.Quaternion().setFromAxisAngle(Y, 2.65), V(1, 1, 1));
+      const o = (geo, op) => MIX.add(geo, { ...op, m: m.clone().multiply(op.m || mat4(op)) });
+      const tubo = (a, b, r, op) => o(new THREE.CylinderGeometry(r, r, 1, 10), { ...op, m: entre(a, b) });
+      const marco = { color: 0x26292b, clase: 'pintura' };
+      // batea de acero pintado, de lados planos, con labio enrollado (torno de cuatro caras con sombreado plano)
+      const perfil = [[0, 0], [0.2546, 0], [0.4384, 0.24], [0.4584, 0.243], [0.452, 0.256], [0.432, 0.249], [0.2476, 0.009], [0, 0.009]].map(([r, y]) => new THREE.Vector2(r, y));
+      const batea = new THREE.LatheGeometry(perfil, 4, Math.PI / 4).toNonIndexed();
+      batea.computeVertexNormals();
+      o(batea, { x: -0.02, y: 0.385, sx: 1.39, color: (x, y, z, c) => c.set(0x2f6a3b).multiplyScalar(y > 0.24 ? 0.8 : y < 0.02 ? 0.65 : 1), clase: 'pintura' });
+      // tierra con piedras en la batea
+      o(new THREE.SphereGeometry(1, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), { x: -0.04, y: 0.392, sx: 0.31, sy: 0.12, sz: 0.215, color: 0x8a7254, clase: 'piedra' });
+      for (const [x, z, e] of [[0.1, 0.06, 0.03], [-0.15, -0.08, 0.024], [0.02, -0.12, 0.02]]) o(new THREE.SphereGeometry(e, 9, 6), { x: x - 0.04, y: 0.392 + 0.12 * Math.sqrt(Math.max(0, 1 - (x / 0.31) ** 2 - (z / 0.215) ** 2)) - e * 0.15, z, sy: 0.7, color: 0x6c6a64, clase: 'piedra' });
+      // rueda: neumático con banda, llanta pintada, maza y eje
+      o(new THREE.TorusGeometry(0.15, 0.052, 10, 30), { x: 0.62, y: 0.202, color: 0x1c1c1c, clase: 'goma' });
+      o(new THREE.CylinderGeometry(0.112, 0.112, 0.07, 22), { x: 0.62, y: 0.202, rx: Math.PI / 2, color: 0xd29a1c, clase: 'pintura' });
+      o(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 14), { x: 0.62, y: 0.202, rx: Math.PI / 2, color: 0x7e8387, clase: 'acero' });
+      o(new THREE.CylinderGeometry(0.011, 0.011, 0.19, 8), { x: 0.62, y: 0.202, rx: Math.PI / 2, color: 0x9aa0a4, clase: 'galv' });
+      // bastidor de tubo: del eje a las manillas, con travesaño y patas
+      for (const l of [-1, 1]) {
+        const A = [0.62, 0.202, l * 0.072], B = [-0.3, 0.43, l * 0.25], C = [-0.93, 0.505, l * 0.28];
+        tubo(A, B, 0.016, marco); tubo(B, C, 0.016, marco);
+        const k = 1 - 0.14 / Math.hypot(C[0] - B[0], C[1] - B[1], C[2] - B[2]);
+        tubo(B.map((v, i) => v + (C[i] - v) * k), C.map((v, i) => v + (C[i] - B[i]) * 0.02), 0.021, { color: 0x151515, clase: 'goma' });
+        tubo([-0.25, 0.42, l * 0.245], [-0.32, 0.012, l * 0.272], 0.014, marco);
+        o(new THREE.BoxGeometry(0.11, 0.012, 0.036), { x: -0.33, y: 0.006, z: l * 0.272, color: 0x1f2123, clase: 'acero' });
+        o(new THREE.BoxGeometry(0.05, 0.06, 0.006), { x: 0.2, y: 0.36, z: l * 0.165, color: 0x26292b, clase: 'pintura' });
+      }
+      tubo([0.35, 0.268, -0.126], [0.35, 0.268, 0.126], 0.012, marco);
+      tubo([-0.285, 0.16, -0.256], [-0.285, 0.16, 0.256], 0.011, marco);
+    }
+    // pisón de mano apoyado en el poste alto (con él se apisonó la tierra del pie del poste)
+    {
+      const yT = 1.38, u = V(0.751, 0, -0.661), eje = V(X2 + P2.curva(yT), 0, 0);
+      const arriba = eje.clone().addScaledVector(u, P2.r(yT) + 0.018).setY(yT), abajo = eje.clone().addScaledVector(u, 0.62).setY(0.055);
+      const d = arriba.clone().sub(abajo).normalize();
+      MIX.add(new THREE.CylinderGeometry(0.016, 0.016, 1, 10), { m: entre(abajo.toArray(), arriba.toArray()), color: 0x45484b, clase: 'acero' });
+      MIX.add(new THREE.CylinderGeometry(0.03, 0.042, 1, 12), { m: entre(abajo.toArray(), abajo.clone().addScaledVector(d, 0.09).toArray()), color: 0x5a4636, clase: 'oxido' });
+      MIX.add(cajaRedondeada(0.2, 0.2, 0.018, 0.012), { m: entre(abajo.clone().addScaledVector(d, -0.009).toArray(), abajo.clone().addScaledVector(d, 0.009).toArray(), false).multiply(mat4({ rx: Math.PI / 2 })), color: 0x6b4a33, clase: 'oxido' });
+      // manilla en T con puños de goma
+      const lado = V().crossVectors(d, Y).normalize(), tope = arriba.clone().addScaledVector(d, 0.02);
+      MIX.add(new THREE.CylinderGeometry(0.014, 0.014, 1, 10), { m: entre(tope.clone().addScaledVector(lado, -0.17).toArray(), tope.clone().addScaledVector(lado, 0.17).toArray()), color: 0x45484b, clase: 'acero' });
+      for (const l of [-1, 1]) MIX.add(new THREE.CylinderGeometry(0.019, 0.019, 1, 10), { m: entre(tope.clone().addScaledVector(lado, l * 0.06).toArray(), tope.clone().addScaledVector(lado, l * 0.17).toArray()), color: 0x1a1a1a, clase: 'goma' });
     }
 
     // ------------------------------------------------------------ trípode y estación total robótica
@@ -779,8 +908,8 @@ export default {
       const mont = new THREE.CylinderGeometry(0.05, 0.2, 0.045, 18, 2);
       const p = mont.attributes.position, uv = mont.attributes.uv;
       for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)); if (p.getY(i) < 0.02) { const k = 1 + 0.2 * Math.sin(3 * a) + 0.1 * Math.sin(7 * a); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } uv.setXY(i, p.getX(i) / 1.6, p.getZ(i) / 1.6); }
-      Tt.add(mont, { y: 0.02, color: 0x9e8a72 });
-      for (const [x, z, e] of [[0.17, 0.08, 0.035], [-0.12, -0.16, 0.028], [0.05, -0.2, 0.022], [-0.2, 0.1, 0.03]]) Tt.add(new THREE.SphereGeometry(e, 7, 5), { x, y: e * 0.3, z, sy: 0.6, color: 0x8e7a62 });
+      Tt.add(mont, { y: 0.02, color: 0xd2bfa5 });
+      for (const [x, z, e] of [[0.17, 0.08, 0.035], [-0.12, -0.16, 0.028], [0.05, -0.2, 0.022], [-0.2, 0.1, 0.03]]) Tt.add(new THREE.SphereGeometry(e, 9, 6), { x, y: e * 0.25, z, sy: 0.55, color: 0xb8a48a });
       const mt = Tt.unir(tierraMat, { sombra: false }); g.remove(mt); estaca.add(mt);
     }
     // indicación de arrastre: anillo y flechas sobre el pasto
@@ -1082,8 +1211,11 @@ export default {
         arcos.position.set(xs, 0.04, 0.05);
         kit.cambiarEtiqueta(lA1, `α = ${kit.num((a1 * 180) / Math.PI, 1)}°`);
         kit.cambiarEtiqueta(lA2, `β = ${kit.num((a2 * 180) / Math.PI, 1)}°`);
-        lA1.position.set(xs - 1.25 * Math.cos(a1 / 2), 0.2 + 1.25 * Math.sin(a1 / 2), 0.1);
-        lA2.position.set(xs + 1.25 * Math.cos(a2 / 2), 0.2 + 1.25 * Math.sin(a2 / 2), 0.1);
+        // cada ángulo va junto al rótulo de su tramo, del lado de la estaca y a su misma altura: sobre el arco quedaba encima
+        // del rótulo de x o de 30 − x, y más abajo lo tapan los paneles de VR
+        const ancho = (l) => l.userData.size[0] * l.scale.x;
+        lA1.position.set(lx.position.x + ancho(lx) / 2 + 0.3 + ancho(lA1) / 2, lx.position.y, lx.position.z);
+        lA2.position.set(lr.position.x - ancho(lr) / 2 - 0.3 - ancho(lA2) / 2, lr.position.y, lr.position.z);
       }
     }
 

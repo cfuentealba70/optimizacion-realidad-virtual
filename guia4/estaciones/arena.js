@@ -38,6 +38,25 @@ function normalDeAltura(THREE, c, fuerza) {
 }
 // Dibuja una figura en las nueve copias vecinas para que la textura se repita sin costuras
 function envolver(n, fn) { for (const dx of [-n, 0, n]) for (const dy of [-n, 0, n]) fn(dx, dy); }
+// Ruido de valor suave en [0, 1) sobre una rejilla de p × p que se repite
+function crearRuido(rnd, p) {
+  const t = Float32Array.from({ length: p * p }, () => rnd());
+  const v = (i, j) => t[(((j % p) + p) % p) * p + (((i % p) + p) % p)];
+  return (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    return mezcla(mezcla(v(xi, yi), v(xi + 1, yi), sx), mezcla(v(xi, yi + 1), v(xi + 1, yi + 1), sx), sy);
+  };
+}
+// Contorno quebrado de un desconchado o una mancha: radios al azar suavizados con sus vecinos
+function contorno(rnd, rr, n = 18) {
+  const r0 = Array.from({ length: n }, () => 0.55 + rnd() * 0.9);
+  const el = 0.6 + rnd() * 0.8, giro = rnd() * Math.PI, c = Math.cos(giro), s = Math.sin(giro);
+  return r0.map((v, k) => {
+    const d = rr * (v * 2 + r0[(k + 1) % n] + r0[(k + n - 1) % n]) / 4, t = (k / n) * Math.PI * 2;
+    const px = Math.cos(t) * d * el, py = Math.sin(t) * d / el;
+    return [px * c - py * s, px * s + py * c];
+  });
+}
 
 // Caja con coordenadas UV a escala real (s metros por repetición) y subdivisiones
 function cajaUV(THREE, w, h, d, { s = 1, seg = [1, 1, 1] } = {}) {
@@ -150,29 +169,30 @@ function texturasPintura(kit, { base = '#3d6c96', semilla = 3, size = 512, desga
       g.fillStyle = gg; g.fillRect(x + dx, y + dy, an, l);
     });
   }
-  const nChips = Math.round(42 * desgaste);
-  for (let i = 0; i < nChips; i++) {
-    const x = rnd() * size, y = rnd() * size, rr = (1.5 + rnd() * rnd() * 11) * S;
-    // contorno orgánico: pocas ondas suaves y un leve serrucho
-    const n = 22, f1 = rnd() * 6, f2 = rnd() * 6, el = 0.6 + rnd() * 0.8, pts = [];
-    for (let k = 0; k < n; k++) {
-      const t = (k / n) * Math.PI * 2, d = rr * (1 + 0.28 * Math.sin(2 * t + f1) + 0.16 * Math.sin(3 * t + f2) + (rnd() - 0.5) * 0.16);
-      pts.push([Math.cos(t) * d * el, Math.sin(t) * d / el]);
+  // desconchados en grupos (golpes de la pala y del cargador): uno mayor y varios chicos alrededor, de borde quebrado.
+  // Los chicos dejan ver solo el acero oxidado; los mayores muestran además el anticorrosivo gris en el borde.
+  const nGrupos = Math.round(10 * desgaste);
+  for (let gi = 0; gi < nGrupos; gi++) {
+    const gx = rnd() * size, gy = rnd() * size, disp = (14 + rnd() * 46) * S, nc = 3 + Math.floor(rnd() * 8);
+    for (let i = 0; i < nc; i++) {
+      const x = gx + (rnd() - 0.5) * 2 * disp, y = gy + (rnd() - 0.5) * 1.2 * disp;
+      const rr = (0.9 + Math.pow(rnd(), 2.2) * (i === 0 ? 8.5 : 4.2)) * S, pts = contorno(rnd, rr);
+      const poli = (ctx, dx, dy, esc) => { ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(x + dx + px * esc, y + dy + py * esc) : ctx.moveTo(x + dx + px * esc, y + dy + py * esc))); ctx.closePath(); ctx.fill(); };
+      const grande = rr > 3 * S, chorrea = grande && rnd() < 0.35, largo = (12 + rnd() * 70) * S, ancho = Math.max(1, rr * 0.22);
+      const ox = ['#57412f', '#4a3a2d', '#5d4634'][Math.floor(rnd() * 3)];
+      envolver(size, (dx, dy) => {
+        if (chorrea) {
+          const gg = g.createLinearGradient(0, y + dy, 0, y + dy + largo);
+          gg.addColorStop(0, 'rgba(104,62,36,0.24)'); gg.addColorStop(1, 'rgba(104,62,36,0)');
+          g.fillStyle = gg; g.fillRect(x + dx - ancho / 2, y + dy, ancho, largo);
+          gr.fillStyle = 'rgba(0,200,40,0.3)'; gr.fillRect(x + dx - ancho / 2, y + dy, ancho, largo * 0.6);
+        }
+        if (grande) { g.fillStyle = 'rgba(116,110,102,0.8)'; poli(g, dx, dy, 1.12); }
+        g.fillStyle = ox; poli(g, dx, dy, grande ? 0.86 : 1);
+        ga.fillStyle = 'rgb(108,108,108)'; poli(ga, dx, dy, grande ? 1.1 : 1);
+        gr.fillStyle = 'rgb(0,225,25)'; poli(gr, dx, dy, grande ? 1.1 : 1);
+      });
     }
-    const poli = (ctx, dx, dy, esc) => { ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(x + dx + px * esc, y + dy + py * esc) : ctx.moveTo(x + dx + px * esc, y + dy + py * esc))); ctx.closePath(); ctx.fill(); };
-    const chorrea = rnd() < 0.3, largo = (15 + rnd() * 90) * S, ox = rnd() < 0.5 ? '#5c3b27' : '#4b3626', ancho = Math.max(1, rr * 0.3);
-    envolver(size, (dx, dy) => {
-      if (chorrea) {
-        const gg = g.createLinearGradient(0, y + dy, 0, y + dy + largo);
-        gg.addColorStop(0, 'rgba(110,58,30,0.32)'); gg.addColorStop(1, 'rgba(110,58,30,0)');
-        g.fillStyle = gg; g.fillRect(x + dx - ancho / 2, y + dy, ancho, largo);
-        gr.fillStyle = 'rgba(0,200,40,0.35)'; gr.fillRect(x + dx - ancho / 2, y + dy, ancho, largo * 0.6);
-      }
-      g.fillStyle = 'rgba(120,104,92,0.85)'; poli(g, dx, dy, 1.18);
-      g.fillStyle = ox; poli(g, dx, dy, 0.8);
-      ga.fillStyle = 'rgb(104,104,104)'; poli(ga, dx, dy, 1.15);
-      gr.fillStyle = 'rgb(0,225,25)'; poli(gr, dx, dy, 1.15);
-    });
   }
   for (let i = 0; i < 34 * desgaste; i++) {
     const x = rnd() * size, y = rnd() * size, l = (4 + rnd() * 22) * S, ang = (rnd() - 0.5) * 0.9 + (rnd() < 0.25 ? Math.PI / 2 : 0);
@@ -199,15 +219,98 @@ function materialPintura(kit, tex, { normal = 0.7, color = 0xffffff, vertexColor
   });
 }
 
-// Atlas de calcomanías de 512 × 512: rótulo pintado, óxido, polvo de arena, huellas, rueda, derrame y mancha
+// Plancha de acero laminado en caliente: calamina gris azulada con manchones, vetas del laminado,
+// florecido de óxido, aureolas de agua secas y rayones brillantes. Mismo formato que texturasPintura.
+function texturasCalamina(kit, { semilla = 8, size = 512 } = {}) {
+  const { THREE } = kit, rnd = kit.mulberry32(semilla), S = size / 512;
+  const [c, g] = lienzo(size), [a, ga] = lienzo(size), [r, gr] = lienzo(size);
+  g.fillStyle = '#656c71'; g.fillRect(0, 0, size, size);
+  ga.fillStyle = 'rgb(128,128,128)'; ga.fillRect(0, 0, size, size);
+  gr.fillStyle = 'rgb(0,172,92)'; gr.fillRect(0, 0, size, size);
+  const mancha = (ctx, x, y, rr, col) => envolver(size, (dx, dy) => {
+    const gg = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, rr);
+    gg.addColorStop(0, col); gg.addColorStop(1, col.replace(/[\d.]+\)$/, '0)'));
+    ctx.fillStyle = gg; ctx.fillRect(x + dx - rr, y + dy - rr, rr * 2, rr * 2);
+  });
+  for (let i = 0; i < 70; i++) {
+    const claro = rnd() < 0.5;
+    mancha(g, rnd() * size, rnd() * size, (25 + rnd() * 90) * S, claro ? `rgba(150,158,164,${(0.08 + rnd() * 0.14).toFixed(2)})` : `rgba(38,44,52,${(0.1 + rnd() * 0.16).toFixed(2)})`);
+  }
+  // vetas del laminado, a lo largo de la plancha
+  for (let i = 0; i < 140; i++) {
+    const y = rnd() * size, x = rnd() * size, l = (80 + rnd() * 300) * S, al = (0.03 + rnd() * 0.06).toFixed(3), h = (0.6 + rnd() * 1.4) * S;
+    g.fillStyle = rnd() < 0.5 ? `rgba(200,206,210,${al})` : `rgba(20,24,30,${al})`;
+    envolver(size, (dx, dy) => g.fillRect(x + dx, y + dy, l, h));
+  }
+  // florecido de óxido: aureolas pardas con puntos más oscuros, más ásperas y menos metálicas
+  for (let k = 0; k < 12; k++) {
+    const cx = rnd() * size, cy = rnd() * size, rr = (20 + rnd() * 60) * S;
+    mancha(g, cx, cy, rr, `rgba(128,72,38,${(0.18 + rnd() * 0.2).toFixed(2)})`);
+    mancha(gr, cx, cy, rr * 0.8, 'rgba(0,236,30,0.6)');
+    for (let i = 0; i < 26; i++) {
+      const an = rnd() * 6.28, d = Math.pow(rnd(), 0.7) * rr, x = cx + Math.cos(an) * d, y = cy + Math.sin(an) * d, pr = (0.8 + rnd() * 3.5) * S;
+      const col = `rgba(${(96 + rnd() * 40) | 0},${(52 + rnd() * 20) | 0},${(26 + rnd() * 12) | 0},${(0.4 + rnd() * 0.4).toFixed(2)})`;
+      envolver(size, (dx, dy) => {
+        g.fillStyle = col;
+        g.beginPath(); g.arc(x + dx, y + dy, pr, 0, 7); g.fill();
+        ga.fillStyle = 'rgb(146,146,146)'; ga.beginPath(); ga.arc(x + dx, y + dy, pr, 0, 7); ga.fill();
+      });
+    }
+  }
+  // aureolas de charcos secos
+  for (let i = 0; i < 7; i++) {
+    const x = rnd() * size, y = rnd() * size, rx = (30 + rnd() * 70) * S, ry = rx * (0.5 + rnd() * 0.4), an = rnd() * 3;
+    const col = `rgba(196,186,166,${(0.1 + rnd() * 0.1).toFixed(2)})`, lw = (2 + rnd() * 3) * S;
+    envolver(size, (dx, dy) => {
+      g.strokeStyle = col; g.lineWidth = lw;
+      g.beginPath(); g.ellipse(x + dx, y + dy, rx, ry, an, 0, 7); g.stroke();
+    });
+  }
+  // rayones con el acero brillante a la vista
+  for (let i = 0; i < 50; i++) {
+    const x = rnd() * size, y = rnd() * size, l = (6 + rnd() * 40) * S, ang = (rnd() - 0.5) * 0.7 + (rnd() < 0.3 ? Math.PI / 2 : 0);
+    const x2 = x + Math.cos(ang) * l, y2 = y + Math.sin(ang) * l;
+    envolver(size, (dx, dy) => {
+      for (const [ctx, col, an] of [[g, 'rgba(176,182,186,0.4)', 0.8], [ga, 'rgb(118,118,118)', 1], [gr, 'rgb(0,96,190)', 1]]) {
+        ctx.strokeStyle = col; ctx.lineWidth = an * S; ctx.beginPath(); ctx.moveTo(x + dx, y + dy); ctx.lineTo(x2 + dx, y2 + dy); ctx.stroke();
+      }
+    });
+  }
+  for (const [ctx, amp] of [[g, 7], [ga, 10]]) {
+    const img = ctx.getImageData(0, 0, size, size), d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const v = (rnd() - 0.5) * amp; d[i] += v; d[i + 1] += v; d[i + 2] += v; }
+    ctx.putImageData(img, 0, 0);
+  }
+  return { map: textura(THREE, c), normalMap: normalDeAltura(THREE, a, 2), rugosidad: textura(THREE, r, { srgb: false }) };
+}
+
+// Borde del patio de grava: alfa con un contorno irregular que se deshace en manchones hacia el pasto
+function texturaBordeGrava(kit) {
+  const N = 512, rnd = kit.mulberry32(63), [c, g] = lienzo(N);
+  const r1 = crearRuido(rnd, 14), r2 = crearRuido(rnd, 60), f = [rnd() * 6, rnd() * 6, rnd() * 6];
+  const img = g.createImageData(N, N), d = img.data;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = ((x + 0.5) / N) * 2 - 1, v = ((y + 0.5) / N) * 2 - 1, r = Math.hypot(u, v), an = Math.atan2(v, u);
+    const re = 0.88 + 0.035 * Math.sin(3 * an + f[0]) + 0.02 * Math.sin(7 * an + f[1]) + 0.012 * Math.sin(13 * an + f[2]);
+    const ruido = r1((x / N) * 14, (y / N) * 14) * 0.6 + r2((x / N) * 60, (y / N) * 60) * 0.4;
+    const al = Math.min(1, Math.max(0, suave(re + 0.075, re - 0.045, r) + (ruido - 0.5) * 0.95)), i = (y * N + x) * 4;
+    d[i] = d[i + 1] = d[i + 2] = al * 255; d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return textura(kit.THREE, c, { srgb: false, repetir: false });
+}
+
+// Atlas de calcomanías de 512 × 768: rótulo pintado, óxido, polvo de arena, huellas, rueda, derrame, mancha,
+// marcas de tiza de las planchas, huella de neumático del camión y mancha de aceite
 const REG = {
   rotulo: [0, 0, 512, 128], oxido: [0, 128, 128, 128], polvo: [128, 128, 128, 128], huellas: [256, 128, 128, 128], rueda: [384, 128, 128, 128],
   derrame: [0, 256, 256, 256], mancha: [256, 256, 256, 256],
+  tizaBase: [0, 512, 256, 128], tizaLado: [256, 512, 256, 128], neumatico: [0, 640, 128, 128], aceite: [128, 640, 128, 128],
 };
 function atlasCalcomanias(kit) {
-  const { THREE } = kit, rnd = kit.mulberry32(41), N = 512;
-  const [c, g] = lienzo(N);
-  g.clearRect(0, 0, N, N);
+  const { THREE } = kit, rnd = kit.mulberry32(41), N = 512, NH = 768;
+  const [c, g] = lienzo(N, NH);
+  g.clearRect(0, 0, N, NH);
   const region = ([x, y, w, h], fn) => { g.save(); g.beginPath(); g.rect(x + 3, y + 3, w - 6, h - 6); g.clip(); g.translate(x, y); fn(w, h); g.restore(); };
   const salpicar = (n, fn) => { for (let i = 0; i < n; i++) fn(); };
   region(REG.rotulo, (w, h) => {
@@ -280,16 +383,58 @@ function atlasCalcomanias(kit) {
       g.fillStyle = gg; g.fillRect(x - r, y - r, 2 * r, 2 * r);
     }
   });
+  // marcas de tiza del bodeguero: espesor, destino y medida, con subrayado y el grano de la tiza
+  const tiza = (lineas) => (w, h) => {
+    g.save(); g.translate(w / 2, h / 2); g.rotate(-0.07);
+    g.fillStyle = g.strokeStyle = 'rgba(242,240,232,0.92)'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const [t, px, y] of lineas) { g.font = `italic 700 ${px}px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive`; g.fillText(t, 0, y); }
+    g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(-86, 8); g.quadraticCurveTo(0, 15, 90, 4); g.stroke();
+    g.restore();
+    g.globalCompositeOperation = 'destination-out';
+    salpicar(650, () => { g.globalAlpha = 0.3 + rnd() * 0.7; g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 2, 1 + rnd() * 1.3); });
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  };
+  region(REG.tizaBase, tiza([['e = 20 mm', 36, -24], ['BASE · 1,0 × 1,5', 21, 34]]));
+  region(REG.tizaLado, tiza([['e = 8 mm', 36, -24], ['COSTADOS · 1,0 × 1,5', 17, 34]]));
+  // huella de las ruedas duales del camión: banda de grava apisonada con tacos que se repiten cada 15 px
+  // (la ventana UV de 120 px contiene 8 períodos, así los tramos de la huella empalman sin costura)
+  region(REG.neumatico, (w, h) => {
+    const gg = g.createLinearGradient(0, 0, w, 0);
+    gg.addColorStop(0, 'rgba(214,204,182,0)'); gg.addColorStop(0.04, 'rgba(214,204,182,0.22)'); gg.addColorStop(0.09, 'rgba(70,58,42,0.3)');
+    gg.addColorStop(0.91, 'rgba(70,58,42,0.3)'); gg.addColorStop(0.96, 'rgba(214,204,182,0.22)'); gg.addColorStop(1, 'rgba(214,204,182,0)');
+    g.fillStyle = gg; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(34,27,18,0.34)';
+    for (const [x0, x1] of [[12, 61], [67, 116]]) {
+      const m = (x0 + x1) / 2;
+      for (let k = -2; k < 10; k++) {
+        const y = 1 + k * 15;
+        g.beginPath(); g.moveTo(x0, y); g.lineTo(m - 1, y + 3); g.lineTo(m - 1, y + 10); g.lineTo(x0, y + 7); g.fill();
+        g.beginPath(); g.moveTo(x1, y + 7); g.lineTo(m + 1, y + 10); g.lineTo(m + 1, y + 17); g.lineTo(x1, y + 14); g.fill();
+      }
+    }
+  });
+  region(REG.aceite, (w, h) => {
+    const pts = contorno(rnd, 34, 22);
+    g.fillStyle = 'rgba(26,22,18,0.4)'; g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(w / 2 + x, h / 2 + y) : g.moveTo(w / 2 + x, h / 2 + y))); g.closePath(); g.fill();
+    for (let i = 0; i < 12; i++) {
+      const an = rnd() * 6.28, d = 30 + rnd() * 26, r = 2 + rnd() * 6;
+      g.fillStyle = `rgba(22,18,14,${(0.25 + rnd() * 0.3).toFixed(2)})`; g.beginPath(); g.arc(w / 2 + Math.cos(an) * d, h / 2 + Math.sin(an) * d, r, 0, 7); g.fill();
+    }
+    const gg = g.createRadialGradient(w / 2 - 6, h / 2 - 4, 2, w / 2, h / 2, 26); gg.addColorStop(0, 'rgba(10,8,6,0.35)'); gg.addColorStop(1, 'rgba(10,8,6,0)');
+    g.fillStyle = gg; g.fillRect(0, 0, w, h);
+  });
   const tex = textura(THREE, c, { repetir: false });
   // coordenadas UV de una región, con un margen para que no se mezclen las vecinas
-  const uv = (nombre) => { const [x, y, w, h] = REG[nombre]; return [(x + 4) / N, 1 - (y + h - 4) / N, (x + w - 4) / N, 1 - (y + 4) / N]; };
+  const uv = (nombre) => { const [x, y, w, h] = REG[nombre]; return [(x + 4) / N, 1 - (y + h - 4) / NH, (x + w - 4) / N, 1 - (y + 4) / NH]; };
   return { tex, uv };
 }
 
-// Letrero con el precio de las planchas
-function texturaLetrero(kit) {
+// Letreros de la bodega en un solo lienzo de 1024 × 512: precio de las planchas (512 × 320, arriba a la izquierda)
+// y señal de elementos de protección personal de uso obligatorio (400 × 500, a la derecha). Devuelve la textura y la
+// región UV [u0, v0, u1, v1] de cada uno.
+function texturaLetreros(kit) {
   const { THREE } = kit, rnd = kit.mulberry32(77);
-  const [c, g] = lienzo(512, 320);
+  const [c, g] = lienzo(1024, 512);
   g.fillStyle = '#ebe7db'; g.fillRect(0, 0, 512, 320);
   g.fillStyle = '#e2742a'; g.fillRect(0, 0, 512, 64);
   g.textBaseline = 'middle'; g.textAlign = 'left';
@@ -309,8 +454,54 @@ function texturaLetrero(kit) {
     g.fillStyle = gr; g.fillRect(x - 2, y, 4, 40);
     g.fillStyle = '#6f7378'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
   }
-  const t = textura(THREE, c, { repetir: false });
-  return t;
+  // señal de uso obligatorio: franja azul, cuatro círculos azules con pictogramas blancos y sus nombres
+  g.save(); g.translate(528, 0);
+  const W = 400, H = 500;
+  g.fillStyle = '#f1f0ea'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#1d58a3'; g.fillRect(0, 0, W, 104);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#ffffff'; g.font = '800 38px Arial, sans-serif'; g.fillText('USO OBLIGATORIO', W / 2, 54);
+  g.fillStyle = '#1c2530'; g.font = '700 17px Arial, sans-serif'; g.fillText('ELEMENTOS DE PROTECCIÓN PERSONAL', W / 2, 130);
+  const icono = (cx, cy, nombre, dibujo) => {
+    g.fillStyle = '#1d58a3'; g.beginPath(); g.arc(cx, cy, 60, 0, 7); g.fill();
+    g.save(); g.translate(cx, cy); g.fillStyle = '#ffffff'; g.strokeStyle = '#1d58a3'; dibujo(); g.restore();
+    g.fillStyle = '#1c2530'; g.font = '800 19px Arial, sans-serif'; g.fillText(nombre, cx, cy + 80);
+  };
+  const poligono = (pts) => { g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); };
+  icono(102, 222, 'CASCO', () => {
+    g.beginPath(); g.moveTo(-34, 10); g.bezierCurveTo(-34, -34, 34, -34, 34, 10); g.closePath(); g.fill();
+    g.beginPath(); g.ellipse(4, 12, 44, 8, 0, 0, 7); g.fill();
+    g.lineWidth = 5; g.beginPath(); g.moveTo(0, -22); g.lineTo(0, 6); g.stroke();
+  });
+  icono(298, 222, 'CHALECO', () => {
+    poligono([[-30, -40], [-12, -40], [0, -12], [12, -40], [30, -40], [38, -18], [32, 40], [-32, 40], [-38, -18]]);
+    g.fillStyle = '#1d58a3'; g.fillRect(-36, 2, 72, 7); g.fillRect(-35, 20, 70, 7); g.fillRect(-2, -10, 4, 50);
+  });
+  icono(102, 386, 'ZAPATOS', () => {
+    poligono([[-26, -38], [6, -38], [8, 4], [30, 12], [38, 26], [38, 38], [-26, 38]]);
+    g.fillStyle = '#1d58a3'; g.fillRect(-26, 28, 64, 5); for (let k = 0; k < 3; k++) g.fillRect(-14, -26 + k * 11, 18, 4);
+  });
+  icono(298, 386, 'GUANTES', () => {
+    const dedo = (x, y0, alto) => { g.beginPath(); g.arc(x, y0, 6.5, Math.PI, 0); g.lineTo(x + 6.5, 4); g.lineTo(x - 6.5, 4); g.closePath(); g.fill(); g.fillRect(x - 6.5, y0, 13, alto); };
+    dedo(-17, -30, 34); dedo(-4, -38, 42); dedo(9, -35, 39); dedo(22, -26, 30);
+    g.beginPath(); g.moveTo(-24, 0); g.lineTo(28, 0); g.lineTo(26, 36); g.lineTo(-18, 36); g.closePath(); g.fill();
+    g.save(); g.translate(-24, 10); g.rotate(-0.7); g.fillRect(-26, -7, 30, 14); g.beginPath(); g.arc(-26, 0, 7, Math.PI / 2, Math.PI * 1.5); g.fill(); g.restore();
+    g.fillRect(-18, 36, 44, 10);
+  });
+  g.strokeStyle = '#2a3440'; g.lineWidth = 6; g.strokeRect(3, 3, W - 6, H - 6);
+  // desgaste: tierra desde abajo, salpicaduras, rayones y óxido bajo los tornillos
+  const gt = g.createLinearGradient(0, H * 0.62, 0, H); gt.addColorStop(0, 'rgba(110,92,64,0)'); gt.addColorStop(1, 'rgba(110,92,64,0.38)');
+  g.fillStyle = gt; g.fillRect(0, H * 0.62, W, H * 0.38);
+  for (let i = 0; i < 520; i++) { g.fillStyle = `rgba(90,74,52,${(rnd() * 0.25).toFixed(2)})`; g.fillRect(rnd() * W, H * 0.55 + rnd() * H * 0.45, 1 + rnd() * 3, 1 + rnd() * 3); }
+  for (let i = 0; i < 26; i++) { g.strokeStyle = 'rgba(255,255,255,0.3)'; g.lineWidth = 1; const x = rnd() * W, y = rnd() * H; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 46, y + (rnd() - 0.5) * 12); g.stroke(); }
+  for (const [x, y] of [[14, 14], [W - 14, 14], [14, H - 14], [W - 14, H - 14]]) {
+    const gr = g.createLinearGradient(0, y, 0, y + 36); gr.addColorStop(0, 'rgba(120,60,25,0.5)'); gr.addColorStop(1, 'rgba(120,60,25,0)');
+    g.fillStyle = gr; g.fillRect(x - 2, y, 4, 36);
+    g.fillStyle = '#6f7378'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill();
+  }
+  g.restore();
+  const tex = textura(THREE, c, { repetir: false });
+  return { tex, precio: [0, 1 - 320 / 512, 512 / 1024, 1], aviso: [528 / 1024, 1 - 500 / 512, 928 / 1024, 1] };
 }
 
 // Pantalla de la tableta de la capataz: el costo según el ancho
@@ -557,30 +748,40 @@ export default {
     arenaMat.vertexColors = true;
     const acero = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.4, roughness: 0.5, side: THREE.DoubleSide });
     const goma = new THREE.MeshStandardMaterial({ color: 0x1d1e20, roughness: 0.9 });
-    const madera = kit.mat('wood', { color: 0xc9a47c, roughness: 0.85, seed: 6 });
+    // madera: la textura fotográfica trae solo el detalle (gris medio 0,292) y el tono lo da el color del material
+    const FOTOS = !/[?&]foto=0\b/.test(globalThis.location?.search || '');
+    const tonoMadera = (m, r, v, a) => { if (FOTOS) m.color.setRGB(r / 0.292, v / 0.292, a / 0.292); return m; };
+    const madera = tonoMadera(kit.mat('wood', { color: 0xc9a47c, roughness: 0.85, seed: 6 }), 0.27, 0.18, 0.09); // pino y raulí gastados
+    const impregnado = tonoMadera(kit.mat('wood', { color: 0xa9ad8a, roughness: 0.9, seed: 9 }), 0.19, 0.2, 0.12); // pino impregnado, verdoso
     const malla = new THREE.MeshStandardMaterial({ map: texturaMalla(kit), alphaTest: 0.45, side: THREE.DoubleSide, metalness: 0.4, roughness: 0.6 });
-    const plancha = kit.mat('metal', { color: 0x6a6f74, metalness: 0.5, roughness: 0.62, normalScale: 0.6, seed: 7 });
+    const plancha = materialPintura(kit, texturasCalamina(kit), { normal: 0.35 });
     const atlas = atlasCalcomanias(kit);
     const calco = new THREE.MeshStandardMaterial({ map: atlas.tex, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-    const MATS = { arena: arenaMat, verde, acero, goma, madera, malla, plancha };
+    const MATS = { arena: arenaMat, verde, acero, goma, madera, impregnado, malla, plancha };
     const COLORES = { acero: [0.16, 0.17, 0.18] };
 
     // ---------------------------------------------------------------- terreno: grava, piedras y pasto
-    const pad = kit.malla(new THREE.CircleGeometry(8.2, 56), kit.mat('gravel', { repeat: [24, 24], color: 0xc2b8a4, normalScale: 0.4 }), { rx: -Math.PI / 2, y: 0.025, z: 0.8, sombra: false, padre: g });
-    pad.material.polygonOffset = true; pad.material.polygonOffsetFactor = -3;
+    // patio de grava compactada: el borde se deshace en manchones hacia el pasto (alfa con recorte, sin transparencias)
+    const grava = kit.mat('gravel', { repeat: [26, 26], color: 0xc2b8a4, normalScale: 0.4 });
+    grava.alphaMap = texturaBordeGrava(kit); grava.alphaTest = 0.5;
+    grava.polygonOffset = true; grava.polygonOffsetFactor = -3;
+    kit.malla(new THREE.CircleGeometry(8.8, 120), grava, { rx: -Math.PI / 2, y: 0.025, z: 0.8, sombra: false, padre: g });
     {
+      // piedras sueltas: chicas, semienterradas y del tono de la grava; más densas en el borde, donde la grava se esparce
       const pg = new THREE.IcosahedronGeometry(1, 1), pp = pg.attributes.position;
       for (let i = 0; i < pp.count; i++) { const k = 0.82 + 0.3 * Math.abs(Math.sin(pp.getX(i) * 5.1 + pp.getY(i) * 3.3 + pp.getZ(i) * 4.7)); pp.setXYZ(i, pp.getX(i) * k, pp.getY(i) * k, pp.getZ(i) * k); }
       pg.computeVertexNormals();
-      const n = 90, piedras = new THREE.InstancedMesh(pg, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }), n);
+      const n = 130, rndP = kit.mulberry32(29), piedras = new THREE.InstancedMesh(pg, kit.mat('concrete', { repeat: [0.35, 0.35], roughness: 0.95, normalScale: 0.8 }), n);
       const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
       for (let i = 0; i < n; i++) {
-        const a = rnd() * Math.PI * 2, r = 4.6 + rnd() * 3.4, sc = 0.03 + rnd() * rnd() * 0.12;
-        e.set(rnd() * 3, rnd() * 3, rnd() * 3); q.setFromEuler(e);
-        m4.compose(V(Math.cos(a) * r, sc * 0.3, 0.8 + Math.sin(a) * r), q, V(sc * (1 + rnd() * 0.5), sc * 0.7, sc)); piedras.setMatrixAt(i, m4);
-        const t = 0.45 + rnd() * 0.25; piedras.setColorAt(i, c.setRGB(t * 1.05, t, t * 0.9));
+        const borde = i < n * 0.55, a = rndP() * Math.PI * 2, r = borde ? 6.9 + rndP() * 1.9 : 1.4 + Math.sqrt(rndP()) * 5.5;
+        const sc = borde ? 0.022 + rndP() * rndP() * 0.07 : 0.02 + rndP() * rndP() * 0.045;
+        e.set(rndP() * 3, rndP() * 3, rndP() * 3); q.setFromEuler(e);
+        m4.compose(V(Math.cos(a) * r, 0.012 + sc * 0.15, 0.8 + Math.sin(a) * r), q, V(sc * (1 + rndP() * 0.5), sc * 0.62, sc)); piedras.setMatrixAt(i, m4);
+        const t = 0.55 + rndP() * 0.45, calido = rndP() < 0.4;
+        piedras.setColorAt(i, c.setRGB(t * (calido ? 1.08 : 0.96), t, t * (calido ? 0.88 : 1.03)));
       }
-      piedras.castShadow = true; piedras.receiveShadow = true; g.add(piedras);
+      piedras.castShadow = false; piedras.receiveShadow = true; g.add(piedras);
       const hojas = [];
       for (let i = 0; i < 8; i++) {
         const h = 0.18 + rnd() * 0.2, cg = new THREE.ConeGeometry(0.011, h, 3, 1, true);
@@ -692,24 +893,39 @@ export default {
 
     // ---------------------------------------------------------------- bodega de planchas con el letrero de precios
     const bodega = new THREE.Group(); g.add(bodega);
+    const LET = { x: -0.55, z: 1.95, giro: 0.35 }; // letrero de precios en la bodega: centro y giro
+    const topes = []; // plancha de arriba de cada pila (base de 20 mm y costados de 8 mm), para las marcas de tiza
     {
       const lb = crearLote(kit, COLORES);
       for (const [z0, n, e] of [[-0.85, 3, 0.02], [0.75, 6, 0.008]]) {
-        for (const x of [-0.38, 0.38]) lb.agregar('madera', cajaUV(THREE, 0.1, 0.09, 1.6, { s: 1.3 }), { x, y: 0.045, z: z0 });
-        let y = 0.09;
+        for (const x of [-0.38, 0.38]) lb.agregar('impregnado', cajaUV(THREE, 0.1, 0.09, 1.6, { s: 1.3 }), { x, y: 0.045, z: z0 });
+        let y = 0.09, tope = null;
         for (let k = 0; k < n; k++) {
-          lb.agregar('plancha', cajaUV(THREE, 1.0, e, 1.5, { s: 1.2 }), { x: (rnd() - 0.5) * 0.05, y: y + e / 2, z: z0 + (rnd() - 0.5) * 0.05, ry: (rnd() - 0.5) * 0.04 });
+          tope = { x: (rnd() - 0.5) * 0.05, y: y + e, z: z0 + (rnd() - 0.5) * 0.05, ry: (rnd() - 0.5) * 0.04 };
+          lb.agregar('plancha', cajaUV(THREE, 1.0, e, 1.5, { s: 1.2 }), { x: tope.x, y: y + e / 2, z: tope.z, ry: tope.ry });
           y += e + 0.0015;
         }
+        topes.push(tope);
       }
-      // letrero sobre dos postes
-      lb.en(0.15, 0, 1.95, 0.35, () => {
-        for (const x of [-0.4, 0.4]) lb.agregar('madera', cajaUV(THREE, 0.07, 1.42, 0.07, { s: 1.3 }), { x, y: 0.71 });
-        lb.agregar('madera', cajaUV(THREE, 0.92, 0.6, 0.025, { s: 1.3 }), { y: 1.12, z: 0.047 });
+      // letreros sobre postes de pino impregnado: precios de las planchas y, a su izquierda, la señal de protección personal
+      const GIRO = LET.giro, AV = [LET.x - Math.cos(GIRO) * 0.98, LET.z + Math.sin(GIRO) * 0.98];
+      lb.en(LET.x, 0, LET.z, GIRO, () => {
+        for (const x of [-0.4, 0.4]) lb.agregar('impregnado', cajaUV(THREE, 0.07, 1.42, 0.07, { s: 1.3 }), { x, y: 0.71 });
+        lb.agregar('impregnado', cajaUV(THREE, 0.92, 0.6, 0.025, { s: 1.3 }), { y: 1.12, z: 0.047 });
+      });
+      lb.en(AV[0], 0, AV[1], GIRO, () => {
+        for (const x of [-0.28, 0.28]) lb.agregar('impregnado', cajaUV(THREE, 0.07, 1.62, 0.07, { s: 1.3 }), { x, y: 0.81 });
+        lb.agregar('impregnado', cajaUV(THREE, 0.64, 0.79, 0.025, { s: 1.3 }), { y: 1.22, z: 0.047 });
       });
       lb.mallas(MATS, bodega);
-      const letrero = kit.malla(new THREE.PlaneGeometry(0.88, 0.55), new THREE.MeshStandardMaterial({ map: texturaLetrero(kit), roughness: 0.75 }), { padre: bodega, sombra: false });
-      letrero.position.set(0.15 + Math.sin(0.35) * 0.061, 1.12, 1.95 + Math.cos(0.35) * 0.061); letrero.rotation.y = 0.35;
+      const tl = texturaLetreros(kit), nx = Math.sin(GIRO) * 0.061, nz = Math.cos(GIRO) * 0.061;
+      const placa = (w, h, [u0, v0, u1, v1], x, y, z) => {
+        const p = new THREE.PlaneGeometry(w, h), uv = p.attributes.uv;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, mezcla(u0, u1, uv.getX(i)), mezcla(v0, v1, uv.getY(i)));
+        return p.rotateY(GIRO).translate(x, y, z);
+      };
+      kit.malla(unir(kit, [placa(0.88, 0.55, tl.precio, LET.x + nx, 1.12, LET.z + nz), placa(0.6, 0.75, tl.aviso, AV[0] + nx, 1.22, AV[1] + nz)]),
+        new THREE.MeshStandardMaterial({ map: tl.tex, roughness: 0.75 }), { padre: bodega, sombra: false });
     }
 
     // ---------------------------------------------------------------- chorro de arena
@@ -744,6 +960,10 @@ export default {
       chorro.t = 0; chorro.dur = dur + 0.05;
     }
     function moverArena() {
+      // entre paladas no hay arena en el aire: terrones y granos se ocultan y no se dibujan
+      const enAire = chorro.t <= chorro.dur;
+      terrones.visible = granos.visible = enAire;
+      if (!enAire) return;
       const pos = granosGeo.attributes.position;
       for (let i = 0; i < NP; i++) {
         const tau = chorro.t - RET[i];
@@ -896,9 +1116,8 @@ export default {
         mArena.visible = s.arena;
       }
 
-      // zona de trabajo, capataz, bodega y focos de las miradas
+      // zona de trabajo, bodega y focos de las miradas (la capataz se ubica al final, junto con los rótulos)
       zona.position.set(X + 0.06 + GAP - lanzaZ.x, 0, zt - lanzaZ.z);
-      capataz.grupo.position.set(Math.max(-X + 0.2, -2.55), 0, Z + 1.35); capataz.grupo.rotation.y = 0.85;
       bodega.position.set(-X - 2.05, 0, -0.15);
       focoRecipiente.position.set(L * 0.2, rim + 0.1, 0);
       focoCarga.set(zona.position.x + cargaZ.x, 0.05, zona.position.z + cargaZ.z);
@@ -911,11 +1130,12 @@ export default {
       // calcomanías: rótulo, óxido, polvo de arena, derrames, huellas, rueda y manchas
       {
         const cp = [], cu = [];
-        const quad = (c, u, v, nombre, espejo = false) => {
-          const [u0, v0, u1, v1] = atlas.uv(nombre), a = espejo ? u1 : u0, b = espejo ? u0 : u1;
-          const P = [c.clone().sub(u).sub(v), c.clone().add(u).sub(v), c.clone().add(u).add(v), c.clone().sub(u).add(v)], T = [[a, v0], [b, v0], [b, v1], [a, v1]];
+        // cuadrilátero con sus esquinas en el orden de la región: abajo-izq., abajo-der., arriba-der., arriba-izq.
+        const cuad = (P, nombre, espejo = false) => {
+          const [u0, v0, u1, v1] = atlas.uv(nombre), a = espejo ? u1 : u0, b = espejo ? u0 : u1, T = [[a, v0], [b, v0], [b, v1], [a, v1]];
           for (const k of [0, 1, 2, 0, 2, 3]) { cp.push(P[k].x, P[k].y, P[k].z); cu.push(T[k][0], T[k][1]); }
         };
+        const quad = (c, u, v, nombre, espejo = false) => cuad([c.clone().sub(u).sub(v), c.clone().add(u).sub(v), c.clone().add(u).add(v), c.clone().sub(u).add(v)], nombre, espejo);
         const enPared = (R, x, y, d, ancho, alto, nombre) => quad(V(x, y, d).applyMatrix4(R), V(ancho / 2, 0, 0).applyMatrix4(R), V(0, alto / 2, 0), nombre);
         const enSuelo = (x, z, ancho, largo, ang, nombre, y = 0.032) => quad(V(x, y, z), V(Math.cos(ang) * ancho / 2, 0, -Math.sin(ang) * ancho / 2), V(-Math.sin(ang) * largo / 2, 0, -Math.cos(ang) * largo / 2), nombre);
         // rótulo en el paño del frente más cercano al centro
@@ -952,6 +1172,34 @@ export default {
           const a = curva(t0), b = curva(t1), m = a.clone().add(b).multiplyScalar(0.5), ang = Math.atan2(b.x - a.x, b.z - a.z);
           enSuelo(m.x, m.z, 0.5, a.distanceTo(b) + 0.03, ang, 'rueda', 0.033);
         }
+        // huellas del camión tolva que trajo la arena: entra de frente y retrocede hasta el montón, sin pasar bajo el recipiente.
+        // Cada huella es una tira continua (las ruedas duales de 0,5 m), a 0,95 m del eje del camión.
+        const pM = V(zx + C.x, 0, zz + C.z);
+        const E0 = V(Math.max(pM.x + 0.25, X + 1.6), 0, pM.z + RM + 1.4), Q0 = V(E0.x - 3.0, 0, E0.z + 3.6), S0 = V(E0.x - 4.0, 0, 9.6);
+        const bez = (t) => V(mezcla(mezcla(S0.x, Q0.x, t), mezcla(Q0.x, E0.x, t), t), 0, mezcla(mezcla(S0.z, Q0.z, t), mezcla(Q0.z, E0.z, t), t));
+        for (const lado of [-0.95, 0.95]) {
+          const nS = 24, bordes = [];
+          for (let k = 0; k <= nS; k++) {
+            const p = bez(k / nS), d = bez(Math.min(1, k / nS + 0.01)).sub(bez(Math.max(0, k / nS - 0.01))).normalize(), nrm = V(-d.z, 0, d.x);
+            bordes.push([lado - 0.25, lado + 0.25].map((o) => V(p.x + nrm.x * o, 0.0305, p.z + nrm.z * o)));
+          }
+          for (let k = 0; k < nS; k++) cuad([bordes[k][0], bordes[k][1], bordes[k + 1][1], bordes[k + 1][0]], 'neumatico');
+        }
+        // arena caída al bajar la compuerta y goteo de aceite donde quedó el motor
+        const dirE = Q0.clone().sub(E0).normalize();
+        enSuelo(E0.x - dirE.x * 0.5, E0.z - dirE.z * 0.5, 1.5, 1.0, 0.3, 'derrame');
+        enSuelo(E0.x + dirE.x * 3.9, E0.z + dirE.z * 3.9, 0.55, 0.45, 0.8, 'aceite', 0.0335);
+        // senda de pisadas desde la entrada del patio hasta el frente del recipiente
+        {
+          const F0 = V(0.35, 0, 8.3), F1 = V(-1.3, 0, Z + 0.95), n = Math.max(3, Math.round(F0.distanceTo(F1) / 0.78));
+          const ang = Math.atan2(-(F1.x - F0.x), -(F1.z - F0.z));
+          for (let k = 0; k < n; k++) {
+            const p = F0.clone().lerp(F1, (k + 0.5) / n);
+            enSuelo(p.x + (rndD() - 0.5) * 0.08, p.z, 0.34, 0.34, ang + (rndD() - 0.5) * 0.25, 'huellas', 0.034);
+          }
+        }
+        // marcas de tiza en la plancha de arriba de cada pila de la bodega
+        topes.forEach((t, i) => enSuelo(bodega.position.x + t.x, bodega.position.z + t.z + 0.32, 0.6, 0.3, t.ry, i === 0 ? 'tizaBase' : 'tizaLado', t.y + 0.002));
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.Float32BufferAttribute(cp, 3));
         geo.setAttribute('uv', new THREE.Float32BufferAttribute(cu, 2));
@@ -964,10 +1212,28 @@ export default {
       ponerCota(cL, [-L / 2, 0.06, zc], [L / 2, 0.06, zc], [0, 1, 0], -0.05, 0.2);
       kit.cambiarEtiqueta(lL, `largo 2w = ${kit.num(L, 2)} m`); lL.position.set(0, 0.42, zc + 0.08);
       ponerCota(cW, [xc, 0.06, -w / 2], [xc, 0.06, w / 2], [0, 1, 0], -0.05, 0.2);
-      kit.cambiarEtiqueta(lW, `ancho w = ${kit.num(w, 2)} m`); lW.position.set(xc - 0.35, 0.45, -w / 4);
+      kit.cambiarEtiqueta(lW, `ancho w = ${kit.num(w, 2)} m`);
+      {
+        // el extremo derecho del rótulo queda a la izquierda de la visual a la esquina del recipiente, desde la VR y desde el escritorio;
+        // a 0,7 m de altura pasa sobre el panel de VR cuando w es grande
+        const zl = w / 4, medio = ((lW.userData.size?.[0] ?? 3) * lW.scale.x) / 2;
+        const xMax = Math.min(...[8.2, 10].map((o) => (-X * (o - zl)) / (o - Z))) - 0.1;
+        lW.position.set(Math.min(xc - 0.35, xMax - medio), 0.7, zl);
+      }
       ponerCota(cH, [X + 0.45, Y0, Z + 0.45], [X + 0.45, Y0 + H, Z + 0.45], [1, 0, 0], -0.12, 0.12);
       kit.cambiarEtiqueta(lH, `alto h = ${kit.num(H, 2)} m`); lH.position.set(X + 0.3, Y0 + H + 0.34, Z + 0.45);
       asa.position.set(X + 0.2, 0.2, Z + 0.2);
+      // capataz entre el letrero de precios y el rótulo del ancho, sin tapar ninguno de los dos desde el lugar de la persona en VR
+      // (z = 8,2) ni desde la cámara de escritorio (z = 10). En la línea z = zCap se toma el hueco común entre las visuales al
+      // extremo izquierdo del rótulo y al borde derecho del letrero; la tableta sobresale unos 0,45 m hacia +x y la espalda 0,25 m.
+      {
+        const zCap = Math.max(2.0, Z + 0.8), ojos = [8.2, 10];
+        const enZ = (x, z, o) => (x * (o - zCap)) / (o - z);
+        const xr = lW.position.x - ((lW.userData.size?.[0] ?? 3) * lW.scale.x) / 2, xl = bodega.position.x + LET.x + Math.cos(LET.giro) * 0.46;
+        const zl = bodega.position.z + LET.z - Math.sin(LET.giro) * 0.46;
+        const der = Math.min(...ojos.map((o) => enZ(xr, lW.position.z, o))), izq = Math.max(...ojos.map((o) => enZ(xl, zl, o)));
+        capataz.grupo.position.set((der + izq) / 2 - 0.1, 0, zCap); capataz.grupo.rotation.y = 1.0;
+      }
       g.updateMatrixWorld(true);
       for (const v of viejas) v.dispose();
     }

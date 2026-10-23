@@ -275,6 +275,8 @@ export const TEXTOS = [
   ['PRECIO DE LAS PLANCHAS', 'SHEET PRICES', 'PREÇO DAS CHAPAS'],
   ['Base del recipiente', 'Container base', 'Base do recipiente'],
   ['Costados', 'Sides', 'Laterais'],
+  ['BASE · 1,0 × 1,5', 'BASE · 1.0 × 1.5', 'BASE · 1,0 × 1,5'],
+  ['COSTADOS · 1,0 × 1,5', 'SIDES · 1.0 × 1.5', 'LATERAIS · 1,0 × 1,5'],
   ['costo según el ancho w', 'cost by width w', 'custo segundo a largura w'],
   ['largo 2w = # m', 'length 2w = # m', 'comprimento 2w = # m'],
   ['ancho w = # m', 'width w = # m', 'largura w = # m'],
@@ -320,6 +322,9 @@ export const TEXTOS = [
   ['largo W = y + z', 'length W = y + z', 'comprimento W = y + z'],
   ['W en metros', 'W in meters', 'W em metros'],
   ['pendiente W′(x)', 'slope W′(x)', 'inclinação W′(x)'],
+  ['Δx  0,02', 'Δx  0.02', 'Δx  0,02'],
+  ['Δy  0,01', 'Δy  0.01', 'Δy  0,01'],
+  ['Dist. 2,7', 'Dist. 2.7', 'Dist. 2,7'],
   ['Distancia x de la estaca al poste de 12 pies', 'Distance x from the stake to the 12 ft pole', 'Distância x da estaca ao poste de 12 pés'],
   ['W′(x) = x/√(x² + 144) − (30 − x)/√((30 − x)² + 784) = 0  ⇒  784x² = 144(30 − x)²  ⇒  x/12 = (30 − x)/28: los triángulos son semejantes y ambos cables forman el mismo ángulo con el suelo. x = 9 pies y W(9) = 15 + 35 = 50 pies, menor que W(0) ≈ 53,04 y W(30) ≈ 60,31. La estaca va a 9 pies del poste de 12 pies.',
     'W′(x) = x/√(x² + 144) − (30 − x)/√((30 − x)² + 784) = 0  ⇒  784x² = 144(30 − x)²  ⇒  x/12 = (30 − x)/28: the triangles are similar and both cables make the same angle with the ground. x = 9 ft and W(9) = 15 + 35 = 50 ft, less than W(0) ≈ 53.04 and W(30) ≈ 60.31. The stake goes 9 ft from the 12 ft pole.',
@@ -359,6 +364,9 @@ export const TEXTOS = [
   ['Tendido · Planta → Fábrica', 'Cable route · Plant → Factory', 'Instalação · Usina → Fábrica'],
   ['Ancho: 100 m', 'Width: 100 m', 'Largura: 100 m'],
   ['Río arriba: 500 m', 'Upstream: 500 m', 'Rio acima: 500 m'],
+  ['Costos', 'Costs', 'Custos'],
+  ['Orilla: $90 / m', 'Bank: $90 / m', 'Margem: $90 / m'],
+  ['Agua: $150 / m', 'Water: $150 / m', 'Água: $150 / m'],
 
   // ---------------------------------------------------------------- ondas (Ejemplo 6)
   ['Ondas en un lago', 'Ripples in a lake', 'Ondas em um lago'],

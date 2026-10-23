@@ -107,53 +107,136 @@ export default {
       }
     };
 
-    // Hormigón visto de los muros: placas de moldaje de 1,22 × 2,44 m con sus juntas, pasadas de tensores, poros y chorreaduras.
+    // Hormigón visto de los muros: atlas de 2 × 2 placas de moldaje fenólico de 1,22 × 2,44 m (2,44 × 4,88 m en total, 4,8 mm
+    // por píxel), cada placa con su tono. Juntas con rebaba y tramos con pérdida de lechada, pasadas de tensores tapadas con
+    // mortero, poros finos concentrados arriba de cada placa, nidos al pie, manchas de desmoldante y algún chorreo de óxido.
     function texturaMuro() {
-      const W = 256, H = 512;
-      const fa = kit.fbm(256, 4, 5, 41), fb = kit.fbm(256, 18, 3, 42), fc = kit.fbm(256, 2, 3, 43);
+      const W = 512, H = 1024, PW = 256, PH = 512;
+      const fa = kit.fbm(256, 4, 5, 41), fb = kit.fbm(256, 18, 3, 42), fc = kit.fbm(256, 2, 3, 43), fd = kit.fbm(256, 48, 2, 44);
       const [c, ctx] = lienzo(W, H), [, hx] = lienzo(W, H);
-      const veta = new Float32Array(W);
-      { let v = 0.5; for (let x = 0; x < W; x++) { v += (azar() - 0.5) * 0.3; v = Math.min(1, Math.max(0, v)); veta[x] = v; } }
+      const tono = [7, -6, -1, 10].map((t) => t + al(-2, 2));
       const img = ctx.createImageData(W, H), d = img.data;
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const i = y * W + x, j = (y % 256) * 256 + x, jj = ((y >> 1) % 256) * 256 + x;
-        const v = 156 + (fa[jj] - 0.5) * 44 + (fb[j] - 0.5) * 22 - suave(0.6, 0.86, fc[jj]) * 22 + (veta[x] - 0.5) * 8;
-        d[i * 4] = v; d[i * 4 + 1] = v * 0.985; d[i * 4 + 2] = v * 0.95; d[i * 4 + 3] = 255;
+        const i = y * W + x, pl = (y >= PH ? 2 : 0) + (x >= PW ? 1 : 0), yy = (y % PH) / PH;
+        const j = (y % 256) * 256 + (x % 256), jj = ((y >> 1) % 256) * 256 + (x >> 1), jg = (y >> 2) * 256 + (x >> 1);
+        const v = 160 + tono[pl] + (fa[jj] - 0.5) * 32 + (fb[j] - 0.5) * 13 + (fd[j] - 0.5) * 9 - suave(0.6, 0.86, fc[jg]) * 18 + (0.5 - yy) * 7;
+        d[i * 4] = v; d[i * 4 + 1] = v * 0.984; d[i * 4 + 2] = v * 0.952; d[i * 4 + 3] = 255;
       }
       ctx.putImageData(img, 0, 0);
       hx.fillStyle = '#7a7a7a'; hx.fillRect(0, 0, W, H);
-      // juntas entre placas: una rebaba fina
-      ctx.fillStyle = 'rgba(70,68,62,0.38)'; ctx.fillRect(0, 0, 1.5, H); ctx.fillRect(0, 0, W, 1.5);
-      ctx.fillStyle = 'rgba(222,220,212,0.28)'; ctx.fillRect(2, 0, 1, H); ctx.fillRect(0, 2, W, 1);
-      hx.fillStyle = '#b4b4b4'; hx.fillRect(0, 0, 2, H); hx.fillRect(0, 0, W, 2);
-      // pasadas de los tensores, tapadas con mortero
-      for (const u of [0.25, 0.75]) for (const v of [0.125, 0.375, 0.625, 0.875]) {
-        const x = u * W + al(-1, 1), y = v * H + al(-1, 1);
-        const gr = ctx.createRadialGradient(x, y, 0, x, y, 7.5);
-        gr.addColorStop(0, 'rgba(118,114,106,0.95)'); gr.addColorStop(0.5, 'rgba(182,178,168,0.95)'); gr.addColorStop(1, 'rgba(182,178,168,0)');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 7.5, 0, 6.28); ctx.fill();
-        hx.fillStyle = '#3c3c3c'; hx.beginPath(); hx.arc(x, y, 3.6, 0, 6.28); hx.fill();
-        if (azar() < 0.55) {
-          const l = 30 + azar() * 110, gx = ctx.createLinearGradient(0, y, 0, y + l);
-          gx.addColorStop(0, 'rgba(228,225,215,0.4)'); gx.addColorStop(1, 'rgba(228,225,215,0)');
-          ctx.fillStyle = gx; ctx.fillRect(x - 1.5 - azar() * 1.5, y + 4, 2 + azar() * 3, l);
+      // manchas suaves de desmoldante y de curado
+      for (let k = 0; k < 14; k++) { const r = 30 + azar() * 60; mancha(ctx, r + azar() * (W - 2 * r), r + azar() * (H - 2 * r), r, azar() < 0.5 ? 'rgba(112,108,98,0.07)' : 'rgba(214,210,198,0.07)', 0.55); }
+      // pérdida de lechada en tramos de las juntas: borde áspero y más oscuro
+      for (let k = 0; k < 12; k++) {
+        const vert = azar() < 0.6, pos = (azar() < 0.5 ? 0 : 1) * (vert ? PW : PH), a0 = azar() * (vert ? H : W), l = 30 + azar() * 150;
+        ctx.fillStyle = 'rgba(92,88,80,0.2)';
+        for (let s2 = 0; s2 < l; s2 += 2) {
+          const w = 2 + azar() * 5;
+          if (vert) { ctx.fillRect(pos - w / 2, (a0 + s2) % H, w, 2); ctx.fillRect(pos + W - w / 2, (a0 + s2) % H, w, 2); }
+          else { ctx.fillRect((a0 + s2) % W, pos - w / 2, 2, w); ctx.fillRect((a0 + s2) % W, pos + H - w / 2, 2, w); }
         }
       }
-      // nidos y poros
-      for (let k = 0; k < 170; k++) {
-        const x = azar() * W, y = azar() * H, r = 0.5 + azar() ** 3 * 2.4;
-        ctx.fillStyle = `rgba(58,56,52,${0.45 + azar() * 0.4})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
-        hx.fillStyle = '#3a3a3a'; hx.beginPath(); hx.arc(x, y, r, 0, 6.28); hx.fill();
+      // juntas entre placas: una rebaba fina con su sombra
+      for (const x of [0, PW]) {
+        ctx.fillStyle = 'rgba(66,64,58,0.4)'; ctx.fillRect(x, 0, 1.5, H);
+        ctx.fillStyle = 'rgba(226,223,214,0.3)'; ctx.fillRect(x + 2, 0, 1, H);
+        hx.fillStyle = '#b6b6b6'; hx.fillRect(x, 0, 2, H);
       }
-      // humedad que baja desde el borde superior de cada placa
-      for (let k = 0; k < 6; k++) {
-        const x = azar() * W, w = 4 + azar() * 16, l = 60 + azar() * 240, gy = ctx.createLinearGradient(0, 0, 0, l);
-        gy.addColorStop(0, 'rgba(78,76,68,0.2)'); gy.addColorStop(1, 'rgba(78,76,68,0)');
-        ctx.fillStyle = gy; ctx.fillRect(x, 0, w, l);
+      for (const y of [0, PH]) {
+        ctx.fillStyle = 'rgba(66,64,58,0.4)'; ctx.fillRect(0, y, W, 1.5);
+        ctx.fillStyle = 'rgba(226,223,214,0.3)'; ctx.fillRect(0, y + 2, W, 1);
+        hx.fillStyle = '#b6b6b6'; hx.fillRect(0, y, W, 2);
+      }
+      // pasadas de los tensores (8 por placa), tapadas con un tarugo de mortero algo hundido
+      const pasadas = [];
+      for (let py = 0; py < 2; py++) for (let px = 0; px < 2; px++) for (const u of [0.25, 0.75]) for (const v of [0.125, 0.375, 0.625, 0.875]) pasadas.push([(px + u) * PW + al(-1.5, 1.5), (py + v) * PH + al(-1.5, 1.5)]);
+      for (const [x, y] of pasadas) {
+        const gr = ctx.createRadialGradient(x, y, 0, x, y, 6.5);
+        gr.addColorStop(0, 'rgba(178,174,164,0.95)'); gr.addColorStop(0.5, 'rgba(152,148,140,0.95)'); gr.addColorStop(0.72, 'rgba(98,94,86,0.85)'); gr.addColorStop(1, 'rgba(98,94,86,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.28); ctx.fill();
+        hx.fillStyle = '#464646'; hx.beginPath(); hx.arc(x, y, 4.4, 0, 6.28); hx.fill();
+        hx.fillStyle = '#5e5e5e'; hx.beginPath(); hx.arc(x, y, 2.8, 0, 6.28); hx.fill();
+      }
+      // lechada clara que escurrió de algunas pasadas y óxido de las que quedaron con el fierro a la vista
+      const chorro = (x, y, l, w, rgb, a) => {
+        for (const o of [0, -H]) {
+          const gx = ctx.createLinearGradient(0, y + o, 0, y + o + l);
+          gx.addColorStop(0, `rgba(${rgb},${a})`); gx.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = gx;
+          ctx.beginPath(); ctx.moveTo(x - w, y + o + 3); ctx.lineTo(x + w, y + o + 3); ctx.lineTo(x + w * 0.4 + al(-1, 1), y + o + l); ctx.lineTo(x - w * 0.4, y + o + l); ctx.fill();
+        }
+      };
+      for (const [x, y] of pasadas) if (azar() < 0.3) chorro(x, y, 30 + azar() * 90, 1.6 + azar(), '226,223,212', 0.32);
+      for (let k = 0; k < 4; k++) { const [x, y] = pasadas[Math.floor(azar() * pasadas.length)]; chorro(x, y, 50 + azar() * 140, 2.2, '140,78,36', 0.4); }
+      // poros finos (2 a 8 mm), más abundantes arriba de cada placa
+      for (let k = 0; k < 380; k++) {
+        const x = azar() * W, y = Math.floor(azar() * 2) * PH + azar() ** 1.7 * PH, r = 0.45 + azar() ** 3 * 1.6;
+        ctx.fillStyle = `rgba(72,69,64,${0.26 + azar() * 0.3})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
+        hx.fillStyle = '#424242'; hx.beginPath(); hx.arc(x, y, r, 0, 6.28); hx.fill();
+      }
+      // nidos de piedra al pie de dos placas
+      for (let k = 0; k < 2; k++) {
+        const cx = 30 + azar() * (W - 60), cy = (k + 1) * PH - 10 - azar() * 16;
+        for (let m = 0; m < 46; m++) {
+          const a = azar() * 6.28, rr = azar() ** 0.6 * 12, x = cx + Math.cos(a) * rr * 1.7, y = cy + Math.sin(a) * rr * 0.6, r = 0.6 + azar() * 1.5;
+          ctx.fillStyle = `rgba(84,80,72,${0.35 + azar() * 0.3})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
+          hx.fillStyle = '#3c3c3c'; hx.beginPath(); hx.arc(x, y, r, 0, 6.28); hx.fill();
+        }
+      }
+      // humedad que baja desde el borde superior de las placas
+      for (let k = 0; k < 8; k++) {
+        const x = azar() * W, w = 4 + azar() * 16, y0 = Math.floor(azar() * 2) * PH, l = 60 + azar() * 260, gy = ctx.createLinearGradient(0, y0, 0, y0 + l);
+        gy.addColorStop(0, 'rgba(80,78,70,0.15)'); gy.addColorStop(1, 'rgba(80,78,70,0)');
+        ctx.fillStyle = gy; ctx.fillRect(x, y0, w, l);
       }
       const alt = alturaDe(hx, W, H);
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) alt[y * W + x] += fb[(y % 256) * 256 + x] * 0.14;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) alt[y * W + x] += fb[(y % 256) * 256 + (x % 256)] * 0.12 + fd[(y % 256) * 256 + (x % 256)] * 0.05;
       return { map: texDe(c), normal: normalDe(alt, W, H, 2.2) };
+    }
+
+    // Calcomanía de suciedad (4,7 mm por píxel). Mitad de arriba: barro salpicado, chorreos del curado y eflorescencia al pie
+    // de los muros (0,6 m de alto). Mitad de abajo: suelo húmedo y lechada pegada alrededor del radier (0,75 m hacia afuera).
+    function texturaSucio() {
+      const W = 512, H = 256, [c, ctx] = lienzo(W, H), f = kit.fbm(256, 8, 4, 91), f2 = kit.fbm(256, 3, 3, 92);
+      const img = ctx.createImageData(W, H), d = img.data;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4, n = f[(y % 256) * 256 + (x >> 1)], m = f2[(y % 256) * 256 + (x >> 1)];
+        let a;
+        if (y < 128) {
+          const h = (127 - y) / 127, borde = 0.17 + 0.16 * m + 0.1 * (n - 0.5); // 0 al pie del muro, 1 a 0,6 m
+          a = 0.72 * (1 - suave(borde * 0.35, borde, h)) * (0.8 + 0.5 * (n - 0.5));
+          d[i] = 84; d[i + 1] = 72; d[i + 2] = 57;
+        } else {
+          const h = (y - 128) / 127, borde = 0.32 + 0.4 * m + 0.16 * (n - 0.5); // 0 junto al radier, 1 a 0,75 m
+          a = 0.62 * (1 - suave(borde * 0.25, borde, h)) * (0.8 + 0.45 * (n - 0.5));
+          d[i] = 50; d[i + 1] = 43; d[i + 2] = 34;
+        }
+        d[i + 3] = Math.max(0, Math.min(255, a * 255));
+      }
+      ctx.putImageData(img, 0, 0);
+      const rep = (fn) => { fn(0); fn(-W); fn(W); };
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 127); ctx.clip();
+      for (let k = 0; k < 280; k++) {
+        const x = azar() * W, y = 126 - azar() ** 2.2 * 84, r = 0.5 + azar() * 1.5, e = 1 + azar(), a = 0.28 + azar() * 0.4;
+        rep((o) => { ctx.fillStyle = `rgba(84,72,56,${a})`; ctx.beginPath(); ctx.ellipse(x + o, y, r, r * e, 0, 0, 6.28); ctx.fill(); });
+      }
+      for (let k = 0; k < 7; k++) {
+        const x = azar() * W, y = 66 + azar() * 44, r = 12 + azar() * 26;
+        rep((o) => { const gr = ctx.createRadialGradient(x + o, y, 0, x + o, y, r); gr.addColorStop(0, 'rgba(236,233,224,0.26)'); gr.addColorStop(1, 'rgba(236,233,224,0)'); ctx.fillStyle = gr; ctx.fillRect(x + o - r, y - r, 2 * r, 2 * r); });
+      }
+      for (let k = 0; k < 12; k++) {
+        const x = azar() * W, l = 30 + azar() * 70, y = 120 - l, w = 1.5 + azar() * 2;
+        rep((o) => { const gx = ctx.createLinearGradient(0, y, 0, y + l); gx.addColorStop(0, 'rgba(60,56,50,0)'); gx.addColorStop(1, 'rgba(60,56,50,0.24)'); ctx.fillStyle = gx; ctx.fillRect(x + o, y, w, l); });
+      }
+      ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 129, W, H - 129); ctx.clip();
+      for (let k = 0; k < 14; k++) { const r = 6 + azar() * 16; mancha(ctx, r + azar() * (W - 2 * r), 131 + azar() * 20, r, 'rgba(152,146,134,0.48)', 0.5); }
+      for (let k = 0; k < 170; k++) {
+        const x = azar() * W, y = 131 + azar() ** 1.5 * 112, r = 0.6 + azar() * 1.5, cl = azar() < 0.5 ? 'rgba(162,156,144,0.55)' : 'rgba(62,54,44,0.45)';
+        rep((o) => { ctx.fillStyle = cl; ctx.beginPath(); ctx.arc(x + o, y, r, 0, 6.28); ctx.fill(); });
+      }
+      ctx.restore();
+      const t = texDe(c); t.wrapT = THREE.ClampToEdgeWrapping;
+      return t;
     }
 
     // Plancha diamantada de acero galvanizado para la tapa (una baldosa = 0,3 m)
@@ -322,8 +405,10 @@ export default {
     // ------------------------------------------------------------------ materiales comunes
     const matVC = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0.15 });
     const vc = []; // piezas estáticas sin textura (se unen al final)
+    const vcSS = []; // piezas tendidas en el suelo: su sombra no se nota y se ahorra el paso de sombras
     const mad = []; // piezas de madera con el atlas
     const ponerVC = (geo, hex, vari) => { vc.push(sinUV(pintar(geo, hex, vari))); return geo; };
+    const ponerSS = (geo, hex, vari) => { vcSS.push(sinUV(pintar(geo, hex, vari))); return geo; };
 
     // ------------------------------------------------------------------ suelo: base estabilizada con borde irregular
     function disco(R, anillos, segs, altura, escUV, irreg = 0.06) {
@@ -359,13 +444,16 @@ export default {
       const sendero = (pts, w) => { ctx.lineWidth = w * k; ctx.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = P(x, z); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }); ctx.stroke(); };
       sendero([[-0.6, 5.6], [-1.8, 2.6], [-2.7, 0.3], [-3.0, -2.6], [-2.6, -4.6], [-1.5, -5.6]], 0.9);
       sendero([[-1.6, -4.3], [-0.5, -3.2], [1.6, -2.6], [2.9, -3.4]], 0.6);
-      // lechada bajo la boca de la betonera y salpicaduras alrededor
+      // lechada bajo la boca de la betonera y salpicaduras alrededor (tonos cálidos y bordes difuminados, como el cemento sobre la grava)
       const [bx, bz] = P(-4.3, -3.4);
-      mancha(ctx, bx, bz, 0.75 * k, 'rgba(138,134,126,0.75)', 0.45);
-      mancha(ctx, bx + 0.3 * k, bz + 0.2 * k, 0.45 * k, 'rgba(112,108,100,0.6)', 0.4);
-      for (let i = 0; i < 70; i++) { const a = azar() * 6.28, d = (0.4 + azar() ** 0.7 * 2.2) * k; salpicadura(ctx, bx + Math.cos(a) * d, bz + Math.sin(a) * d, (0.03 + azar() * 0.09) * k, `rgba(${170 + azar() * 25},${166 + azar() * 25},${156 + azar() * 25},0.85)`, 5); }
+      ctx.filter = 'blur(1.2px)';
+      mancha(ctx, bx, bz, 0.75 * k, 'rgba(140,134,122,0.62)', 0.45);
+      mancha(ctx, bx + 0.3 * k, bz + 0.2 * k, 0.45 * k, 'rgba(112,106,96,0.5)', 0.4);
+      ctx.filter = 'blur(0.7px)';
+      for (let i = 0; i < 38; i++) { const a = azar() * 6.28, d = (0.4 + azar() ** 1.2 * 1.6) * k, t = 150 + azar() * 16; salpicadura(ctx, bx + Math.cos(a) * d, bz + Math.sin(a) * d, (0.025 + azar() * 0.06) * k, `rgba(${t},${t - 6},${t - 16},${0.32 + azar() * 0.22})`, 4); }
+      ctx.filter = 'none';
       // huellas de carretilla hacia la cisterna
-      ctx.strokeStyle = 'rgba(126,122,114,0.5)'; ctx.lineWidth = 0.05 * k;
+      ctx.strokeStyle = 'rgba(122,116,106,0.4)'; ctx.lineWidth = 0.05 * k;
       for (const off of [0, 0.06]) { ctx.beginPath(); const pts = [[-4.0 + off, -3.0], [-3.2, -2.2], [-2.6 + off, -1.0], [-2.5, 0.0]]; pts.forEach(([x, z], i) => { const [a, b] = P(x, z); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }); ctx.stroke(); }
       // polvo de cemento junto al pallet y al saco roto
       for (const [x, z, r] of [[LUG.pallet[0], LUG.pallet[1], 1.0], [-4.75, -2.35, 0.55]]) {
@@ -378,9 +466,11 @@ export default {
         gr.addColorStop(0, 'rgba(52,44,34,0.45)'); gr.addColorStop(1, 'rgba(52,44,34,0)'); ctx.fillStyle = gr; mancha(ctx, a, b, r * k, gr, 0.4);
       }
       // derrames de hormigón al pie de la cisterna (del hormigonado)
-      for (let i = 0; i < 9; i++) { const a = azar() * 6.28, d = 2.3 + azar() * 0.9; const [x, z] = P(Math.cos(a) * d, Math.sin(a) * d); mancha(ctx, x, z, (0.12 + azar() * 0.25) * k, 'rgba(150,146,138,0.55)', 0.5); }
+      ctx.filter = 'blur(1px)';
+      for (let i = 0; i < 6; i++) { const a = azar() * 6.28, d = 2.4 + azar() * 0.9; const [x, z] = P(Math.cos(a) * d, Math.sin(a) * d); mancha(ctx, x, z, (0.1 + azar() * 0.2) * k, 'rgba(146,140,128,0.34)', 0.5); }
+      ctx.filter = 'none';
       // trozos de hormigón seco y piedras sueltas
-      for (let i = 0; i < 220; i++) { const [x, z] = P(al(-7, 7), al(-7, 7)); ctx.fillStyle = azar() < 0.4 ? 'rgba(178,174,164,0.55)' : 'rgba(76,68,58,0.4)'; ctx.beginPath(); ctx.arc(x, z, 0.4 + azar() * 0.8, 0, 6.28); ctx.fill(); }
+      for (let i = 0; i < 220; i++) { const [x, z] = P(al(-7, 7), al(-7, 7)); ctx.fillStyle = azar() < 0.4 ? 'rgba(166,158,144,0.42)' : 'rgba(76,68,58,0.34)'; ctx.beginPath(); ctx.arc(x, z, 0.4 + azar() * 0.7, 0, 6.28); ctx.fill(); }
       const t = texDe(c, { repetir: false });
       return t;
     }
@@ -391,23 +481,107 @@ export default {
     const muro = texturaMuro();
     const concreto = new THREE.MeshStandardMaterial({ map: muro.map, normalMap: muro.normal, normalScale: new THREE.Vector2(0.9, 0.9), roughness: 0.93, vertexColors: true });
     const cuerpo = kit.malla(new THREE.BufferGeometry(), concreto, { padre: g });
-    // bloque de hormigón con uv en metros (placas de 1,22 × 2,44) y barro al pie
-    function bloque(w, h, d, cx, y0, cz, extMitad, yTope) {
-      const filas = [0, Math.min(0.05, h * 0.1), Math.min(0.32, h * 0.3), h * 0.5, Math.max(h * 0.7, h - 0.35), Math.max(h * 0.92, h - 0.06), h];
-      const geo = new THREE.BoxGeometry(w, 1, d, 1, filas.length - 1, 1);
-      const p = geo.attributes.position, n = geo.attributes.normal, uv = geo.attributes.uv, col = new Float32Array(p.count * 3);
-      for (let i = 0; i < p.count; i++) {
-        const k = Math.round((p.getY(i) + 0.5) * (filas.length - 1));
-        const x = cx + p.getX(i) * w, y = y0 + filas[k], z = cz + p.getZ(i) * d;
-        p.setXYZ(i, x, y, z);
-        if (Math.abs(n.getY(i)) > 0.5) uv.setXY(i, x / 1.22, z / 1.22);
-        else if (Math.abs(n.getX(i)) > 0.5) uv.setXY(i, (z + extMitad) / 1.22, y / 2.44);
-        else uv.setXY(i, (x + extMitad) / 1.22, y / 2.44);
-        const barro = 1 - suave(0, 0.34, y), arriba = 1 - 0.1 * suave(yTope - 0.5, yTope, y);
-        col[i * 3] = (1 - 0.34 * barro) * arriba; col[i * 3 + 1] = (1 - 0.39 * barro) * arriba; col[i * 3 + 2] = (1 - 0.46 * barro) * arriba;
+
+    // Prismas de hormigón con las aristas achaflanadas, como salen de un moldaje con junquillo de 45°.
+    // Contorno cuadrado de semilado e con las esquinas cortadas en c: cara +x, chaflán, +z, chaflán, −x, chaflán, −z, chaflán.
+    const contorno = (e, c) => [[e, -(e - c)], [e, e - c], [e - c, e], [-(e - c), e], [-e, e - c], [-e, -(e - c)], [-(e - c), -e], [e - c, -e]];
+    const normalLado = (a, b) => {
+      let nx = b[1] - a[1], nz = a[0] - b[0];
+      const l = Math.hypot(nx, nz); nx /= l; nz /= l;
+      if (nx * (a[0] + b[0]) + nz * (a[1] + b[1]) < 0) { nx = -nx; nz = -nz; }
+      return [nx, nz];
+    };
+    // contorno paralelo hacia afuera (d > 0) o hacia adentro (d < 0)
+    const desplazar = (pts, d) => {
+      const N = pts.length, ns = pts.map((p, k) => normalLado(p, pts[(k + 1) % N]));
+      return pts.map((p, k) => { const n1 = ns[(k + N - 1) % N], n2 = ns[k], f = d / (1 + n1[0] * n2[0] + n1[1] * n2[1]); return [p[0] + f * (n1[0] + n2[0]), p[1] + f * (n1[1] + n2[1])]; });
+    };
+    // geometría por partes con normales planas, uv y color por vértice
+    function acumulador() {
+      const A = { p: [], n: [], uv: [], c: [], i: [] }, pa = V(), pb = V(), pc = V();
+      const de = (k, v) => v.set(A.p[k * 3], A.p[k * 3 + 1], A.p[k * 3 + 2]);
+      A.v = (x, y, z, n, u, v, col) => { A.p.push(x, y, z); A.n.push(n[0], n[1], n[2]); A.uv.push(u, v); A.c.push(col[0], col[1], col[2]); return A.p.length / 3 - 1; };
+      const hacia = (a, b, c2, n) => { de(a, pa); de(b, pb).sub(pa); de(c2, pc).sub(pa); pb.cross(pc); return pb.x * n[0] + pb.y * n[1] + pb.z * n[2] >= 0; };
+      A.tri = (a, b, c2, n) => { if (hacia(a, b, c2, n)) A.i.push(a, b, c2); else A.i.push(a, c2, b); };
+      A.cuad = (a0, b0, a1, b1, n) => { if (hacia(a0, b0, a1, n)) A.i.push(a0, b0, b1, a0, b1, a1); else A.i.push(a0, b1, b0, a0, a1, b1); };
+      A.geo = () => {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(A.p, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(A.n, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(A.uv, 2));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(A.c, 3));
+        geo.setIndex(A.i);
+        return geo;
+      };
+      return A;
+    }
+    // Prisma entre ya e yb con chaflán c en las aristas verticales y en las superiores; hueco > 0 lo deja abierto por dentro
+    // (los muros). Cada cara empieza en una junta de placa y toma otra placa del atlas de 2,44 × 4,88 m.
+    function prisma(A, { e, c, ya, yb, hueco = 0, filas, color }) {
+      const ext = contorno(e, c), N = ext.length, ns = ext.map((p, k) => normalLado(p, ext[(k + 1) % N])), ins = desplazar(ext, -c);
+      const ys = [...new Set(filas.map((f) => Math.min(ya + f, yb - c)))].sort((a, b) => a - b);
+      const vDe = (y, vo) => (y - ya) / 4.88 + vo, s2 = Math.SQRT1_2;
+      const lados = (pts, nDe, u0, vo, ysL, tope, nTope) => {
+        let u = u0;
+        for (let k = 0; k < pts.length; k++) {
+          const a = pts[k], b = pts[(k + 1) % pts.length], n = nDe(k);
+          if (pts.length === N && k % 2 === 0) { u = 0.5 * ((k >> 1) % 2); vo = 0.5 * (k >> 2); }
+          else if (pts.length === 4) { u = 0.5 * (k % 2); vo = 0.5 * (k >> 1); }
+          const u1 = u + Math.hypot(b[0] - a[0], b[1] - a[1]) / 2.44;
+          let prev = null;
+          for (const y of ysL) {
+            const col = color(y), fila = [A.v(a[0], y, a[1], n, u, vDe(y, vo), col), A.v(b[0], y, b[1], n, u1, vDe(y, vo), col)];
+            if (prev) A.cuad(prev[0], prev[1], fila[0], fila[1], n);
+            prev = fila;
+          }
+          // chaflán superior: de la arista a yb − c hasta el contorno corrido c a la altura yb
+          const ta = tope[k], tb = tope[(k + 1) % pts.length], nc = nTope(n), y1 = yb - c, c1 = color(y1), c2 = color(yb);
+          A.cuad(A.v(a[0], y1, a[1], nc, u, vDe(y1, vo), c1), A.v(b[0], y1, b[1], nc, u1, vDe(y1, vo), c1),
+            A.v(ta[0], yb, ta[1], nc, u, vDe(yb, vo), c2), A.v(tb[0], yb, tb[1], nc, u1, vDe(yb, vo), c2), nc);
+          u = u1;
+        }
+      };
+      lados(ext, (k) => [ns[k][0], 0, ns[k][1]], 0, 0, ys, ins, (n) => [n[0] * s2, s2, n[2] * s2]);
+      const arriba = [0, 1, 0], cTop = color(yb);
+      if (hueco > 0) {
+        const inn = [[hueco, -hueco], [hueco, hueco], [-hueco, hueco], [-hueco, -hueco]], hoyo = desplazar(inn, c);
+        const tris = THREE.ShapeUtils.triangulateShape(ins.map(([x, z]) => new THREE.Vector2(x, z)), [hoyo.map(([x, z]) => new THREE.Vector2(x, z))]);
+        const base = [...ins, ...hoyo].map(([x, z]) => A.v(x, yb, z, arriba, x / 2.44, z / 2.44, cTop));
+        for (const [i0, i1, i2] of tris) A.tri(base[i0], base[i1], base[i2], arriba);
+        // caras interiores, mirando al centro
+        const nsI = inn.map((p, k) => normalLado(p, inn[(k + 1) % 4]));
+        const ysI = [...new Set([ya, ...ys.filter((y) => y > ya)])];
+        lados(inn, (k) => [-nsI[k][0], 0, -nsI[k][1]], 0, 0, ysI, hoyo, (n) => [n[0] * s2, s2, n[2] * s2]);
+      } else {
+        const centro = A.v(0, yb, 0, arriba, 0, 0, cTop), anillo = ins.map(([x, z]) => A.v(x, yb, z, arriba, x / 2.44, z / 2.44, cTop));
+        for (let k = 0; k < N; k++) A.tri(centro, anillo[k], anillo[(k + 1) % N], arriba);
       }
-      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-      return geo;
+    }
+    // color por altura: barro suave al pie (la calcomanía pone las salpicaduras) y algo de suciedad en el coronamiento
+    const colorMuro = (yc) => (y) => {
+      const barro = 1 - suave(0.1, 0.5, y), tope = 1 - 0.1 * suave(yc - 0.5, yc, y);
+      return [(1 - 0.16 * barro) * tope, (1 - 0.19 * barro) * tope, (1 - 0.24 * barro) * tope];
+    };
+    const colorRadier = (y) => { const b = 1 - suave(0, 0.12, y); return [0.86 - 0.2 * b, 0.84 - 0.22 * b, 0.8 - 0.25 * b]; };
+
+    // franja de barro al pie de los muros y suelo húmedo alrededor del radier (una sola malla transparente)
+    const matSucio = new THREE.MeshStandardMaterial({ map: texturaSucio(), transparent: true, depthWrite: false, roughness: 0.96, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    const sucio = kit.malla(new THREE.BufferGeometry(), matSucio, { sombra: false, padre: g });
+    sucio.renderOrder = 2;
+    function geoSucio(e2, eR, y0, yc) {
+      const A = acumulador(), bl = [1, 1, 1], arriba = [0, 1, 0];
+      const m = desplazar(contorno(e2, 0.025), 0.003), r0 = contorno(eR, 0.02), r1 = desplazar(r0, 0.75), alto = Math.min(0.6, yc - y0 - 0.06);
+      const vM = 1 - 127.5 / 256, vT = vM + (1 - 0.5 / 256 - vM) * (alto / 0.6), vR = 1 - 128.5 / 256, vF = 0.5 / 256, yS = 0.026;
+      let u = 0, uR = 0;
+      for (let k = 0; k < m.length; k++) {
+        const a = m[k], b = m[(k + 1) % m.length], on = normalLado(a, b), n = [on[0], 0, on[1]], u1 = u + Math.hypot(b[0] - a[0], b[1] - a[1]) / 2.4;
+        A.cuad(A.v(a[0], y0, a[1], n, u, vM, bl), A.v(b[0], y0, b[1], n, u1, vM, bl), A.v(a[0], y0 + alto, a[1], n, u, vT, bl), A.v(b[0], y0 + alto, b[1], n, u1, vT, bl), n);
+        u = u1;
+        const p = r0[k], q = r0[(k + 1) % m.length], P1 = r1[k], Q1 = r1[(k + 1) % m.length], uR1 = uR + Math.hypot(q[0] - p[0], q[1] - p[1]) / 2.4;
+        A.cuad(A.v(p[0], yS, p[1], arriba, uR, vR, bl), A.v(q[0], yS, q[1], arriba, uR1, vR, bl), A.v(P1[0], yS, P1[1], arriba, uR, vF, bl), A.v(Q1[0], yS, Q1[1], arriba, uR1, vF, bl), arriba);
+        uR = uR1;
+      }
+      return A.geo();
     }
 
     // agua (se ve con la tapa abierta)
@@ -438,6 +612,13 @@ export default {
         p.push(ubicar(new THREE.BoxGeometry(0.014, 0.05, 0.014), f * e + 0.07, 0.035, e - 0.07));
         p.push(viga(V(f * e - 0.077, 0.064, e - 0.07), V(f * e + 0.077, 0.064, e - 0.07), 0.016, 0.016));
       }
+      // ventilación de acero galvanizado con cuello de ganso (la boca mira hacia abajo para que no entre lluvia)
+      const vx = -e * 0.3, vz = e * 0.28;
+      p.push(ubicar(new THREE.CylinderGeometry(0.058, 0.058, 0.01, 14), vx, 0.017, vz));
+      p.push(ubicar(new THREE.CylinderGeometry(0.03, 0.03, 0.28, 12, 1, true), vx, 0.15, vz));
+      p.push(ubicar(new THREE.TorusGeometry(0.065, 0.03, 8, 10, Math.PI), vx + 0.065, 0.29, vz));
+      p.push(ubicar(new THREE.CylinderGeometry(0.03, 0.03, 0.07, 12), vx + 0.13, 0.255, vz));
+      p.push(ubicar(new THREE.CylinderGeometry(0.034, 0.034, 0.012, 12), vx + 0.13, 0.222, vz));
       for (const gp of p) {
         const pos = gp.attributes.position, nn = gp.attributes.normal, uv = gp.attributes.uv;
         for (let i = 0; i < pos.count; i++) {
@@ -487,7 +668,30 @@ export default {
     const cotaX = kit.barra([0, 0, 0], [0, 1, 0], 0.015, cotaMat), cotaH = kit.barra([0, 0, 0], [0, 1, 0], 0.015, cotaMat);
     cotaX.castShadow = cotaH.castShadow = false;
     g.add(cotaX, cotaH);
-    const lx = kit.etiqueta('x', 0.32, { bg: '#ffb347', color: '#1a1206' }), lh = kit.etiqueta('h', 0.32, { bg: '#ffb347', color: '#1a1206' });
+    const cotaRef = kit.malla(new THREE.BufferGeometry(), cotaMat, { sombra: false, padre: g });
+
+    // llave de bola de bronce en la pasada de desagüe y pasada de rebalse de PVC, en el muro izquierdo (el que ve el escritorio)
+    const accesorios = kit.malla(new THREE.BufferGeometry(), matVC, { sombra: false, padre: g });
+    function geoAccesorios(L, e2, y0, yc) {
+      const p = [], pon = (geo, hex, v = 0.03) => p.push(sinUV(pintar(geo, hex, v)));
+      const PVC = 0xd6d7d2, BRONCE = 0xa8803a, SELLO = 0x9c988f, x0 = -e2;
+      const yd = y0 + 0.17, zd = L / 2 - 0.3;
+      pon(tubo(V(x0 + 0.004, yd, zd), V(x0 - 0.006, yd, zd), 0.05, 14), SELLO); // mortero de sello alrededor de la pasada
+      pon(tubo(V(x0 + 0.02, yd, zd), V(x0 - 0.075, yd, zd), 0.034, 12), PVC);
+      pon(tubo(V(x0 - 0.075, yd, zd), V(x0 - 0.1, yd, zd), 0.03, 6), BRONCE); // hexágono del terminal
+      pon(ubicar(new THREE.SphereGeometry(0.036, 12, 8), x0 - 0.125, yd, zd), BRONCE);
+      pon(tubo(V(x0 - 0.15, yd, zd), V(x0 - 0.175, yd, zd), 0.03, 6), BRONCE);
+      pon(tubo(V(x0 - 0.175, yd, zd), V(x0 - 0.23, yd, zd), 0.021, 10), BRONCE);
+      pon(tubo(V(x0 - 0.125, yd + 0.03, zd), V(x0 - 0.125, yd + 0.056, zd), 0.007, 6), 0x555555);
+      pon(ubicar(new THREE.BoxGeometry(0.022, 0.012, 0.13), x0 - 0.125, yd + 0.062, zd + 0.05), 0xb3302a); // manilla atravesada: cerrada
+      const yr = Math.max(y0 + 0.45, yc - 0.24), zr = -L / 4;
+      pon(tubo(V(x0 + 0.004, yr, zr), V(x0 - 0.006, yr, zr), 0.056, 14), SELLO);
+      pon(tubo(V(x0 + 0.02, yr, zr), V(x0 - 0.12, yr, zr), 0.04, 12), PVC);
+      pon(tubo(V(x0 - 0.118, yr, zr), V(x0 - 0.123, yr, zr), 0.033, 12), 0x2a2a28); // boca del rebalse
+      return kit.mergeGeometries(p);
+    }
+    // rótulos de cota siempre legibles, aunque la escalera o el asa queden delante (como las anotaciones de un modelo 3D)
+    const lx = kit.etiqueta('x', 0.32, { bg: '#ffb347', color: '#1a1206', depthTest: false }), lh = kit.etiqueta('h', 0.32, { bg: '#ffb347', color: '#1a1206', depthTest: false });
     g.add(lx, lh);
 
     // asa para arrastrar la esquina y cambiar x
@@ -508,15 +712,15 @@ export default {
     g.add(ojoMuro, ojoAlto, ojoSenal);
 
     function construir() {
-      const L = s.x * dm, H = M.h(s.x) * dm, ext = L + 2 * esp, y0 = esp, yc = y0 + H, e2 = ext / 2;
+      const L = s.x * dm, H = M.h(s.x) * dm, ext = L + 2 * esp, y0 = esp, yc = y0 + H, e2 = ext / 2, eR = e2 + 0.06;
       cuerpo.geometry.dispose();
-      cuerpo.geometry = kit.mergeGeometries([
-        bloque(ext + 0.08, esp, ext + 0.08, 0, 0, 0, e2 + 0.04, esp),
-        bloque(ext, H, esp, 0, y0, L / 2 + esp / 2, e2, yc),
-        bloque(ext, H, esp, 0, y0, -L / 2 - esp / 2, e2, yc),
-        bloque(esp, H, L, L / 2 + esp / 2, y0, 0, e2, yc),
-        bloque(esp, H, L, -L / 2 - esp / 2, y0, 0, e2, yc),
-      ]);
+      const A = acumulador();
+      prisma(A, { e: eR, c: 0.02, ya: 0, yb: esp, filas: [0, 0.04, esp], color: colorRadier });
+      prisma(A, { e: e2, c: 0.025, ya: y0, yb: yc, hueco: L / 2, color: colorMuro(yc), filas: [0, 0.05, 0.18, 0.4, H * 0.5, Math.max(H * 0.7, H - 0.35), Math.max(H * 0.92, H - 0.08), H] });
+      cuerpo.geometry = A.geo();
+      sucio.geometry.dispose(); sucio.geometry = geoSucio(e2, eR, y0, yc);
+      // accesorios: llave de desagüe y pasada de rebalse en el muro izquierdo
+      accesorios.geometry.dispose(); accesorios.geometry = geoAccesorios(L, e2, y0, yc);
       const libre = Math.min(0.25, H * 0.15);
       superficie.scale.set(L - 0.004, L - 0.004, 1); superficie.position.set(0, yc - libre, 0);
       tapa.geometry.dispose(); tapa.geometry = geoTapa(ext);
@@ -525,7 +729,22 @@ export default {
       // cotas a lo largo del borde frontal inferior y de la arista frontal derecha
       kit.moverBarra(cotaX, [-L / 2, 0.08, e2 + 0.35], [L / 2, 0.08, e2 + 0.35]);
       kit.moverBarra(cotaH, [e2 + 0.35, y0, e2 + 0.35], [e2 + 0.35, yc, e2 + 0.35]);
-      kit.cambiarEtiqueta(lx, `x = ${kit.num(s.x, 1)} dm`); lx.position.set(Math.min(L / 2, L / 4 + 0.12), 0.62, e2 + 0.45);
+      // líneas de referencia desde la obra y trazos oblicuos en los extremos, como en un plano
+      {
+        const za = e2 + 0.35, xa = e2 + 0.35, p = [];
+        for (const sx of [-1, 1]) {
+          p.push(tubo(V(sx * L / 2, 0.08, eR + 0.03), V(sx * L / 2, 0.08, za + 0.1), 0.006, 6));
+          p.push(tubo(V(sx * L / 2 - 0.055, 0.025, za), V(sx * L / 2 + 0.055, 0.135, za), 0.011, 6));
+        }
+        for (const y of [y0, yc]) {
+          const d0 = y === y0 ? eR + 0.03 : e2 + 0.03;
+          p.push(tubo(V(d0, y, d0), V(xa + 0.08, y, za + 0.08), 0.006, 6));
+          p.push(tubo(V(xa - 0.055, y - 0.055, za), V(xa + 0.055, y + 0.055, za), 0.011, 6));
+        }
+        cotaRef.geometry.dispose(); cotaRef.geometry = kit.mergeGeometries(p.map(sinUV));
+      }
+      // el rótulo de x va algo más alto que el asa para que, desde el escritorio, la esfera no le tape la letra
+      kit.cambiarEtiqueta(lx, `x = ${kit.num(s.x, 1)} dm`); lx.position.set(Math.min(L / 2, L / 4 + 0.12), 0.8, e2 + 0.45);
       // con h baja el rótulo sube sobre la arista: así no se junta con el de x ni queda tras el gráfico de VR
       kit.cambiarEtiqueta(lh, `h = ${kit.num(M.h(s.x), 1)} dm`); lh.position.set(e2 + 0.55, H >= 2.2 ? y0 + H / 2 : y0 + H + 0.4, e2 + 0.55);
       asaX.position.set(L / 2 + esp, 0.2, L / 2 + esp);
@@ -725,7 +944,7 @@ export default {
       add(mez, 0x77736c, 0);
       // cable eléctrico del motor que se va por el suelo
       const pts = [V(-0.42, 0.47, -0.05), V(-0.55, 0.3, -0.25), V(-0.7, 0.02, -0.45), V(-1.3, 0.016, -0.9), V(-1.9, 0.016, -0.6), V(-2.6, 0.016, -1.4), V(-3.6, 0.016, -1.2)];
-      add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.009, 5), 0xd2601c, 0.02);
+      ponerSS(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.009, 5), 0xd2601c, 0.02).applyMatrix4(MB);
       for (const geo of pz) { geo.applyMatrix4(MB); vc.push(geo); }
     }
     // tambor que gira, con engranaje y aro de refuerzo
@@ -817,11 +1036,11 @@ export default {
       const pts = [V(px + 0.15, 0.7, pzz), V(px + 0.17, 0.4, pzz + 0.05), V(px + 0.25, yS, pzz + 0.25), V(px + 0.9, yS, pzz + 0.55), V(px + 1.35, yS, pzz + 0.15),
         V(px + 0.9, yS, pzz - 0.25), V(px + 0.35, yS, pzz + 0.05), V(px - 0.4, yS, pzz + 0.5), V(px - 1.3, yS, pzz + 0.45), V(px - 2.0, yS, pzz + 0.85),
         V(LUG.tambor[0] + 0.55, yS, LUG.tambor[1] - 0.15), V(LUG.tambor[0] + 0.33, 0.35, LUG.tambor[1] - 0.12), V(LUG.tambor[0] + 0.29, 0.9, LUG.tambor[1] - 0.08), V(LUG.tambor[0] + 0.18, 0.86, LUG.tambor[1] - 0.04), V(LUG.tambor[0] + 0.05, 0.74, LUG.tambor[1])];
-      const tg = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 220, 0.011, 6);
+      const tg = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 150, 0.011, 5);
       const nm = tg.attributes.position.count, colM = new Float32Array(nm * 3);
       for (let i = 0; i < nm; i++) { const k = 0.85 + 0.15 * Math.sin(i * 0.013) + (tg.attributes.position.getY(i) < 0.04 ? -0.12 : 0); colM.set([0.17 * k, 0.43 * k, 0.2 * k], i * 3); }
       tg.setAttribute('color', new THREE.BufferAttribute(colM, 3));
-      vc.push(sinUV(tg));
+      vcSS.push(sinUV(tg));
     }
 
     // ------------------------------------------------------------------ conos con cinta de peligro
@@ -888,17 +1107,17 @@ export default {
             ponerVC(tubo(V(x, y, z0 + dz), V(x, y, z1 + dz), 0.008, 5, true), oxidos[Math.floor(azar() * oxidos.length)], 0.12);
           }
         });
-        for (const zz of [-2.2, -0.2, 0.9]) { const amarra = new THREE.TorusGeometry(0.06, 0.0022, 4, 14); amarra.scale(1, 0.42, 1); ponerVC(ubicar(amarra, xc, 0.112, zz), 0x2a2826, 0); }
+        for (const zz of [-2.2, -0.2, 0.9]) { const amarra = new THREE.TorusGeometry(0.06, 0.0022, 4, 14); amarra.scale(1, 0.42, 1); ponerSS(ubicar(amarra, xc, 0.112, zz), 0x2a2826, 0); }
       }
       void largo;
       // estribos apilados
       const camino = (a, b, r = 0.012) => new THREE.CatmullRomCurve3([V(-a, 0, -b + r), V(-a + r, 0, -b), V(a - r, 0, -b), V(a, 0, -b + r), V(a, 0, b - r), V(a - r, 0, b), V(-a + r, 0, b), V(-a, 0, b - r)], true, 'centripetal');
       for (let k = 0; k < 9; k++) {
         const geo = new THREE.TubeGeometry(camino(0.11, 0.16), 28, 0.004, 3, true);
-        ponerVC(ubicar(geo, 3.55 + al(-0.03, 0.03), 0.006 + k * 0.0085, 1.75 + al(-0.03, 0.03), 0, al(-0.25, 0.25), 0), oxidos[k % oxidos.length], 0.1);
+        ponerSS(ubicar(geo, 3.55 + al(-0.03, 0.03), 0.006 + k * 0.0085, 1.75 + al(-0.03, 0.03), 0, al(-0.25, 0.25), 0), oxidos[k % oxidos.length], 0.1);
       }
       // rollo de alambre negro
-      ponerVC(ubicar(new THREE.TorusGeometry(0.13, 0.035, 6, 18), 3.35, 0.035, 1.15, Math.PI / 2, 0, 0), 0x232220, 0.03);
+      ponerSS(ubicar(new THREE.TorusGeometry(0.13, 0.035, 6, 18), 3.35, 0.035, 1.15, Math.PI / 2, 0, 0), 0x232220, 0.03);
     }
 
     // ------------------------------------------------------------------ madera: pallet, moldaje usado, cuartones, caballete y letrero
@@ -917,9 +1136,10 @@ export default {
       const mol = [];
       for (const x of [-0.8, 0.0, 0.8]) mol.push(tabla(0.07, 0.045, 1.3, [x, 0.0225, 0], [0, al(-0.06, 0.06), 0], { tono: 0xb19a74 }));
       for (let k = 0; k < 6; k++) mol.push(tabla(2.44, 0.018, 1.22, [al(-0.05, 0.05), 0.054 + k * 0.0185, al(-0.04, 0.04)], [0, al(-0.035, 0.035), 0], { fenolico: true, tono: 0xffffff }));
-      // dos placas apoyadas contra la pila y cuartones sueltos encima
-      mol.push(tabla(2.44, 0.018, 1.22, [0.05, 0.42, 0.98], [-1.2, 0.04, 0], { fenolico: true }));
-      for (let k = 0; k < 5; k++) mol.push(tabla(0.045, 0.07, 3.2, [-0.6 + k * 0.11 + al(-0.02, 0.02), 0.2 + 0.035, al(-0.15, 0.15)], [0, Math.PI / 2 + al(-0.08, 0.08), 0], { tono: 0xc2ad86 }));
+      // una placa con el canto en el suelo, recostada a 20° sobre el borde de la pila, y cuartones sueltos encima de la pila
+      // (la placa de arriba termina a 0,156 m)
+      { const th = 0.349, zg = 0.61 + 0.156 / Math.tan(th); mol.push(tabla(2.44, 0.018, 1.22, [0.05, 0.61 * Math.sin(th) + 0.009 * Math.cos(th), zg - 0.61 * Math.cos(th) + 0.009 * Math.sin(th)], [th, 0.04, 0], { fenolico: true })); }
+      for (let k = 0; k < 5; k++) mol.push(tabla(0.045, 0.07, 3.2, [-0.6 + k * 0.11 + al(-0.02, 0.02), 0.156 + 0.035, al(-0.15, 0.15) - 0.25], [0, Math.PI / 2 + al(-0.08, 0.08), 0], { tono: 0xc2ad86 }));
       mol.push(tabla(0.045, 0.07, 1.1, [1.6, 0.035, 0.6], [0, 0.6, 0], { tono: 0xb8a27c }));
       mol.push(tabla(0.045, 0.07, 0.7, [-1.55, 0.035, 0.75], [0, -0.4, 0.0], { tono: 0xbca784 }));
       mol.push(tabla(0.3, 0.018, 0.55, [-1.45, 0.009, -0.5], [0, 0.7, 0], { fenolico: true }));
@@ -930,7 +1150,8 @@ export default {
       const cab = [];
       for (const x of [-0.55, 0.55]) {
         cab.push(tabla(0.09, 0.07, 0.07, [x, 0.73, 0], [0, 0, 0], { tono: 0xb59f7a }));
-        for (const sz of [-1, 1]) cab.push(tabla(0.045, 0.78, 0.045, [x, 0.37, sz * 0.15], [sz * 0.36, 0, 0], { tono: 0xb59f7a }));
+        // patas abiertas abajo y juntas bajo el cabezal
+        for (const sz of [-1, 1]) cab.push(tabla(0.045, 0.78, 0.045, [x, 0.37, sz * 0.15], [-sz * 0.36, 0, 0], { tono: 0xb59f7a }));
       }
       cab.push(tabla(1.4, 0.07, 0.07, [0, 0.8, 0], [0, 0, 0], { tono: 0xb8a37e }));
       cab.push(tabla(2.2, 0.04, 0.25, [0.1, 0.855, 0.02], [0, 0.05, 0], { tono: 0xc9b48c }));
@@ -986,6 +1207,7 @@ export default {
     }
 
     kit.malla(kit.mergeGeometries(vc), matVC, { padre: g });
+    kit.malla(kit.mergeGeometries(vcSS), matVC, { sombra: false, padre: g });
 
     // ------------------------------------------------------------------ gráfico del costo
     const graf = kit.grafico({

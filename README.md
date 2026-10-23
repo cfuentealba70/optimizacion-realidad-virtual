@@ -56,6 +56,10 @@ npm test
 
 `npm test` comprueba los modelos matemáticos. Las páginas `tests/xr-rio.html` y `tests/xr-guia4.html` emulan unas Meta Quest 3 con [IWER](https://github.com/meta-quest/immersive-web-emulation-runtime) para probar la sesión de realidad virtual sin casco. Se abren desde un servidor local después de `npm install`.
 
+## Cómo citar
+
+Si usas o adaptas este recurso, cítalo con los datos de `CITATION.cff` (en GitHub, botón «Cite this repository»). Cada versión publicada se archiva en Zenodo con su propio DOI, de modo que la cita apunte siempre a la versión que se usó.
+
 ## Licencia
 
 Código bajo licencia MIT. three.js se distribuye con su propia licencia MIT en `vendor/three/LICENSE`. Las texturas son de [ambientCG](https://ambientcg.com) y la fotografía HDR es de [Poly Haven](https://polyhaven.com/a/farm_field), ambas con licencia CC0 (detalles en `assets/texturas/LICENCIA.txt` y `assets/hdri/LICENCIA.txt`).

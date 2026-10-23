@@ -1,0 +1,23 @@
+{
+  "title": "La Obra: Optimization and Related Rates Problems in Virtual Reality (WebXR)",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "mit",
+  "description": "<p>Open WebXR resource in which eleven optimization and related rates problems of a first-year single-variable calculus course for engineering are recreated at real scale in a single virtual world, a construction site. Each station links a manipulable three-dimensional situation with a panel of equations and live readings, a dynamic graph and a narrated explanation. The interface, the number format and the narration are available in Spanish, English and Portuguese. It runs in a desktop browser and in standalone headsets such as Meta Quest 3, without installation.</p><p>Site: <a href=\"https://cfuentealba70.github.io/optimizacion-realidad-virtual/\">https://cfuentealba70.github.io/optimizacion-realidad-virtual/</a></p>",
+  "creators": [
+    {
+      "name": "Fuentealba, Claudio",
+      "affiliation": "Universidad Austral de Chile"
+    }
+  ],
+  "keywords": [
+    "mathematical modelling",
+    "calculus",
+    "optimization",
+    "related rates",
+    "virtual reality",
+    "WebXR",
+    "engineering education",
+    "open educational resources"
+  ]
+}

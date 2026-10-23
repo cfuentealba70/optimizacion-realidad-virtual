@@ -50,6 +50,12 @@ export function createApp(opts = {}) {
 
   const input = createInput({ renderer, camera, rig, domElement: renderer.domElement, orbit });
 
+  // Fundido a negro breve al teletransportarse en realidad virtual: evita el salto brusco de la imagen, que marea.
+  const velo = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, side: THREE.BackSide, depthTest: false, depthWrite: false, toneMapped: false }));
+  velo.renderOrder = 10000; velo.visible = false; velo.frustumCulled = false;
+  camera.add(velo);
+  let veloT = 0;
+
   const updaters = [];
   const xrListeners = [];
   const billboards = new Set();
@@ -70,6 +76,7 @@ export function createApp(opts = {}) {
     teleportRig(position, yaw = null) {
       rig.position.set(position[0] ?? position.x, position[1] ?? position.y, position[2] ?? position.z);
       if (yaw !== null) rig.rotation.y = yaw;
+      if (renderer.xr.isPresenting) { veloT = 1; velo.material.opacity = 1; velo.visible = true; }
     },
     resize() {
       const w = container.clientWidth || window.innerWidth, h = container.clientHeight || window.innerHeight;
@@ -121,6 +128,7 @@ export function createApp(opts = {}) {
     lastT = nowT;
     input.update();
     locomote(dt);
+    if (veloT > 0) { veloT = Math.max(0, veloT - dt / 0.35); velo.material.opacity = veloT * veloT; velo.visible = veloT > 0; }
     if (!renderer.xr.isPresenting) orbit.update();
     for (const fn of updaters) fn(dt, time);
     if (billboards.size) {
@@ -164,10 +172,26 @@ export function createApp(opts = {}) {
   return app;
 }
 
-// Un pequeño rótulo de carga que se retira solo
-export function loading(text) {
+// Pantalla de carga con el nombre de la página, el paso en curso y una barra de avance (fracción de 0 a 1, o indefinida).
+// Con text = null se desvanece y se retira.
+export function loading(text, fraccion = null) {
   let el = document.getElementById('loading');
-  if (!el) { el = document.createElement('div'); el.id = 'loading'; document.body.appendChild(el); }
-  if (text == null) { el.remove(); return; }
-  el.textContent = tr(text);
+  if (text == null) {
+    if (el) { el.id = 'loading-fuera'; el.classList.add('fuera'); setTimeout(() => el.remove(), 450); }
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'loading'; el.className = 'pantalla-carga';
+    el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+    const titulo = (document.title || '').split('·')[0].trim() || tr('Cargando');
+    el.innerHTML = '<div class="carga"><div class="carga-titulo"></div><div class="carga-texto"></div><div class="carga-barra"><span></span></div>'
+      + '<div class="carga-nota"></div></div>';
+    el.querySelector('.carga-titulo').textContent = titulo;
+    el.querySelector('.carga-nota').textContent = tr('La primera carga puede tardar hasta un minuto, sobre todo en las gafas.');
+    document.body.appendChild(el);
+  }
+  el.querySelector('.carga-texto').textContent = tr(text);
+  const barra = el.querySelector('.carga-barra'), relleno = barra.querySelector('span');
+  if (fraccion == null) barra.classList.add('indet');
+  else { barra.classList.remove('indet'); relleno.style.width = Math.round(Math.max(0, Math.min(1, fraccion)) * 100) + '%'; }
 }

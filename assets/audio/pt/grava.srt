@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:10,635
+Uma correia transportadora descarrega cascalho a uma taxa de trinta pés cúbicos por minuto, e o monte forma um cone cujo diâmetro da base é sempre igual à sua altura.
+
+2
+00:00:10,585 --> 00:00:15,305
+Reproduza o tempo ou mova o controle deslizante para ver o monte crescer.
+
+3
+00:00:15,305 --> 00:00:21,954
+Embora o cascalho caia a um ritmo constante, observe se a altura sobe sempre com a mesma rapidez.
+
+4
+00:00:21,954 --> 00:00:27,034
+No gráfico da altura, a inclinação da tangente é a rapidez com que o monte sobe.
+
+5
+00:00:27,034 --> 00:00:31,250
+Com Ir para agá igual a dez pés, você chega ao instante do problema.
+
+6
+00:00:31,250 --> 00:00:36,688
+O painel mantém essa rapidez oculta até que você ative Revelar resposta.
+

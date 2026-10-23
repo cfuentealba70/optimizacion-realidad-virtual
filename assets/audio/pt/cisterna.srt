@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:02,510
+Esta é a cisterna de custo mínimo.
+
+2
+00:00:02,460 --> 00:00:08,683
+Ela deve guardar doze mil decímetros cúbicos de água, e sua base e sua tampa são quadradas.
+
+3
+00:00:08,683 --> 00:00:15,824
+O concreto da base e das laterais custa cem pesos por decímetro quadrado, e o material da tampa custa o dobro.
+
+4
+00:00:15,824 --> 00:00:18,297
+A variável xis é o lado da base.
+
+5
+00:00:18,297 --> 00:00:23,603
+Como o volume é fixo, a altura se ajusta sozinha cada vez que você muda xis.
+
+6
+00:00:23,603 --> 00:00:32,792
+Arraste a esfera laranja, mova o controle deslizante ou o ponto do gráfico, e observe como mudam a forma da cisterna e o custo total.
+
+7
+00:00:32,792 --> 00:00:35,917
+Com Levantar a tampa, você pode olhar o interior.
+
+8
+00:00:35,917 --> 00:00:41,609
+Quando achar que encontrou o mínimo, confira com Ir ao ótimo ou com Revelar solução.
+

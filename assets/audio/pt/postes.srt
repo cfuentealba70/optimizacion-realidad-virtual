@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:06,871
+Aqui há dois postes, um de doze pés e outro de vinte e oito pés de altura, separados por trinta pés.
+
+2
+00:00:06,821 --> 00:00:12,872
+Cada poste é sustentado por um cabo que desce até uma mesma estaca cravada no chão, entre os dois.
+
+3
+00:00:12,872 --> 00:00:16,861
+A variável xis é a distância da estaca ao poste mais baixo.
+
+4
+00:00:16,861 --> 00:00:25,319
+Arraste a estaca laranja, mova o controle deslizante ou o ponto do gráfico, e observe como muda o comprimento total do cabo.
+
+5
+00:00:25,319 --> 00:00:32,446
+O botão de extremo leva a estaca ao pé de um dos postes, para que você compare os extremos do intervalo com o mínimo.
+
+6
+00:00:32,446 --> 00:00:36,183
+Observe também o ângulo que cada cabo forma com o chão.
+
+7
+00:00:36,183 --> 00:00:41,449
+Depois, confira seu resultado com Ir ao ótimo ou com Revelar solução.
+

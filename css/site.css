@@ -44,6 +44,12 @@ a.btn { display: inline-block; text-decoration: none; background: rgba(60, 86, 1
 a.btn:hover { background: rgba(92, 128, 176, .98); text-decoration: none; }
 button.btn:hover { background: rgba(92, 128, 176, .98); }
 button.btn.on { background: var(--accent); color: #1a1206; border-color: transparent; }
+select.idioma {
+  background: rgba(60, 86, 120, .9); color: #fff; border: 1px solid var(--edge); border-radius: 10px;
+  padding: 7px 10px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+select.idioma option { background: #16212f; color: #fff; }
+.home .idiomas { display: flex; justify-content: flex-end; margin: 0 0 6px; }
 
 #vr-button { z-index: 6; left: auto !important; right: 16px !important; bottom: 16px !important; width: auto !important; padding: 12px 18px !important; font: 600 13px 'Segoe UI', Arial, sans-serif !important; letter-spacing: .04em; border-radius: 12px !important; }
 #loading {

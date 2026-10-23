@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:03,042
+Esta é a maquete do problema do rio e do cabo.
+
+2
+00:00:02,992 --> 00:00:11,675
+Uma usina elétrica fica em uma margem de um rio de cem metros de largura, e a fábrica está quinhentos metros rio acima, na margem oposta.
+
+3
+00:00:11,675 --> 00:00:20,478
+O cabo pode ir primeiro pela margem, a noventa pesos o metro, e depois atravessar a água em diagonal, a cento e cinquenta pesos o metro.
+
+4
+00:00:20,478 --> 00:00:23,563
+A variável xis é o trecho que vai pela margem.
+
+5
+00:00:23,563 --> 00:00:33,191
+Arraste o poste laranja sobre a maquete, mova o controle deslizante ou o ponto do gráfico, e observe como mudam os dois trechos e o custo total.
+
+6
+00:00:33,191 --> 00:00:41,702
+Os botões dos extremos levam o poste a xis igual a zero e a xis igual a quinhentos, para que você compare esses custos com o mínimo.
+
+7
+00:00:41,702 --> 00:00:46,476
+Com Ir para escala real, você percorrerá o vale em seu tamanho verdadeiro.
+
+8
+00:00:46,476 --> 00:00:54,893
+Quando tiver sua resposta, compare-a com Revelar solução, e lembre-se de que o problema pergunta pelo comprimento da instalação.
+

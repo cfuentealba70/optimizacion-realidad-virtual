@@ -1,6 +1,7 @@
 // Paneles flotantes dibujados en canvas, con botones, interruptores y deslizadores.
 // Sirven igual con ratón que con el rayo de un mando.
 import * as THREE from 'three';
+import { tr } from './i18n.js';
 
 const FONT = '"Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
@@ -30,9 +31,9 @@ export function roundRect(ctx, x, y, w, h, r) {
 
 export function font(px, weight = 400) { return `${weight} ${px}px ${FONT}`; }
 
-// Texto que se ajusta a un ancho y devuelve la altura usada
+// Texto que se ajusta a un ancho y devuelve la altura usada (se traduce entero antes de cortarlo en líneas)
 export function wrapText(ctx, text, x, y, maxW, lineH) {
-  const words = String(text).split(' ');
+  const words = String(tr(text)).split(' ');
   let line = '', yy = y;
   for (const w of words) {
     const test = line ? line + ' ' + w : w;
@@ -88,7 +89,7 @@ export function createPanel(opts) {
     }
     if (title) {
       ctx.fillStyle = THEME.dim; ctx.font = font(Math.round(H * 0.058), 600); ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-      ctx.fillText(title, W * 0.04, H * 0.04);
+      ctx.fillText(tr(title), W * 0.04, H * 0.04);
     }
     draw?.(ctx, W, H, panel);
     for (const w of widgets) {
@@ -110,7 +111,7 @@ export function createPanel(opts) {
     ctx.fillStyle = on ? '#1a1206' : '#fff';
     ctx.font = font(Math.round(w.h * (w.fontScale || 0.42)), 600);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const label = typeof w.label === 'function' ? w.label() : w.label;
+    const label = tr(typeof w.label === 'function' ? w.label() : w.label);
     ctx.fillText(label, w.x + w.w / 2, w.y + w.h / 2 + 1);
   }
 
@@ -195,7 +196,7 @@ export function createLabel(text, { size = 0.06, color = '#fff', bg = null, weig
   const g = c.getContext('2d');
   const px = Math.round(size * ppm);
   g.font = font(px, weight);
-  const lines = String(text).split('\n');
+  const lines = String(tr(text)).split('\n');
   const wText = Math.max(...lines.map((l) => g.measureText(l).width));
   const padPx = px * pad;
   c.width = Math.ceil(wText + padPx * 2); c.height = Math.ceil(lines.length * px * 1.2 + padPx * 2);

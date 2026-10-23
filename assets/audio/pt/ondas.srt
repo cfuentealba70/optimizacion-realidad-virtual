@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:04,371
+Uma pessoa joga uma pedra no lago e formam-se ondas circulares.
+
+2
+00:00:04,321 --> 00:00:09,055
+O raio do círculo externo cresce a uma taxa constante de um pé por segundo.
+
+3
+00:00:09,055 --> 00:00:14,561
+O círculo laranja é a frente da onda, e a camada azul-clara é a área que ela delimita.
+
+4
+00:00:14,561 --> 00:00:22,340
+Use Lançar a pedra para ver o lançamento, Reproduzir para que o tempo avance, ou mova o controle deslizante do tempo.
+
+5
+00:00:22,340 --> 00:00:26,635
+Observe que o raio cresce sempre no mesmo ritmo, mas a área não.
+
+6
+00:00:26,635 --> 00:00:31,502
+No gráfico da área, a inclinação da tangente é a rapidez com que a área cresce.
+
+7
+00:00:31,502 --> 00:00:36,143
+Com Ir para erre igual a quatro pés, você chega ao instante do problema.
+
+8
+00:00:36,143 --> 00:00:41,582
+O painel mantém essa rapidez oculta até que você ative Revelar resposta.
+

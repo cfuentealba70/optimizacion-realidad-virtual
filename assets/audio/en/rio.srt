@@ -1,0 +1,32 @@
+1
+00:00:00,100 --> 00:00:03,547
+This is the model of the river and cable problem.
+
+2
+00:00:03,497 --> 00:00:12,593
+A power plant stands on one bank of a river one hundred meters wide, and the factory is five hundred meters upstream, on the opposite bank.
+
+3
+00:00:12,593 --> 00:00:22,313
+The cable can first run along the bank, at ninety pesos per meter, and then cross the water diagonally, at one hundred and fifty pesos per meter.
+
+4
+00:00:22,313 --> 00:00:26,329
+The variable x is the stretch that runs along the bank.
+
+5
+00:00:26,329 --> 00:00:34,880
+Drag the orange post on the model, move the slider or the point on the graph, and watch how the two stretches and the total cost change.
+
+6
+00:00:34,880 --> 00:00:43,311
+The endpoint buttons take the post to x equal to zero and to x equal to five hundred, so you can compare those costs with the minimum.
+
+7
+00:00:43,311 --> 00:00:47,859
+With Go to real scale you will walk through the valley at its true size.
+
+8
+00:00:47,859 --> 00:00:55,465
+When you have your answer, compare it with Reveal solution, and remember that the problem asks for the length of the cable route.
+

@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:02,962
+Agora você está no vale, em escala real.
+
+2
+00:00:02,912 --> 00:00:08,803
+O rio tem cem metros de largura e a fábrica está quinhentos metros rio acima, na outra margem.
+
+3
+00:00:08,803 --> 00:00:15,664
+A linha laranja sobre a margem é o trecho de cabo por terra, e a linha tracejada atravessa a água até a fábrica.
+
+4
+00:00:15,664 --> 00:00:19,468
+O poste laranja marca o ponto onde o cabo deixa a margem.
+
+5
+00:00:19,468 --> 00:00:26,343
+Mova-o com o controle deslizante ou com o gráfico, e veja como mudam o comprimento e o custo de cada trecho.
+
+6
+00:00:26,343 --> 00:00:33,723
+Com os óculos, o joystick esquerdo leva você rapidamente pelo vale, e o direito permite subir para olhá-lo de cima.
+
+7
+00:00:33,723 --> 00:00:37,207
+Com Voltar à maquete, você retorna à mesa.
+

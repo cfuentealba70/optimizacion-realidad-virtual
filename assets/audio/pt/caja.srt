@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:06,885
+Nesta oficina se monta uma caixa sem tampa a partir de um papelão quadrado de vinte e quatro polegadas de lado.
+
+2
+00:00:06,835 --> 00:00:12,686
+Em cada canto se corta um quadrado de lado xis, e depois as bordas são dobradas para cima.
+
+3
+00:00:12,686 --> 00:00:18,404
+Se você cortar pouco, a caixa fica muito baixa, e se cortar muito, a base diminui.
+
+4
+00:00:18,404 --> 00:00:25,970
+Arraste a esfera laranja do canto, mova o controle deslizante ou o ponto do gráfico, e veja como muda o volume.
+
+5
+00:00:25,970 --> 00:00:33,484
+Com Desdobrar, você vê o papelão plano com os cortes, e com Encher com areia pode comparar o volume de caixas diferentes.
+
+6
+00:00:33,484 --> 00:00:38,803
+No final, confira seu resultado com Ir ao ótimo ou com Revelar solução.
+

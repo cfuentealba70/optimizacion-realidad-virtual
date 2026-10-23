@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,401
+Now you are in the valley, at real scale.
+
+2
+00:00:03,351 --> 00:00:10,186
+The river is one hundred meters wide and the factory is five hundred meters upstream, on the other bank.
+
+3
+00:00:10,186 --> 00:00:17,726
+The orange line along the bank is the stretch of cable over land, and the dashed line crosses the water to the factory.
+
+4
+00:00:17,726 --> 00:00:22,074
+The orange post marks the point where the cable leaves the bank.
+
+5
+00:00:22,074 --> 00:00:28,377
+Move it with the slider or with the graph, and see how the length and the cost of each stretch change.
+
+6
+00:00:28,377 --> 00:00:36,156
+With the headset, the left joystick takes you quickly through the valley, and the right one lets you rise to look at it from above.
+
+7
+00:00:36,156 --> 00:00:39,428
+With Back to the model you return to the table.
+

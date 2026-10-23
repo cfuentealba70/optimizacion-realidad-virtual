@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:02,895
+This is the minimum-cost cistern.
+
+2
+00:00:02,845 --> 00:00:08,776
+It must hold twelve thousand cubic decimeters of water, and its base and lid are square.
+
+3
+00:00:08,776 --> 00:00:17,739
+The concrete for the base and the sides costs one hundred pesos per square decimeter, and the material for the lid costs twice as much.
+
+4
+00:00:17,739 --> 00:00:20,944
+The variable x is the side of the base.
+
+5
+00:00:20,944 --> 00:00:33,922
+Since the volume is fixed, the height adjusts by itself every time you change x. Drag the orange sphere, move the slider or the point on the graph, and watch how the shape of the cistern and the total cost change.
+
+6
+00:00:33,922 --> 00:00:36,835
+With Lift the lid you can look inside.
+
+7
+00:00:36,835 --> 00:00:42,433
+When you think you have found the minimum, check it with Go to optimum or with Reveal solution.
+

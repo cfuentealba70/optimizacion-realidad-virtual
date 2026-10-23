@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:05,768
+Uma escada de treze metros está apoiada contra a parede do edifício e começa a escorregar.
+
+2
+00:00:05,718 --> 00:00:09,640
+Sua base se afasta da parede a cinco metros por segundo.
+
+3
+00:00:09,640 --> 00:00:14,867
+Reproduza o deslizamento ou mova o tempo, e veja como desce a parte superior.
+
+4
+00:00:14,867 --> 00:00:23,364
+Além da altura, o problema pergunta pela área do triângulo que a escada, o chão e a parede formam, e pelo ângulo da escada com o chão.
+
+5
+00:00:23,364 --> 00:00:28,417
+No gráfico da altura, a inclinação da curva é a rapidez com que a escada desce.
+
+6
+00:00:28,417 --> 00:00:33,098
+Com Ir para xis igual a doze metros, você chega ao instante do problema.
+
+7
+00:00:33,098 --> 00:00:39,029
+As três rapidezes ficam ocultas no painel até que você ative Revelar resposta.
+

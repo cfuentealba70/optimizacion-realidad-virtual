@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:05,329
+A thirteen-meter ladder leans against the wall of the building and starts to slide.
+
+2
+00:00:05,279 --> 00:00:09,587
+Its base moves away from the wall at five meters per second.
+
+3
+00:00:09,587 --> 00:00:14,175
+Play the slide or move the time, and watch how the top comes down.
+
+4
+00:00:14,175 --> 00:00:24,029
+Besides the height, the problem asks about the area of the triangle formed by the ladder, the ground and the wall, and about the angle of the ladder with the ground.
+
+5
+00:00:24,029 --> 00:00:29,215
+On the height graph, the slope of the curve is the rate at which the ladder comes down.
+
+6
+00:00:29,215 --> 00:00:33,896
+With Go to x equals twelve meters you reach the instant of the problem.
+
+7
+00:00:33,896 --> 00:00:38,550
+The three rates stay hidden in the panel until you turn on Reveal answer.
+

@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:09,797
+A conveyor belt discharges gravel at a rate of thirty cubic feet per minute, and the pile forms a cone whose base diameter is always equal to its height.
+
+2
+00:00:09,747 --> 00:00:13,603
+Play the time or move the slider to watch the pile grow.
+
+3
+00:00:13,603 --> 00:00:20,212
+Although the gravel falls at a constant rate, notice whether the height always rises equally fast.
+
+4
+00:00:20,212 --> 00:00:25,492
+On the height graph, the slope of the tangent is the rate at which the pile rises.
+
+5
+00:00:25,492 --> 00:00:30,013
+With Go to h equals ten feet you reach the instant of the problem.
+
+6
+00:00:30,013 --> 00:00:34,308
+The panel keeps that rate hidden until you turn on Reveal answer.
+

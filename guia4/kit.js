@@ -7,6 +7,7 @@ import { createPlot, dashedLine } from '../src/common/plot3d.js';
 import * as tex from '../src/common/textures.js';
 import { createWater } from '../src/common/water.js';
 import { num, pesos } from '../src/math/guia4.js';
+import { tr } from '../src/common/i18n.js';
 import { crearHumano, POSES, CLIPS, PRESETS, PIELES, PELOS, OJOS } from './humano.js';
 
 const PPM = 760;
@@ -121,6 +122,7 @@ export function crearKit(app) {
   //        botones: [{ etiqueta: string | () => string, accion, tipo: 'boton' | 'interruptor', get, set }],
   //        pie: () => string, pieColor: () => string, ancho, columnas, lineasPie, intervalo }
   kit.panelEstandar = (def) => {
+    const enunciado = tr(def.enunciado); // traducido antes de medir, para que el diseño calce con el texto que se dibuja
     const ancho = def.ancho ?? 1.2;
     const W = Math.round(ancho * PPM);
     const u = W * 0.04, pad = u, innerW = W - 2 * pad;
@@ -129,7 +131,7 @@ export function crearKit(app) {
     const L = { titulo: y };
     y += u * 2.05;
     m.font = font(u * 0.6, 400);
-    const nEnun = def.enunciado ? contarLineas(m, def.enunciado, innerW) : 0;
+    const nEnun = enunciado ? contarLineas(m, enunciado, innerW) : 0;
     L.enunciado = y + u * 0.5;
     y += nEnun * u * 0.76 + (nEnun ? u * 0.3 : 0);
     L.ecuaciones = [];
@@ -170,16 +172,16 @@ export function crearKit(app) {
       draw(ctx) {
         ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
         ctx.fillStyle = THEME.dim; ctx.font = font(u * 0.55, 700);
-        ctx.fillText((def.etiqueta || '').toUpperCase(), pad, L.titulo + u * 0.62);
+        ctx.fillText(tr(def.etiqueta || '').toUpperCase(), pad, L.titulo + u * 0.62);
         ctx.fillStyle = THEME.text; ctx.font = font(u * 0.95, 700);
-        ctx.fillText(def.titulo || '', pad, L.titulo + u * 1.62);
-        if (def.enunciado) {
+        ctx.fillText(tr(def.titulo || ''), pad, L.titulo + u * 1.62);
+        if (enunciado) {
           ctx.fillStyle = THEME.dim; ctx.font = font(u * 0.6, 400);
-          wrapText(ctx, def.enunciado, pad, L.enunciado, innerW, u * 0.76);
+          wrapText(ctx, enunciado, pad, L.enunciado, innerW, u * 0.76);
         }
         (def.ecuaciones || []).forEach((e, i) => {
           ctx.fillStyle = THEME.text; ctx.font = font(u * 0.8, 700);
-          ctx.fillText(typeof e === 'function' ? e() : e, pad, L.ecuaciones[i]);
+          ctx.fillText(tr(typeof e === 'function' ? e() : e), pad, L.ecuaciones[i]);
         });
         const T = L.tarjetas;
         lect.forEach((c, i) => {
@@ -188,21 +190,21 @@ export function crearKit(app) {
           ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(cx, cy, T.cw, T.ch);
           ctx.fillStyle = c.color || THEME.accent; ctx.fillRect(cx, cy, 6, T.ch);
           ctx.fillStyle = THEME.dim; ctx.font = font(u * 0.5, 600);
-          ctx.fillText(c.etiqueta, cx + u * 0.4, cy + u * 0.68);
+          ctx.fillText(tr(c.etiqueta), cx + u * 0.4, cy + u * 0.68);
           ctx.fillStyle = THEME.text; ctx.font = font(u * (c.escala ?? 0.82), 700);
-          ctx.fillText(c.valor(), cx + u * 0.4, cy + u * 1.62);
+          ctx.fillText(tr(c.valor()), cx + u * 0.4, cy + u * 1.62);
         });
         for (const s of L.deslizadores) {
           ctx.fillStyle = THEME.dim; ctx.font = font(u * 0.58, 600); ctx.textAlign = 'left';
-          ctx.fillText(s.d.etiqueta, pad, s.ly);
+          ctx.fillText(tr(s.d.etiqueta), pad, s.ly);
           ctx.fillStyle = THEME.text; ctx.textAlign = 'right';
-          ctx.fillText(s.d.formato ? s.d.formato(s.d.get()) : String(s.d.get()), W - pad, s.ly);
+          ctx.fillText(tr(s.d.formato ? s.d.formato(s.d.get()) : String(s.d.get())), W - pad, s.ly);
           ctx.textAlign = 'left';
         }
         if (def.pie) {
           const col = def.pieColor ? def.pieColor() : THEME.dim;
           ctx.fillStyle = col; ctx.font = font(u * 0.56, col === THEME.dim ? 400 : 700);
-          wrapText(ctx, def.pie(), pad, L.pie, innerW, u * 0.74);
+          wrapText(ctx, tr(def.pie()), pad, L.pie, innerW, u * 0.74);
         }
       },
     });

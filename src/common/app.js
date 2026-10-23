@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { createInput } from './input.js';
+import { tr } from './i18n.js';
 
 export function createApp(opts = {}) {
   const {
@@ -153,7 +154,8 @@ export function createApp(opts = {}) {
   const vrButton = VRButton.createButton(renderer, { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });
   vrButton.id = 'vr-button';
   const TR = { 'ENTER VR': 'ENTRAR EN VR', 'EXIT VR': 'SALIR DE VR', 'VR NOT SUPPORTED': 'VR NO DISPONIBLE AQUÍ', 'VR NOT ALLOWED': 'VR NO PERMITIDO', 'WEBXR NEEDS HTTPS': 'WEBXR REQUIERE HTTPS', 'WEBXR NOT AVAILABLE': 'WEBXR NO DISPONIBLE' };
-  const trans = () => { const t = TR[vrButton.textContent.trim()]; if (t && vrButton.textContent !== t) vrButton.textContent = t; };
+  // el botón de three.js viene en inglés: se pasa al español y de ahí al idioma de la interfaz
+  const trans = () => { const t = tr(TR[vrButton.textContent.trim()]); if (t && vrButton.textContent !== t) vrButton.textContent = t; };
   new MutationObserver(trans).observe(vrButton, { childList: true, characterData: true, subtree: true });
   trans();
   document.body.appendChild(vrButton);
@@ -167,5 +169,5 @@ export function loading(text) {
   let el = document.getElementById('loading');
   if (!el) { el = document.createElement('div'); el.id = 'loading'; document.body.appendChild(el); }
   if (text == null) { el.remove(); return; }
-  el.textContent = text;
+  el.textContent = tr(text);
 }

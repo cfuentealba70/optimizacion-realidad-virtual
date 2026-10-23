@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:04,225
+Este reservatório tem a forma de um cone com o vértice para baixo.
+
+2
+00:00:04,175 --> 00:00:07,672
+Mede dez metros de altura e quinze metros de raio.
+
+3
+00:00:07,672 --> 00:00:15,425
+Pelo vértice sai água a um metro cúbico por segundo, e pela tubulação entra água com uma vazão constante, que chamamos de cê.
+
+4
+00:00:15,425 --> 00:00:23,364
+O problema pede a vazão cê para que o nível suba a quatro metros por segundo, no instante em que a água tem um metro de profundidade.
+
+5
+00:00:23,364 --> 00:00:31,050
+Mova a vazão e o nível com os controles deslizantes, arraste a esfera azul-clara, ou ative Simular para ver o enchimento.
+
+6
+00:00:31,050 --> 00:00:39,242
+Procure a vazão com a qual a curva do gráfico passa pela guia de quatro metros por segundo, exatamente em um metro de profundidade.
+
+7
+00:00:39,242 --> 00:00:44,640
+Com Ir para agá igual a um metro e com Revelar, você confere seu resultado.
+

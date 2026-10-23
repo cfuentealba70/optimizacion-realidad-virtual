@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:02,855
+Welcome to the construction site.
+
+2
+00:00:02,805 --> 00:00:11,263
+On this site there are eleven stations, one for each optimization and related rates problem of the guide that can be seen at real scale.
+
+3
+00:00:11,263 --> 00:00:16,023
+To go to a station, choose it in the stations menu or walk to it.
+
+4
+00:00:16,023 --> 00:00:22,327
+On the computer, drag with the mouse over the scene to rotate the view and use the wheel to zoom in.
+
+5
+00:00:22,327 --> 00:00:30,611
+With the headset, walk with the left joystick, turn with the right one, and use the menu on your left: point and pull the trigger.
+
+6
+00:00:30,611 --> 00:00:39,760
+Each station has a panel with the equations and a graph of the function, and you can move the variable of the problem to see how everything changes at once.
+
+7
+00:00:39,760 --> 00:00:45,957
+You can repeat this explanation whenever you want, or turn the narration off with the narration button.
+

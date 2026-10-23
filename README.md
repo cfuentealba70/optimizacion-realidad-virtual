@@ -16,6 +16,10 @@ En las Quest 3, abre https://cfuentealba70.github.io/optimizacion-realidad-virtu
 
 En el computador, el ratón gira la vista y se puede arrastrar sobre el gráfico, el poste naranja y los deslizadores. Los navegadores no reproducen audio antes del primer clic: la narración de la primera escena empieza con el primer gesto. `?narracion=0` la desactiva y `?foto=0` vuelve a las texturas procedurales, más livianas.
 
+### Idiomas
+
+El sitio está en español, inglés y portugués. El idioma se elige en la barra de la obra o en la portada, se recuerda en el navegador y también se puede fijar con `?lang=es`, `?lang=en` o `?lang=pt`. Cambian los textos, el formato de los números (coma o punto decimal) y la narración. Los textos de las estaciones siguen escritos en español y se traducen al dibujarse con la tabla de `src/common/i18n-textos.js` (español, inglés y portugués). Con `?i18n=revisar`, `window.__i18n.faltan` y `window.__i18n.faltanLienzo` muestran los textos que no encontraron traducción.
+
 Para probar en local hace falta Python 3:
 
 ```
@@ -35,13 +39,13 @@ src/common/           aplicación base, entrada por rayos, paneles, gráficos 3D
 vendor/three/         three.js (r186) y los complementos usados
 css/                  estilos
 assets/               ícono, vistas previas, texturas fotográficas (texturas/), iluminación HDR (hdri/) y narraciones (audio/)
-tools/                generar_narracion.py: genera los MP3 y los subtítulos de assets/audio/narraciones.json
+tools/                generar_narracion.py: genera los MP3 y los subtítulos de assets/audio/narraciones*.json
 docs/                 modelo matemático y solución
 tests/                pruebas de la matemática y páginas de prueba con un casco emulado
 .nojekyll             necesario para publicar en GitHub Pages
 ```
 
-No hay paso de compilación. Los materiales de suelo, hormigón, madera, metal, ladrillo y estuco usan texturas fotográficas escaneadas (color, relieve y un mapa de oclusión, rugosidad y metal, de 1024 px); el suelo se proyecta en metros reales sobre cualquier objeto, y el terreno mezcla pasto y tierra a dos escalas para que no se note la repetición. La luz ambiental y los reflejos vienen de una fotografía HDR de un campo abierto. Las narraciones se regeneran con `python tools/generar_narracion.py` (requiere `pip install edge-tts`) después de editar los textos en `assets/audio/narraciones.json`.
+No hay paso de compilación. Los materiales de suelo, hormigón, madera, metal, ladrillo y estuco usan texturas fotográficas escaneadas (color, relieve y un mapa de oclusión, rugosidad y metal, de 1024 px); el suelo se proyecta en metros reales sobre cualquier objeto, y el terreno mezcla pasto y tierra a dos escalas para que no se note la repetición. La luz ambiental y los reflejos vienen de una fotografía HDR de un campo abierto. Las narraciones se regeneran con `python tools/generar_narracion.py` (requiere `pip install edge-tts`) después de editar los textos en `assets/audio/narraciones.json`. Las de inglés y portugués están en `narraciones.en.json` y `narraciones.pt.json`, se generan con `--idioma en` o `--idioma pt` y quedan en `assets/audio/en/` y `assets/audio/pt/`.
 
 ## Pruebas
 

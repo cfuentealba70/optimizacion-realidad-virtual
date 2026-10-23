@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:08,853
+On this air traffic control desk you can see two airplanes flying at the same altitude, on perpendicular routes that cross at point O.
+
+2
+00:00:08,803 --> 00:00:14,946
+One is two hundred and twenty-five miles from O and flies at four hundred and fifty miles per hour.
+
+3
+00:00:14,946 --> 00:00:19,335
+The other is three hundred miles away and flies at six hundred.
+
+4
+00:00:19,335 --> 00:00:25,585
+Play the clock or move the time to see how they approach each other, and adjust the clock speed if you need to.
+
+5
+00:00:25,585 --> 00:00:32,712
+On the graph of the distance between the airplanes, the slope of the tangent is the rate at which that distance changes.
+
+6
+00:00:32,712 --> 00:00:39,840
+With Go to the instant you place yourself at the moment of the problem, and with Reveal answer you check your calculation.
+
+7
+00:00:39,840 --> 00:00:45,226
+If you keep moving time forward, you will see what happens when both reach point O.
+

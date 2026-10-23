@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:06,698
+Here there are two poles, one twelve feet and the other twenty-eight feet high, thirty feet apart.
+
+2
+00:00:06,648 --> 00:00:12,805
+Each pole is held by a cable that runs down to the same stake driven into the ground between them.
+
+3
+00:00:12,805 --> 00:00:17,207
+The variable x is the distance from the stake to the shorter pole.
+
+4
+00:00:17,207 --> 00:00:24,481
+Drag the orange stake, move the slider or the point on the graph, and watch how the total length of cable changes.
+
+5
+00:00:24,481 --> 00:00:32,034
+The endpoint button takes the stake to the foot of one of the poles, so you can compare the endpoints of the interval with the minimum.
+
+6
+00:00:32,034 --> 00:00:36,143
+Notice also the angle that each cable makes with the ground.
+
+7
+00:00:36,143 --> 00:00:40,545
+Then check your result with Go to optimum or with Reveal solution.
+

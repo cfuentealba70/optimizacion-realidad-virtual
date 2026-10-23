@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,427
+Desta torre você vê duas estradas que se cruzam.
+
+2
+00:00:03,377 --> 00:00:11,462
+Um carro viaja para o leste a noventa quilômetros por hora, e outro viaja para o sul a sessenta, e ambos se dirigem ao cruzamento.
+
+3
+00:00:11,462 --> 00:00:16,010
+Reproduza o tempo ou mova o controle deslizante para vê-los avançar.
+
+4
+00:00:16,010 --> 00:00:22,061
+As distâncias de cada carro ao cruzamento diminuem, e por isso suas derivadas são negativas.
+
+5
+00:00:22,061 --> 00:00:29,401
+O gráfico mostra a distância entre os dois carros, e a inclinação da sua tangente é a rapidez com que eles se aproximam.
+
+6
+00:00:29,401 --> 00:00:37,539
+Com Ir ao instante, você se situa no momento em que o primeiro carro está a duzentos metros do cruzamento e o segundo a cento e cinquenta.
+
+7
+00:00:37,539 --> 00:00:42,220
+Depois, ative Revelar resposta para conferir seu cálculo.
+

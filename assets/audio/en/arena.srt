@@ -1,0 +1,36 @@
+1
+00:00:00,100 --> 00:00:05,182
+Here an open-top container is built to store ten cubic meters of sand.
+
+2
+00:00:05,132 --> 00:00:08,218
+The length of the base is twice its width.
+
+3
+00:00:08,218 --> 00:00:14,321
+The bottom costs thirty thousand pesos per square meter, and the sides, twenty thousand.
+
+4
+00:00:14,321 --> 00:00:18,590
+The variable is the width of the base, which we call w.
+
+5
+00:00:18,590 --> 00:00:23,071
+When you change it, the height adjusts by itself to keep the volume.
+
+6
+00:00:23,071 --> 00:00:29,175
+A small base forces very tall sides, and a large base makes the bottom expensive.
+
+7
+00:00:29,175 --> 00:00:35,585
+Drag the orange sphere, move the slider or the point on the graph, and look for the lowest cost.
+
+8
+00:00:35,585 --> 00:00:39,561
+With Show sand you see the material inside the container.
+
+9
+00:00:39,561 --> 00:00:43,523
+Then check it with Go to optimum or with Reveal solution.
+

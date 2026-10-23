@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:03,680
+From this tower you see two roads that cross.
+
+2
+00:00:03,630 --> 00:00:12,393
+One car travels east at ninety kilometers per hour, and another travels south at sixty, and both are heading toward the intersection.
+
+3
+00:00:12,393 --> 00:00:16,223
+Play the time or move the slider to watch them advance.
+
+4
+00:00:16,223 --> 00:00:22,872
+The distances from each car to the intersection decrease, and that is why their derivatives are negative.
+
+5
+00:00:22,872 --> 00:00:30,226
+The graph shows the distance between the two cars, and the slope of its tangent is the rate at which they approach each other.
+
+6
+00:00:30,226 --> 00:00:39,148
+With Go to the instant you place yourself at the moment when the first car is two hundred meters from the intersection and the second is one hundred and fifty.
+
+7
+00:00:39,148 --> 00:00:43,005
+Then turn on Reveal answer to check your calculation.
+

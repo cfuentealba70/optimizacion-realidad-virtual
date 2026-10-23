@@ -1,0 +1,36 @@
+1
+00:00:00,100 --> 00:00:05,528
+Aqui se constrói um recipiente sem tampa para guardar dez metros cúbicos de areia.
+
+2
+00:00:05,478 --> 00:00:08,550
+O comprimento da base é o dobro da sua largura.
+
+3
+00:00:08,550 --> 00:00:13,603
+O fundo custa trinta mil pesos o metro quadrado, e as laterais, vinte mil.
+
+4
+00:00:13,603 --> 00:00:17,180
+A variável é a largura da base, que chamamos de dáblio.
+
+5
+00:00:17,180 --> 00:00:21,050
+Ao mudá-la, a altura se ajusta sozinha para manter o volume.
+
+6
+00:00:21,050 --> 00:00:26,968
+Uma base pequena obriga a levantar laterais muito altas, e uma base grande encarece o fundo.
+
+7
+00:00:26,968 --> 00:00:33,670
+Arraste a esfera laranja, mova o controle deslizante ou o ponto do gráfico, e procure o menor custo.
+
+8
+00:00:33,670 --> 00:00:37,460
+Com Mostrar areia, você vê o material dentro do recipiente.
+
+9
+00:00:37,460 --> 00:00:41,968
+Depois, confira com Ir ao ótimo ou com Revelar solução.
+

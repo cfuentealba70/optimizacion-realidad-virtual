@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:02,284
+Bem-vinda, bem-vindo à obra.
+
+2
+00:00:02,234 --> 00:00:10,944
+Neste terreno há onze estações, uma para cada problema de otimização e de taxas relacionadas do guia que pode ser visto em escala real.
+
+3
+00:00:10,944 --> 00:00:15,744
+Para ir a uma estação, escolha-a no menu de estações ou caminhe até ela.
+
+4
+00:00:15,744 --> 00:00:21,635
+No computador, arraste com o mouse sobre a cena para girar a vista e use a roda para aproximar.
+
+5
+00:00:21,635 --> 00:00:29,867
+Com os óculos, caminhe com o joystick esquerdo, gire com o direito e use o menu que fica à sua esquerda: aponte e aperte o gatilho.
+
+6
+00:00:29,867 --> 00:00:39,135
+Em cada estação há um painel com as equações e um gráfico da função, e você pode mover a variável do problema para ver como tudo muda ao mesmo tempo.
+
+7
+00:00:39,135 --> 00:00:46,130
+Você pode repetir esta explicação quando quiser, ou desativar a narração com o botão de narração.
+

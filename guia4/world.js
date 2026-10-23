@@ -10,6 +10,12 @@ import { surfaceMaterial, makeSurface, fbm, mulberry32, fotoTex, fotosActivas } 
 import { createPanel, THEME, font } from '../src/common/panel.js';
 import { crearKit } from './kit.js';
 import { crearNarrador } from './narrador.js';
+import { tr, IDIOMA, selectorIdioma, traducirPagina } from '../src/common/i18n.js';
+
+// textos fijos de la página y selector de idioma en la barra (cambiar de idioma recarga la página)
+document.title = tr(document.title);
+traducirPagina();
+document.getElementById('info')?.before(selectorIdioma());
 
 loading('Preparando la obra…');
 // cede el turno al navegador para que muestre el aviso de carga (con un mensaje: los temporizadores se retrasan en pestañas ocultas)
@@ -276,7 +282,7 @@ async function cargarEstaciones() {
     est.habilitado = () => grupo.visible;
     est.activa = () => activa === est;
     try {
-      loading(`Construyendo: ${l.id}…`);
+      loading(`Construyendo la estación ${LAYOUT.indexOf(l) + 1}/${LAYOUT.length}…`);
       await ceder();
       const mod = await import(`./estaciones/${l.id}.js`);
       est.def = mod.default;
@@ -374,7 +380,8 @@ function irA(est) {
 // ------------------------------------------------------------------ narración en audio de cada escena
 const SIN_NARRACION = PARAMS0.get('ui') === '0' || PARAMS0.get('narracion') === '0';
 const narrador = crearNarrador({
-  base: new URL('../assets/audio/', import.meta.url).href,
+  // la narración en español está en assets/audio; las de inglés y portugués, en assets/audio/en y assets/audio/pt
+  base: new URL(`../assets/audio/${IDIOMA === 'es' ? '' : IDIOMA + '/'}`, import.meta.url).href,
   alTexto: (t) => { const el = $('subtitulo'); if (el) { el.textContent = t; el.hidden = !t || !subtitulosVisibles(); } },
   alEstado: () => { actualizarBotonesNarracion(); menuVR?.invalidate?.(); },
 });
@@ -382,7 +389,7 @@ const subtitulosVisibles = () => !renderer.xr.isPresenting;
 function narrar(est) { if (!SIN_NARRACION) narrador.reproducir(est ? est.api?.narracion?.() || est.id : 'obra'); }
 function actualizarBotonesNarracion() {
   const b = $('btn-narracion');
-  if (b) { b.textContent = narrador.activo() ? 'Narración: sí' : 'Narración: no'; b.setAttribute('aria-pressed', String(narrador.activo())); }
+  if (b) { b.textContent = tr(narrador.activo() ? 'Narración: sí' : 'Narración: no'); b.setAttribute('aria-pressed', String(narrador.activo())); }
 }
 kit.narrar = (id) => { if (!SIN_NARRACION) narrador.reproducir(id); };
 
@@ -423,14 +430,14 @@ function construirMenuDom() {
   const ul = $('menu-lista');
   ul.innerHTML = '';
   const li0 = document.createElement('li');
-  li0.innerHTML = '<button class="btn" data-id="">Plaza de inicio</button>';
+  li0.innerHTML = `<button class="btn" data-id="">${tr('Plaza de inicio')}</button>`;
   ul.appendChild(li0);
   const grupos = [['optimizacion', 'Optimización'], ['razon', 'Razón de cambio']];
   for (const [tipo, nombre] of grupos) {
-    const h = document.createElement('li'); h.className = 'grupo'; h.textContent = nombre; ul.appendChild(h);
+    const h = document.createElement('li'); h.className = 'grupo'; h.textContent = tr(nombre); ul.appendChild(h);
     for (const est of estaciones.filter((e) => (e.def.tipo || 'optimizacion') === tipo).sort((a, b) => ordenGuia(a) - ordenGuia(b))) {
       const li = document.createElement('li');
-      li.innerHTML = `<button class="btn" data-id="${est.id}"><span>${est.def.titulo}</span><small>${est.def.etiqueta || ''}</small></button>`;
+      li.innerHTML = `<button class="btn" data-id="${est.id}"><span>${tr(est.def.titulo)}</span><small>${tr(est.def.etiqueta || '')}</small></button>`;
       ul.appendChild(li);
     }
   }
@@ -440,9 +447,9 @@ function marcarMenu() {
   document.querySelectorAll('#menu-lista button').forEach((b) => b.classList.toggle('on', (b.dataset.id || null) === (activa ? activa.id : null)));
 }
 function actualizarHud() {
-  $('hud-etiqueta').textContent = activa ? activa.def.etiqueta || '' : 'Guía 4 · Optimización y razón de cambio';
-  $('hud-titulo').textContent = activa ? activa.def.titulo : 'La obra';
-  $('hud-texto').textContent = activa ? activa.def.resumen || '' : 'Elige una estación en el menú. Cada una modela un problema de la guía con su función objetivo o con las razones de cambio relacionadas.';
+  $('hud-etiqueta').textContent = tr(activa ? activa.def.etiqueta || '' : 'Guía 4 · Optimización y razón de cambio');
+  $('hud-titulo').textContent = tr(activa ? activa.def.titulo : 'La obra');
+  $('hud-texto').textContent = tr(activa ? activa.def.resumen || '' : 'Elige una estación en el menú. Cada una modela un problema de la guía con su función objetivo o con las razones de cambio relacionadas.');
 }
 let controlesDom = [];
 function construirControles() {
@@ -454,17 +461,17 @@ function construirControles() {
   for (const d of defs) {
     if (d.tipo === 'rango') {
       const lab = document.createElement('label');
-      lab.innerHTML = `${d.etiqueta} <input type="range" min="${d.min}" max="${d.max}" step="${d.paso}"><output></output>`;
+      lab.innerHTML = `${tr(d.etiqueta)} <input type="range" min="${d.min}" max="${d.max}" step="${d.paso}"><output></output>`;
       const inp = lab.querySelector('input'), out = lab.querySelector('output');
       inp.oninput = () => d.set(parseFloat(inp.value));
-      controlesDom.push(() => { if (document.activeElement !== inp) inp.value = String(d.get()); out.textContent = d.formato ? d.formato(d.get()) : String(d.get()); });
+      controlesDom.push(() => { if (document.activeElement !== inp) inp.value = String(d.get()); out.textContent = tr(d.formato ? d.formato(d.get()) : String(d.get())); });
       bar.appendChild(lab);
     } else {
       const b = document.createElement('button');
       b.className = 'btn';
       b.onclick = () => (d.tipo === 'interruptor' ? d.set(!d.get()) : d.accion());
       controlesDom.push(() => {
-        b.textContent = typeof d.etiqueta === 'function' ? d.etiqueta() : d.etiqueta;
+        b.textContent = tr(typeof d.etiqueta === 'function' ? d.etiqueta() : d.etiqueta);
         if (d.tipo === 'interruptor') b.classList.toggle('on', !!d.get());
       });
       bar.appendChild(b);
@@ -541,14 +548,14 @@ function montarLamina() {
   insets = [];
   if (!activa) {
     const p = document.createElement('p');
-    p.textContent = 'Elige una estación en el menú. Cada una modela un problema de optimización o de razón de cambio con su función objetivo o con la relación entre las razones, un panel y un gráfico.';
+    p.textContent = tr('Elige una estación en el menú. Cada una modela un problema de optimización o de razón de cambio con su función objetivo o con la relación entre las razones, un panel y un gráfico.');
     $pan.appendChild(p);
     return;
   }
   if (renderer.xr.isPresenting) return;
   for (const p of activa.api?.paneles || []) {
     const c = p.canvas;
-    c.setAttribute('role', 'application'); c.setAttribute('aria-label', 'Panel de la estación');
+    c.setAttribute('role', 'application'); c.setAttribute('aria-label', tr('Panel de la estación'));
     const hit = (e) => { const r = c.getBoundingClientRect(); return { uv: { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height } }; };
     c.onpointerdown = (e) => { p.handlers.onDown(hit(e), null); try { c.setPointerCapture(e.pointerId); } catch { /* sin captura */ } };
     c.onpointermove = (e) => { if (p.activeId) p.handlers.onMove(hit(e), null); else p.handlers.onHover(hit(e)); };
@@ -559,7 +566,7 @@ function montarLamina() {
   for (const g of activa.graficos || []) {
     const div = document.createElement('div');
     div.className = 'grafico';
-    div.setAttribute('aria-label', 'Gráfico de la estación');
+    div.setAttribute('aria-label', tr('Gráfico de la estación'));
     const prm = g.userData.fondo.geometry.parameters;
     div.style.aspectRatio = String((prm.width / prm.height).toFixed(3));
     $lam.appendChild(div);

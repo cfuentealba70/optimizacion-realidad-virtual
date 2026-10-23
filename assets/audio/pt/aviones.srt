@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:09,052
+Nesta mesa de controle de tráfego aéreo veem-se dois aviões que voam à mesma altitude, por rotas perpendiculares que se cruzam no ponto O.
+
+2
+00:00:09,002 --> 00:00:14,973
+Um está a duzentas e vinte e cinco milhas de O e voa a quatrocentas e cinquenta milhas por hora.
+
+3
+00:00:14,973 --> 00:00:18,311
+O outro está a trezentas milhas e voa a seiscentas.
+
+4
+00:00:18,311 --> 00:00:25,558
+Reproduza o relógio ou mova o tempo para ver como eles se aproximam, e ajuste a velocidade do relógio se precisar.
+
+5
+00:00:25,558 --> 00:00:32,034
+No gráfico da distância entre os aviões, a inclinação da tangente é a rapidez com que essa distância muda.
+
+6
+00:00:32,034 --> 00:00:38,377
+Com Ir ao instante, você se situa no momento do problema, e com Revelar resposta confere seu cálculo.
+
+7
+00:00:38,377 --> 00:00:44,228
+Se continuar avançando o tempo, verá o que acontece quando ambos chegam ao ponto O.
+

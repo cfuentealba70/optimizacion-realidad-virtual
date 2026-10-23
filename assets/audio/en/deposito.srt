@@ -1,0 +1,28 @@
+1
+00:00:00,100 --> 00:00:04,052
+This tank has the shape of a cone with its vertex down.
+
+2
+00:00:04,002 --> 00:00:08,364
+It is ten meters high and has a radius of fifteen meters.
+
+3
+00:00:08,364 --> 00:00:17,194
+Water flows out through the vertex at one cubic meter per second, and water flows in through the pipe at a constant rate, which we call c.
+
+4
+00:00:17,194 --> 00:00:25,771
+The problem asks for the inflow c that makes the level rise at four meters per second, at the instant when the water is one meter deep.
+
+5
+00:00:25,771 --> 00:00:33,457
+Move the inflow and the level with the sliders, drag the light-blue sphere, or turn on Simulate to watch the tank fill.
+
+6
+00:00:33,457 --> 00:00:41,662
+Look for the inflow with which the curve on the graph passes through the guide of four meters per second, exactly at one meter of depth.
+
+7
+00:00:41,662 --> 00:00:46,276
+With Go to h equals one meter and with Reveal you check your result.
+

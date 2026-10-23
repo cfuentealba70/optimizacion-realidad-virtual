@@ -126,9 +126,12 @@ export const AUTOS = {
   respuesta() { return -108; }, // km/h
 };
 
+// Cifras con el formato del idioma de la interfaz (es-CL: 1.024,5 · en-US: 1,024.5 · pt-BR: 1.024,5).
+// src/common/i18n.js deja el código regional en globalThis.__g4Locale; sin él (pruebas), se usa es-CL.
+const locale = () => globalThis.__g4Locale || 'es-CL';
 export function num(n, d = 2) {
   if (!Number.isFinite(n)) return n > 0 ? '∞' : '−∞';
-  const s = Math.abs(n).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
-  return (n < 0 && Number(s.replace(/\./g, '').replace(',', '.')) !== 0 ? '−' : '') + s;
+  const s = Math.abs(n).toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
+  return (n < 0 && Number(Math.abs(n).toFixed(d)) !== 0 ? '−' : '') + s;
 }
-export function pesos(n) { return '$' + Math.round(n).toLocaleString('es-CL'); }
+export function pesos(n) { return '$' + Math.round(n).toLocaleString(locale()); }

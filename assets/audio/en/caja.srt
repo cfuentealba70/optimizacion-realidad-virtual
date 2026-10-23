@@ -1,0 +1,24 @@
+1
+00:00:00,100 --> 00:00:06,632
+In this workshop an open-top box is made from a square piece of cardboard twenty-four inches on a side.
+
+2
+00:00:06,582 --> 00:00:11,888
+A square of side x is cut from each corner, and then the edges are folded up.
+
+3
+00:00:11,888 --> 00:00:18,138
+If you cut a little, the box is very shallow, and if you cut a lot, the base gets smaller.
+
+4
+00:00:18,138 --> 00:00:25,332
+Drag the orange sphere at the corner, move the slider or the point on the graph, and see how the volume changes.
+
+5
+00:00:25,332 --> 00:00:32,978
+With Unfold you see the flat cardboard with the cuts, and with Fill with sand you can compare the volumes of different boxes.
+
+6
+00:00:32,978 --> 00:00:37,885
+Finally, check your result with Go to optimum or with Reveal solution.
+

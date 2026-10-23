@@ -30,9 +30,11 @@ export const RIO = {
   extremos() { return { x0: this.costo(0), xD: this.costo(this.D) }; },
 };
 
+// Formato del idioma de la interfaz (ver src/common/i18n.js); sin él, es-CL
+const locale = () => globalThis.__g4Locale || 'es-CL';
 export function formatoPesos(n) {
-  return '$' + Math.round(n).toLocaleString('es-CL');
+  return '$' + Math.round(n).toLocaleString(locale());
 }
 export function formatoNum(n, d = 2) {
-  return n.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
 }

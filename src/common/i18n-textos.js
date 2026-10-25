@@ -180,9 +180,9 @@ export const TEXTOS = [
   ['En el computador', 'On the computer', 'No computador'],
   ['Arrastra con el ratón para girar la vista y usa la rueda para acercarte.', 'Drag with the mouse to rotate the view and use the wheel to zoom in.', 'Arraste com o mouse para girar a vista e use a roda para aproximar.'],
   ['Haz clic y arrastra sobre los gráficos, las esferas naranjas o los deslizadores.', 'Click and drag on the graphs, the orange spheres or the sliders.', 'Clique e arraste sobre os gráficos, as esferas laranja ou os controles deslizantes.'],
-  ['Código con licencia MIT. Funciona sin conexión una vez cargado y no recoge datos de quien lo usa. Hecho con <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.',
-    'Code under the MIT license. It works offline once loaded and does not collect any data from its users. Made with <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.',
-    'Código com licença MIT. Funciona sem conexão depois de carregado e não coleta dados de quem o usa. Feito com <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.'],
+  ['Código con licencia MIT. Una vez cargadas, las escenas funcionan sin conexión, salvo la narración, que se descarga al llegar a cada estación. No recoge datos de quien lo usa. Hecho con <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.',
+    'Code under the MIT license. Once loaded, the scenes work offline, except for the narration, which is downloaded on arrival at each station. It does not collect any data from its users. Made with <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.',
+    'Código com licença MIT. Depois de carregadas, as cenas funcionam sem conexão, exceto a narração, que é baixada ao chegar a cada estação. Não coleta dados de quem o usa. Feito com <a href="https://threejs.org">three.js</a>. © 2026 Claudio Fuentealba, Universidad Austral de Chile.'],
 
   // ---------------------------------------------------------------- entorno de la obra
   ['OFICINA TÉCNICA', 'SITE OFFICE', 'ESCRITÓRIO TÉCNICO'],

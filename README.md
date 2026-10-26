@@ -60,7 +60,7 @@ npm test
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23647379.svg)](https://doi.org/10.5281/zenodo.23647379)
 
-Si usas o adaptas este recurso, cítalo con los datos de `CITATION.cff` (en GitHub, botón «Cite this repository»). Cada versión publicada se archiva en Zenodo con su propio DOI, de modo que la cita apunte siempre a la versión que se usó. El DOI 10.5281/zenodo.23647379 reúne todas las versiones, y la 1.0.0 tiene el 10.5281/zenodo.23647380.
+Si usas o adaptas este recurso, cítalo con los datos de `CITATION.cff` (en GitHub, botón «Cite this repository»). Cada versión publicada se archiva en Zenodo con su propio DOI, de modo que la cita apunte siempre a la versión que se usó. El DOI 10.5281/zenodo.23647379 reúne todas las versiones. La 1.1.0, la primera con el nombre DeriVR, tiene el 10.5281/zenodo.23667678, y la 1.0.0 tiene el 10.5281/zenodo.23647380.
 
 ## Licencia
 

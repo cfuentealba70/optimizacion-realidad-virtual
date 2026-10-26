@@ -1541,7 +1541,7 @@ export function crearEntorno(ctx) {
     textoAjustado(g, 'OBRA EN CONSTRUCCIÓN', 40, 62, 640, 64, 800);
     g.textAlign = 'right'; g.fillStyle = '#ffd08a'; textoAjustado(g, 'GUÍA 4', 984, 62, 260, 54, 800);
     g.textAlign = 'left'; g.fillStyle = '#163d6b';
-    textoAjustado(g, 'La obra: once problemas de Cálculo', 40, 178, 940, 46, 800);
+    textoAjustado(g, 'DeriVR: once problemas de Cálculo', 40, 178, 940, 46, 800);
     g.fillStyle = '#3d4a5a'; textoAjustado(g, 'Optimización y razón de cambio en una variable', 40, 228, 940, 34, 600);
     const filas = [['Estaciones', '11'], ['Superficie del terreno', '2,8 ha'], ['Plazo de ejecución', '18 semanas'], ['Inicio de faenas', 'marzo de 2026'], ['Horario', 'lunes a viernes, 8:00 a 18:00']];
     filas.forEach(([a, b], i) => {

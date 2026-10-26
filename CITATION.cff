@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "Si usas este recurso, cítalo con estos datos. If you use this resource, please cite it as below."
 type: software
-title: "La Obra: Optimization and Related Rates Problems in Virtual Reality (WebXR)"
+title: "DeriVR: Optimization and Related Rates Problems in Virtual Reality (WebXR)"
 abstract: >-
   Open WebXR resource in which eleven optimization and related rates problems of a
   first-year single-variable calculus course for engineering are recreated at real

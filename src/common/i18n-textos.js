@@ -73,8 +73,8 @@ export const TEXTOS = [
   ['ADVERTENCIA', 'WARNING', 'ADVERTÊNCIA'],
 
   // ---------------------------------------------------------------- páginas y menús
-  ['La obra', 'The construction site', 'A obra'],
-  ['La obra · optimización y razón de cambio en VR', 'The construction site · optimization and related rates in VR', 'A obra · otimização e taxas relacionadas em VR'],
+  ['DeriVR', 'DeriVR', 'DeriVR'],
+  ['DeriVR · optimización y razón de cambio en VR', 'DeriVR · optimization and related rates in VR', 'DeriVR · otimização e taxas relacionadas em VR'],
   ['Preparando la obra…', 'Preparing the construction site…', 'Preparando a obra…'],
   ['Preparando el entorno…', 'Preparing the surroundings…', 'Preparando o entorno…'],
   ['Construyendo la estación #/#…', 'Building station #/#…', 'Construindo a estação #/#…'],
@@ -142,14 +142,14 @@ export const TEXTOS = [
   ['WEBXR NO DISPONIBLE', 'WEBXR NOT AVAILABLE', 'WEBXR NÃO DISPONÍVEL'],
 
   // portada
-  ['Optimización y razón de cambio en realidad virtual', 'Optimization and related rates in virtual reality', 'Otimização e taxas relacionadas em realidade virtual'],
+  ['DeriVR: optimización y razón de cambio en realidad virtual', 'DeriVR: optimization and related rates in virtual reality', 'DeriVR: otimização e taxas relacionadas em realidade virtual'],
   ['Problemas de Cálculo en una variable construidos como escenas WebXR para Meta Quest 3 y para el navegador de escritorio. En cada uno se ve la función objetivo o la relación entre las razones de cambio, y se mueve la variable o el tiempo para observar cómo cambian las magnitudes del problema.',
     'Single-variable Calculus problems built as WebXR scenes for Meta Quest 3 and for the desktop browser. Each one shows the objective function or the relation between the rates of change, and the variable or the time can be moved to observe how the quantities of the problem change.',
     'Problemas de Cálculo em uma variável construídos como cenas WebXR para o Meta Quest 3 e para o navegador do computador. Em cada um se vê a função objetivo ou a relação entre as taxas de variação, e move-se a variável ou o tempo para observar como mudam as grandezas do problema.'],
   ['Once estaciones en un mismo mundo, una por cada problema de la guía cuyo contexto se puede representar a escala real, dentro de una obra con sus alrededores. Se recorre caminando o con el menú de estaciones.',
     'Eleven stations in a single world, one for each problem of the guide whose context can be represented at real scale, inside a construction site and its surroundings. You can walk around it or use the stations menu.',
     'Onze estações em um mesmo mundo, uma para cada problema do guia cujo contexto pode ser representado em escala real, dentro de uma obra com seus arredores. Percorre-se caminhando ou com o menu de estações.'],
-  ['Entrar a la obra', 'Enter the construction site', 'Entrar na obra'],
+  ['Entrar a DeriVR', 'Enter DeriVR', 'Entrar no DeriVR'],
   ['Qué problemas de la guía se modelan, cuáles no y por qué, junto con los modelos y las respuestas, está en <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/guia4.md">docs/guia4.md</a>.',
     'Which problems of the guide are modeled, which are not and why, together with the models and the answers, is described in <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/guia4.md">docs/guia4.md</a> (in Spanish).',
     'Quais problemas do guia são modelados, quais não e por quê, junto com os modelos e as respostas, está descrito em <a href="https://github.com/cfuentealba70/optimizacion-realidad-virtual/blob/main/docs/guia4.md">docs/guia4.md</a> (em espanhol).'],
@@ -194,7 +194,7 @@ export const TEXTOS = [
   ['A PERSONAS AJENAS A LA OBRA', 'FOR UNAUTHORIZED PERSONS', 'A PESSOAS ESTRANHAS À OBRA'],
   ['SALIDA DE CAMIONES', 'TRUCK EXIT', 'SAÍDA DE CAMINHÕES'],
   ['GUÍA 4', 'GUIDE 4', 'GUIA 4'],
-  ['La obra: once problemas de Cálculo', 'The construction site: eleven Calculus problems', 'A obra: onze problemas de Cálculo'],
+  ['DeriVR: once problemas de Cálculo', 'DeriVR: eleven Calculus problems', 'DeriVR: onze problemas de Cálculo'],
   ['Optimización y razón de cambio en una variable', 'Single-variable optimization and related rates', 'Otimização e taxas relacionadas em uma variável'],
   ['Superficie del terreno', 'Site area', 'Área do terreno'],
   ['Plazo de ejecución', 'Construction period', 'Prazo de execução'],

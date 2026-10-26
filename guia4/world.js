@@ -450,7 +450,7 @@ function marcarMenu() {
 }
 function actualizarHud() {
   $('hud-etiqueta').textContent = tr(activa ? activa.def.etiqueta || '' : 'Guía 4 · Optimización y razón de cambio');
-  $('hud-titulo').textContent = tr(activa ? activa.def.titulo : 'La obra');
+  $('hud-titulo').textContent = tr(activa ? activa.def.titulo : 'DeriVR');
   $('hud-texto').textContent = tr(activa ? activa.def.resumen || '' : 'Elige una estación en el menú. Cada una modela un problema de la guía con su función objetivo o con las razones de cambio relacionadas.');
 }
 let controlesDom = [];
